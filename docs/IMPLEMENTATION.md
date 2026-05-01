@@ -197,3 +197,55 @@ La majorité de la surface était déjà en place (logger pino, env.READ_ONLY, /
 - Audit `READ_ONLY` confirmé sur les 9 entités (grep cohérent : tous les actions de mutation testent `env.READ_ONLY` avant la moindre opération DB).
 
 ---
+
+## Étape 11 — Dockerfile, compose example, docs FR/EN
+
+**Commit** : `f99741a` — *feat(docker): step 11 — Dockerfile, compose example, docs FR/EN*
+
+Délégué à un sub-agent en background — interrompu par un plafond d'usage avant la fin (a livré Dockerfile + compose + INSTALL FR/EN + script SQL + .dockerignore mais pas INTEGRATION_TESLAMATE.md ni le README). J'ai complété moi-même la doc d'intégration et le README.
+
+- `docker/Dockerfile` : multi-stage `deps → builder → runner` sur `node:22-alpine`. Builder lance `prisma generate` + `next build` (Turbopack standalone). Runner copie `.next/standalone` + `.next/static` + `public` + le client Prisma (.prisma/client + @prisma/client + libquery_engine). USER node, EXPOSE 3001, HEALTHCHECK `/api/health`. Cache mount BuildKit sur `npm ci`.
+- `docker/docker-compose.example.yml` : bloc service à coller dans le compose TeslaMate, avec `depends_on: database` + healthcheck wired.
+- `docker/init-teslamatefix-user.sql` : crée un user PG `teslamatefix` avec uniquement SELECT/INSERT/UPDATE/DELETE sur les 11 tables métier nommées explicitement, USAGE sur `public`, USAGE+SELECT sur les sequences. **Aucun grant** sur `tokens`, `schema_migrations`, ni le futur schéma `private`. Le mot de passe est passé via `psql -v tmfix_password=…`.
+- `docs/INSTALL.md` (FR) + `docs/INSTALL.en.md` (EN) : prérequis, génération bcrypt + AUTH_SECRET, SQL user bootstrap, snippet compose, premier login + hardening, mise à jour de l'image.
+- `docs/INTEGRATION_TESLAMATE.md` (FR) : procédure pg_dump, diff before/after du compose, snippets reverse-proxy nginx + Caddy (avec `X-Forwarded-{For,Proto}` propagés pour le rate limit + le cookie Secure), FAQ (mode lecture seule, rotation mdp, sans-Docker, "et si je casse la base").
+- `README.md` : remplacé le default create-next-app par un README orienté projet (pitch, stack, dev quickstart, Docker prod pointer, tests, sécurité, plan/journal, MIT).
+
+---
+
+## Étape 12 — Tests Vitest + Playwright
+
+**Commit** : `d6818c2` — *test: step 12 — Vitest unit tests on integrity rules + Playwright e2e*
+
+Délégué à un sub-agent en background, en parallèle de l'étape 11 — interrompu par le même plafond d'usage avant la fin de Playwright. L'agent a livré Vitest config + 4 fichiers de tests unitaires + scripts npm et installé les deps. J'ai complété `playwright.config.ts` + le test e2e + l'entrée `.gitignore`.
+
+- `vitest.config.ts` + 20 tests sur `src/lib/integrity/*` (tous verts) :
+  - **drives** (9 tests) : Haversine sur triangle connu, single-position, positions identiques, ascent/descent (deltas signés), duration_min, speed_max, return safe sans position.
+  - **charges** (4 tests) : MAX charge_energy_added, MIN/MAX battery_level (SOC bornes), duration via premier/dernier tick, return safe sans tick.
+  - **states** (4 tests) : `closePreviousOpenState` — pas d'état ouvert → null, ouvert avant new start → ferme à `start-1s`, ouvert après → throw, transaction client wired.
+  - **settings** (3 tests) : `updateSettings` n'appelle que `prisma.settings.update({where:{id:1}})`, jamais `.create` ni `.upsert`.
+- Refactor mineur de `src/lib/integrity/drives.ts` : Haversine + ascent/descent reducer extraits en fonctions pures exportées (testables sans fixture Prisma). Pas de changement de comportement.
+- `playwright.config.ts` : chromium uniquement, retries=2 en CI, `webServer: npm run start` qui attend `/api/health`. `E2E_BASE_URL` pour pointer une instance déjà déployée.
+- `e2e/login-edit-drive.spec.ts` : anonyme → /login → soumet creds → dashboard rendu → clique "Modifier" sur le dernier drive (skip si vide) → logout → /login. Non-destructif.
+- npm scripts : `test`, `test:watch`, `test:e2e`. Variables `E2E_USERNAME`/`E2E_PASSWORD` (défaut `admin/admin`).
+- `.gitignore` étendu : `/test-results`, `/playwright-report`, `/playwright/.cache`.
+
+---
+
+## Synthèse — état final
+
+| Critère | Statut |
+|---|---|
+| Build (`npm run build`) | ✅ |
+| Typecheck (`npm run typecheck`) | ✅ |
+| Tests unit (`npm run test`) | ✅ 20/20 |
+| 9 entités CRUD livrées | ✅ |
+| 4 règles d'intégrité dans `lib/integrity/` | ✅ |
+| Dashboard avec firmware + anomalies | ✅ |
+| i18n FR/EN | ✅ |
+| Docker image + compose example + docs | ✅ |
+| Routes générées | 26 routes (1 home, 8 entités liste/[id]/new, 1 settings, 4 routes API) |
+
+**Architecture par entité métier confirmée** : aucune route `tables/[table]` générique. Chaque entité a son dossier `app/[locale]/<entity>/` + `components/entities/<entity>/` + (le cas échéant) `lib/integrity/<entity>.ts`.
+
+**Sécurité au design** : auth obligatoire (cookie chiffré iron-session), rate limit login, mode `READ_ONLY`, recommandation user PG dédié sans grant sur tokens/schema_migrations.
