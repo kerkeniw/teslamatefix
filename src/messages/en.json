@@ -1,0 +1,52 @@
+{
+  "common": {
+    "appName": "TeslaMateFix",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "create": "Create",
+    "new": "New",
+    "back": "Back",
+    "search": "Search",
+    "filter": "Filter",
+    "loading": "Loading…",
+    "noResult": "No result.",
+    "confirm": "Confirm",
+    "yes": "Yes",
+    "no": "No",
+    "logout": "Log out"
+  },
+  "auth": {
+    "loginTitle": "Sign in",
+    "loginSubtitle": "Sign in to access the console.",
+    "username": "Username",
+    "password": "Password",
+    "login": "Sign in",
+    "loggingIn": "Signing in…",
+    "invalidCredentials": "Invalid credentials.",
+    "rateLimited": "Too many attempts. Try again in {seconds} second(s)."
+  },
+  "nav": {
+    "drives": "Drives",
+    "charges": "Charges",
+    "positions": "Positions",
+    "addresses": "Addresses",
+    "geofences": "Geofences",
+    "states": "States",
+    "updates": "Updates",
+    "cars": "Vehicles",
+    "settings": "Settings"
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "lastCharge": "Last charge",
+    "lastDrive": "Last drive",
+    "newCharge": "New charge",
+    "newDrive": "New drive",
+    "firmware": "Firmware",
+    "viewReleaseNotes": "View release notes",
+    "anomalies": "Detected anomalies",
+    "summary": "Summary"
+  }
+}

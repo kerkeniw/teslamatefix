@@ -1,0 +1,52 @@
+{
+  "common": {
+    "appName": "TeslaMateFix",
+    "save": "Enregistrer",
+    "cancel": "Annuler",
+    "delete": "Supprimer",
+    "edit": "Modifier",
+    "create": "Créer",
+    "new": "Nouveau",
+    "back": "Retour",
+    "search": "Rechercher",
+    "filter": "Filtrer",
+    "loading": "Chargement…",
+    "noResult": "Aucun résultat.",
+    "confirm": "Confirmer",
+    "yes": "Oui",
+    "no": "Non",
+    "logout": "Déconnexion"
+  },
+  "auth": {
+    "loginTitle": "Connexion",
+    "loginSubtitle": "Connectez-vous pour accéder à la console.",
+    "username": "Identifiant",
+    "password": "Mot de passe",
+    "login": "Se connecter",
+    "loggingIn": "Connexion…",
+    "invalidCredentials": "Identifiants invalides.",
+    "rateLimited": "Trop de tentatives. Réessayez dans {seconds} seconde(s)."
+  },
+  "nav": {
+    "drives": "Trajets",
+    "charges": "Charges",
+    "positions": "Positions",
+    "addresses": "Adresses",
+    "geofences": "Géofences",
+    "states": "États",
+    "updates": "Mises à jour",
+    "cars": "Véhicules",
+    "settings": "Paramètres"
+  },
+  "dashboard": {
+    "title": "Tableau de bord",
+    "lastCharge": "Dernière charge",
+    "lastDrive": "Dernier trajet",
+    "newCharge": "Nouvelle charge",
+    "newDrive": "Nouveau trajet",
+    "firmware": "Firmware",
+    "viewReleaseNotes": "Voir les notes de version",
+    "anomalies": "Anomalies détectées",
+    "summary": "Résumé"
+  }
+}
