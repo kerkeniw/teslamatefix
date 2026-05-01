@@ -203,5 +203,151 @@
       "save": "Enregistrer",
       "delete": "Supprimer"
     }
+  },
+  "cars": {
+    "title": "Véhicules",
+    "subtitle": "Voitures suivies par TeslaMate et leurs réglages.",
+    "edit": "Éditer le véhicule",
+    "empty": "Aucun véhicule.",
+    "enabled": "Actif",
+    "disabled": "Désactivé",
+    "deleteUnavailable": "Suppression non disponible : un effacement de véhicule en cascade purgerait l'intégralité de l'historique (trajets, charges, positions, états, mises à jour). À effectuer manuellement en base si nécessaire.",
+    "tabs": {
+      "vehicle": "Véhicule",
+      "settings": "Réglages"
+    },
+    "sections": {
+      "identity": "Identité",
+      "model": "Modèle",
+      "options": "Options & apparence",
+      "polling": "Polling",
+      "flags": "Drapeaux"
+    },
+    "fields": {
+      "name": "Nom",
+      "vin": "VIN",
+      "eid": "EID",
+      "vid": "VID",
+      "model": "Modèle",
+      "marketingName": "Nom commercial",
+      "trimBadging": "Trim",
+      "exteriorColor": "Couleur extérieure",
+      "spoilerType": "Spoiler",
+      "wheelType": "Jantes",
+      "displayPriority": "Priorité d'affichage",
+      "efficiency": "Efficacité (Wh/km)",
+      "suspendMin": "Suspend (min)",
+      "suspendAfterIdleMin": "Suspend après inactivité (min)",
+      "reqNotUnlocked": "Exiger véhicule verrouillé",
+      "freeSupercharging": "Supercharge gratuite",
+      "useStreamingApi": "API streaming",
+      "enabled": "Suivi actif",
+      "lfpBattery": "Batterie LFP"
+    },
+    "hints": {
+      "displayPriority": "Plus le nombre est petit, plus le véhicule est prioritaire dans les vues qui supportent plusieurs voitures.",
+      "efficiency": "Wh par km. Mis à jour automatiquement par TeslaMate à partir des trajets.",
+      "suspendMin": "Délai avant que TeslaMate cesse le polling pour permettre l'endormissement (par défaut 21 min).",
+      "suspendAfterIdleMin": "Inactivité requise avant de tenter de suspendre (par défaut 15 min).",
+      "reqNotUnlocked": "Si actif, TeslaMate n'essaiera de suspendre que si le véhicule n'est pas déverrouillé.",
+      "useStreamingApi": "Active la souscription à l'API streaming Tesla pour les trajets.",
+      "lfpBattery": "Cocher si la batterie est LFP (lithium fer phosphate). Affecte le calcul SOC."
+    },
+    "errors": {
+      "invalidNumber": "Valeur numérique invalide.",
+      "invalidPriority": "Priorité d'affichage invalide (1 à 32767)."
+    },
+    "actions": {
+      "save": "Enregistrer"
+    }
+  },
+  "settings": {
+    "title": "Paramètres",
+    "subtitle": "Configuration globale TeslaMate (singleton id=1).",
+    "saved": "Paramètres enregistrés.",
+    "sections": {
+      "units": "Unités",
+      "display": "Affichage",
+      "urls": "URLs"
+    },
+    "fields": {
+      "unitOfLength": "Unité de distance",
+      "unitOfTemperature": "Unité de température",
+      "unitOfPressure": "Unité de pression",
+      "preferredRange": "Autonomie préférée",
+      "language": "Langue (TeslaMate)",
+      "baseUrl": "URL de base TeslaMate",
+      "grafanaUrl": "URL Grafana"
+    },
+    "values": {
+      "km": "km",
+      "mi": "mi",
+      "C": "°C",
+      "F": "°F",
+      "bar": "bar",
+      "psi": "psi",
+      "ideal": "Idéale",
+      "rated": "Estimée (rated)"
+    },
+    "hints": {
+      "language": "Code de langue TeslaMate (ex. fr, en). Sépare l'UI de TeslaMate de celle de TeslaMateFix.",
+      "baseUrl": "URL publique de l'instance TeslaMate (utilisée par les notifications).",
+      "grafanaUrl": "URL publique de Grafana (lien dans les notifications)."
+    },
+    "actions": {
+      "save": "Enregistrer"
+    }
+  },
+  "states": {
+    "title": "États",
+    "subtitle": "Historique online / offline / asleep par véhicule.",
+    "new": "Nouvel état",
+    "edit": "Éditer l'état",
+    "create": "Créer un état",
+    "empty": "Aucun état enregistré.",
+    "ongoing": "En cours",
+    "fields": {
+      "state": "État",
+      "startDate": "Début",
+      "endDate": "Fin",
+      "carId": "Véhicule",
+      "duration": "Durée"
+    },
+    "values": {
+      "online": "Online",
+      "offline": "Offline",
+      "asleep": "Asleep"
+    },
+    "hints": {
+      "endDate": "Laisser vide si l'état est toujours en cours.",
+      "endAfterStart": "La date de fin doit être postérieure ou égale à la date de début.",
+      "openState": "Un seul état peut rester ouvert (sans date de fin) par véhicule à la fois."
+    },
+    "duration": {
+      "minutes": "{m} min",
+      "hours": "{h} h {m} min",
+      "days": "{d} j {h} h"
+    },
+    "closePrevious": {
+      "label": "Clôturer automatiquement l'état précédent",
+      "description": "Un état est encore ouvert pour ce véhicule. Cocher cette case pour le clôturer à 1 seconde avant le nouvel état."
+    },
+    "delete": {
+      "title": "Supprimer cet état ?",
+      "description": "Action irréversible. L'enregistrement de l'état sera supprimé.",
+      "confirm": "Supprimer"
+    },
+    "errors": {
+      "endBeforeStart": "La date de fin ne peut pas être antérieure à la date de début.",
+      "carRequired": "Sélectionner un véhicule.",
+      "stateRequired": "Sélectionner un état.",
+      "openStateExists": "Un état est déjà ouvert pour ce véhicule. Cochez « clôturer le précédent » ou renseignez une date de fin.",
+      "noCar": "Aucun véhicule disponible. Importer une voiture avant de créer un état."
+    },
+    "actions": {
+      "create": "Créer l'état",
+      "save": "Enregistrer",
+      "delete": "Supprimer"
+    }
   }
 }

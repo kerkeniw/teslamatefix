@@ -203,5 +203,151 @@
       "save": "Save",
       "delete": "Delete"
     }
+  },
+  "cars": {
+    "title": "Vehicles",
+    "subtitle": "Cars tracked by TeslaMate and their settings.",
+    "edit": "Edit vehicle",
+    "empty": "No vehicle.",
+    "enabled": "Enabled",
+    "disabled": "Disabled",
+    "deleteUnavailable": "Deletion unavailable: cascading a vehicle delete would wipe the entire history (drives, charges, positions, states, updates). Run this manually in the database if truly required.",
+    "tabs": {
+      "vehicle": "Vehicle",
+      "settings": "Settings"
+    },
+    "sections": {
+      "identity": "Identity",
+      "model": "Model",
+      "options": "Options & appearance",
+      "polling": "Polling",
+      "flags": "Flags"
+    },
+    "fields": {
+      "name": "Name",
+      "vin": "VIN",
+      "eid": "EID",
+      "vid": "VID",
+      "model": "Model",
+      "marketingName": "Marketing name",
+      "trimBadging": "Trim",
+      "exteriorColor": "Exterior color",
+      "spoilerType": "Spoiler",
+      "wheelType": "Wheels",
+      "displayPriority": "Display priority",
+      "efficiency": "Efficiency (Wh/km)",
+      "suspendMin": "Suspend (min)",
+      "suspendAfterIdleMin": "Suspend after idle (min)",
+      "reqNotUnlocked": "Require vehicle locked",
+      "freeSupercharging": "Free supercharging",
+      "useStreamingApi": "Streaming API",
+      "enabled": "Tracking enabled",
+      "lfpBattery": "LFP battery"
+    },
+    "hints": {
+      "displayPriority": "Lower numbers are shown first in views that support multiple cars.",
+      "efficiency": "Wh per km. Updated automatically by TeslaMate from drives.",
+      "suspendMin": "Delay before TeslaMate stops polling to let the car sleep (default 21 min).",
+      "suspendAfterIdleMin": "Required idle time before attempting to suspend (default 15 min).",
+      "reqNotUnlocked": "If enabled, TeslaMate will only try to suspend when the vehicle is locked.",
+      "useStreamingApi": "Subscribes to the Tesla streaming API for drives.",
+      "lfpBattery": "Tick if the battery is LFP (lithium iron phosphate). Affects SOC computation."
+    },
+    "errors": {
+      "invalidNumber": "Invalid number.",
+      "invalidPriority": "Invalid display priority (1 to 32767)."
+    },
+    "actions": {
+      "save": "Save"
+    }
+  },
+  "settings": {
+    "title": "Settings",
+    "subtitle": "Global TeslaMate configuration (singleton id=1).",
+    "saved": "Settings saved.",
+    "sections": {
+      "units": "Units",
+      "display": "Display",
+      "urls": "URLs"
+    },
+    "fields": {
+      "unitOfLength": "Length unit",
+      "unitOfTemperature": "Temperature unit",
+      "unitOfPressure": "Pressure unit",
+      "preferredRange": "Preferred range",
+      "language": "Language (TeslaMate)",
+      "baseUrl": "TeslaMate base URL",
+      "grafanaUrl": "Grafana URL"
+    },
+    "values": {
+      "km": "km",
+      "mi": "mi",
+      "C": "°C",
+      "F": "°F",
+      "bar": "bar",
+      "psi": "psi",
+      "ideal": "Ideal",
+      "rated": "Rated"
+    },
+    "hints": {
+      "language": "TeslaMate language code (e.g. fr, en). Separate from the TeslaMateFix UI locale.",
+      "baseUrl": "Public URL of the TeslaMate instance (used in notifications).",
+      "grafanaUrl": "Public Grafana URL (linked in notifications)."
+    },
+    "actions": {
+      "save": "Save"
+    }
+  },
+  "states": {
+    "title": "States",
+    "subtitle": "online / offline / asleep history per vehicle.",
+    "new": "New state",
+    "edit": "Edit state",
+    "create": "Create state",
+    "empty": "No state recorded.",
+    "ongoing": "Ongoing",
+    "fields": {
+      "state": "State",
+      "startDate": "Start",
+      "endDate": "End",
+      "carId": "Vehicle",
+      "duration": "Duration"
+    },
+    "values": {
+      "online": "Online",
+      "offline": "Offline",
+      "asleep": "Asleep"
+    },
+    "hints": {
+      "endDate": "Leave blank if the state is still ongoing.",
+      "endAfterStart": "End date must be greater than or equal to start date.",
+      "openState": "Only one state can stay open (no end date) per vehicle at a time."
+    },
+    "duration": {
+      "minutes": "{m} min",
+      "hours": "{h} h {m} min",
+      "days": "{d} d {h} h"
+    },
+    "closePrevious": {
+      "label": "Automatically close the previous state",
+      "description": "A state is still open for this vehicle. Tick this box to close it at 1 second before the new state."
+    },
+    "delete": {
+      "title": "Delete this state?",
+      "description": "This cannot be undone. The state record will be removed.",
+      "confirm": "Delete"
+    },
+    "errors": {
+      "endBeforeStart": "End date cannot be earlier than start date.",
+      "carRequired": "Select a vehicle.",
+      "stateRequired": "Select a state.",
+      "openStateExists": "A state is already open for this vehicle. Tick \"close previous\" or set an end date.",
+      "noCar": "No vehicle available. Import a car before creating a state."
+    },
+    "actions": {
+      "create": "Create state",
+      "save": "Save",
+      "delete": "Delete"
+    }
   }
 }
