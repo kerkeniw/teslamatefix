@@ -1,36 +1,84 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# TeslaMateFix
 
-## Getting Started
+Outil web mobile-first pour **corriger et compléter** les données collectées par
+[TeslaMate](https://github.com/teslamate-org/teslamate). Quand la voiture perd sa
+connexion (parking souterrain, zone blanche, panne API), des trajets et sessions
+de charge sont enregistrés incomplets — fin manquante, kilométrage faux, énergie
+absente, état bloqué sur `online`. Aujourd'hui, la seule façon de corriger ces
+données est `psql` à la main, ce qui est risqué et pénible.
 
-First, run the development server:
+TeslaMateFix s'ajoute au `docker-compose.yml` de TeslaMate, se connecte à la base
+PostgreSQL existante et expose une UI sécurisée pour gérer chaque entité métier
+(`drives`, `charges`, `positions`, `addresses`, `geofences`, `states`, `updates`,
+`cars`, `settings`).
+
+## Stack
+
+- **Next.js 16** (App Router, src-dir, Turbopack, output `standalone`)
+- **React 19** + **TypeScript 5**
+- **Tailwind CSS 4** + **shadcn/ui** (preset `base-nova`, bâti sur `@base-ui/react`)
+- **Prisma 6** (introspection read-only du schéma TeslaMate, **jamais** de
+  `prisma migrate` sur la base partagée)
+- **iron-session** (cookie chiffré) pour l'auth single-user
+- **next-intl 4** pour i18n FR/EN
+- **TanStack Table** pour les listes paginées
+- **pino** pour les logs structurés
+- **Vitest** + **Playwright** pour les tests
+
+## Démarrage rapide (dev)
 
 ```bash
+# 1) Pointer DATABASE_URL vers une base TeslaMate accessible
+cp .env.example .env
+# 2) Générer un AUTH_SECRET et un AUTH_PASSWORD_HASH
+openssl rand -base64 32          # → AUTH_SECRET
+echo -n "MotDePasse" | npm run auth:hash --silent  # → AUTH_PASSWORD_HASH
+# 3) Compléter .env, puis :
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+# Accès : http://localhost:3000 (login : la valeur de AUTH_USERNAME)
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Production (Docker)
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Voir [`docs/INSTALL.md`](docs/INSTALL.md) (FR) / [`docs/INSTALL.en.md`](docs/INSTALL.en.md) (EN)
+pour le guide d'intégration au compose TeslaMate, et
+[`docs/INTEGRATION_TESLAMATE.md`](docs/INTEGRATION_TESLAMATE.md) pour les détails
+de mise en place du reverse-proxy et du backup préalable.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Le `docker-compose.example.yml` à coller dans la stack TeslaMate est dans
+[`docker/`](docker/).
 
-## Learn More
+## Tests
 
-To learn more about Next.js, take a look at the following resources:
+```bash
+npm run test       # Vitest unit (lib/integrity)
+npm run test:e2e   # Playwright e2e (login → dashboard → logout)
+npm run typecheck  # tsc --noEmit
+npm run build      # next build (Turbopack)
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Sécurité
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- Une seule paire identifiant/mot-de-passe via env (`AUTH_USERNAME`,
+  `AUTH_PASSWORD_HASH` bcrypt, `AUTH_SECRET` 32+ chars).
+- Cookie session `httpOnly` + `sameSite=lax` + `secure` en production.
+- Rate limit 5 tentatives / 5 min / IP sur `/login`.
+- Mode `READ_ONLY=true` pour bloquer toute mutation (utile en phase pilote ou
+  en backup).
+- **Recommandé** : créer un utilisateur PostgreSQL dédié avec privilèges
+  minimaux via [`docker/init-teslamatefix-user.sql`](docker/init-teslamatefix-user.sql).
+  Pas de privilège sur les tokens OAuth chiffrés Cloak ni sur `schema_migrations`.
 
-## Deploy on Vercel
+## Plan & journal
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- **Plan d'exécution** : `~/.claude/plans/nous-allons-cr-er-une-woolly-donut.md`
+- **Journal d'implémentation** : [`docs/IMPLEMENTATION.md`](docs/IMPLEMENTATION.md)
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Statut
+
+En développement actif. Pas encore publié.
+
+## Licence
+
+MIT

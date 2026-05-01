@@ -1,0 +1,54 @@
+# Artefacts locaux qui n'ont rien à faire dans l'image Docker.
+# Ce filtre s'applique au build context (`docker build .` depuis la racine).
+
+# Dépendances et caches
+node_modules
+.npm
+.yarn
+.pnpm-store
+
+# Sorties de build Next
+.next
+out
+build
+
+# Variables d'environnement locales (jamais dans une image)
+.env
+.env.*
+!.env.example
+
+# Git / éditeurs
+.git
+.gitignore
+.vscode
+.idea
+*.swp
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# TypeScript
+*.tsbuildinfo
+next-env.d.ts
+
+# Tests / couvertures
+coverage
+.nyc_output
+
+# Documentation et fichiers méta — pas nécessaires dans l'image runtime
+docs
+README.md
+AGENTS.md
+CLAUDE.md
+.claude
+
+# Le Dockerfile lui-même n'a pas besoin d'être dans l'image
+docker
+Dockerfile
