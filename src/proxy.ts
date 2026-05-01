@@ -43,7 +43,7 @@ function isLoginPath(pathname: string): boolean {
 export async function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
-  if (pathname === "/api/health") {
+  if (pathname === "/api/health" || pathname === "/api/health/db") {
     return NextResponse.next();
   }
 
