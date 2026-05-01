@@ -121,3 +121,79 @@ Ce journal trace, pas à pas, ce qui a été réalisé.
 - Build : ✅ — routes générées : `/[locale]`, `/[locale]/login`, `/api/auth/logout`, `/api/health`.
 
 ---
+
+## Étape 6 — Entités simples (addresses, geofences, updates)
+
+**Commit** : `cdfe99e` — *feat(entities): step 6 — addresses/geofences/updates CRUD*
+
+Délégué à un sub-agent en foreground (~18 min). Brief : `~/.claude/plans/...md` + références aux patrons existants. **Aucune touche aux fichiers fondateurs.**
+
+- `addresses` : recherche ILIKE serveur sur `display_name`/`road`/`city`/`country`, sections Identité/Localisation/OSM (read-only)/Raw avec validation `JSON.parse` client+serveur. `Prisma.DbNull` pour les nuls JSON. Confirm dialog avec décompte des drives + charging_processes qui passeront en SET NULL.
+- `geofences` : cartes (volume = dizaines), sections Identité/Localisation/Tarification, billing_type Select.
+- `updates` : tableau chronologique avec `<FirmwareLink>`, badge "ongoing" si `end_date IS NULL`. Le CHECK Postgres `end_date >= start_date` arrive en `PrismaClientUnknownRequestError` — fallback regex `/check constraint/i`.
+- Chaque action : `env.READ_ONLY` bloque, Zod valide, `logger.info({event, user, id, diff_keys})`, retour `{ok}` discriminé, P2002/P2025 mappés clean.
+- `Decimal`/`BigInt` stringifiés à la frontière server→client.
+- `messages/fr.json` + `en.json` étendus : `addresses`, `geofences`, `updates` + extensions `common` (saving/deleting/saved/deleted/etc.).
+- Build & typecheck ✅. Aucune nouvelle dep.
+
+---
+
+## Étape 7 — Entités véhicule & système (cars, settings, states)
+
+**Commit** : `6d3c1de` — *feat(entities): step 7 — cars/settings/states with integrity rules*
+
+Délégué à un sub-agent en foreground (~22 min).
+
+- `cars` : redirige automatiquement vers `/cars/[id]` quand une seule voiture (cas TeslaMate). Tabs `Véhicule` / `Réglages`. `prisma.$transaction([carUpdate, carSettingsUpdate])` pour l'atomicité. `eid`/`vid`/`vin` désactivés en édition (changer ces ids casserait l'OAuth binding). **Pas de delete par design** (cascade catastrophique). Pas de `/cars/new` (créés par TeslaMate via OAuth).
+- `settings` : page unique sans liste/[id]/new. Règle codifiée dans `src/lib/integrity/settings.ts` → `updateSettings()` ne fait que `prisma.settings.update({where:{id:1}})`. INSERT structurellement impossible.
+- `states` : timeline desktop + table mobile, `StateBadge` avec couleur par enum, `formatDuration`. Règle dans `src/lib/integrity/states.ts` → `closePreviousOpenState(carId, newStartDate, tx?)`. Quand on crée un état ouvert et qu'un autre est déjà ouvert pour le même `car_id`, l'UI propose une checkbox "fermer le précédent" qui déclenche un `$transaction([closePrev, createNew])`. CHECK `end_date >= start_date` validé Zod + fallback Prisma.
+- Server actions retournent des **clés i18n** (ex `errors.openStateExists`) plutôt que des strings traduits — le client `useTranslations` les résout. Plus propre que de threader `getTranslations` dans chaque action.
+- `messages/fr.json` + `en.json` : sections `cars`, `settings`, `states`.
+- Build & typecheck ✅. Aucune nouvelle dep.
+
+---
+
+## Étape 8 — Entités cœur métier (drives, charges, positions)
+
+**Commit** : `9b0cea2` — *feat(entities): step 8 — drives/charges/positions with recalc and cursor pagination*
+
+Délégué à un sub-agent en foreground (~35 min — la plus grosse étape).
+
+- `drives` : 3 onglets `Trajet` / `Positions` / `Recalcul`. `src/lib/integrity/drives.ts` → `recalcFromPositions()` Haversine cumulé, ascent/descent (deltas signés sommés en absolu), `(end-start)/60000` pour duration_min. Bornes par l'index `positions_drive_id_date_index`. Filtres liste : car_id, range date, "ouverts uniquement".
+- `charges` : 3 onglets `Session` / `Mesures` / `Recalcul`. `src/lib/integrity/charges.ts` → `recalcFromTicks()` via `prisma.aggregate` (MIN/MAX date + MAX énergie) + premier/dernier tick pour SOC. Pagination cursor scopée par tab (`?tcursor/tdir/tps` pour ne pas écraser les params session). AC/DC dérivé via une requête bornée à la page courante (jamais de scan complet sur 33k+ ticks). Suppression unitaire d'un tick ne touche PAS le parent (recalc explicite requis).
+- `positions` (4.4M lignes) : **filtre obligatoire** côté UI — soit `drive_id`, soit `(car_id + plage ≤ 31 jours)`. Sans filtre, placeholder + return early serveur. Pagination cursor par id (lecture pageSize+1 pour détecter la page suivante), tri date desc. FK Selects bornés à 200 lignes ; si l'id courant n'y est pas, `unshift` en tête. Suppression bulk refuse les positions référencées par `charging_processes.position_id` (FK NOT NULL). Lien sortant vers OSM, pas de carte intégrée.
+- `src/components/data-table/cursor-pagination.tsx` créé (composant partagé avec param de cursor configurable).
+- `messages/fr.json` + `en.json` : sections `drives`, `charges`, `positions`.
+- Build & typecheck ✅. Aucune nouvelle dep.
+
+---
+
+## Étape 9 — Dashboard avec FirmwareLink et anomalies
+
+**Commit** : `edcf985` — *feat(dashboard): step 9 — vehicle status, firmware widget, anomalies*
+
+Codé moi-même (intégrative, point d'entrée visuel).
+
+- `src/lib/dashboard.ts` → `getDashboardData()` : tous les `await` en parallèle via `Promise.all` — un seul aller-retour vers Postgres (statut, firmware, dernier drive, dernière charge, comptes du mois, 3 familles d'anomalies).
+- `src/components/dashboard/dashboard.tsx` :
+  - Header card : marketing/model + nom + 6 derniers chars du VIN, état courant (online/offline/asleep) avec helper `timeSince`, version firmware via `<FirmwareLink>` (lien sortant vers `notateslaapp.com/.../version/<v>/release-notes`).
+  - Quick actions : 4 cartes — Dernière charge, Dernier drive (chacune liée à `/charges/[id]` ou `/drives/[id]`), Nouvelle charge, Nouveau drive (vers `/.../new`).
+  - Summary card : drives ce mois + charges ce mois, liens vers les listes.
+  - Anomalies : drives ouverts > 24h, charging_processes ouverts > 24h, états ouverts > 7j. Chaque ligne est un Link vers la page d'édition. Section masquée si aucune anomalie.
+- `messages/fr.json` + `en.json` : section `dashboard` étendue (statusLabel, quickActions, newChargeHint/newDriveHint, edit, create, drivesThisMonth, chargesThisMonth, openSince).
+- Build ✅. Mobile-first : cartes empilées sur mobile, grille à 4 colonnes desktop.
+
+---
+
+## Étape 10 — Logger pino + healthcheck + READ_ONLY
+
+**Commit** : `ee689f1` — *feat(observability): step 10 — audit helper + /api/health/db + READ_ONLY audit*
+
+La majorité de la surface était déjà en place (logger pino, env.READ_ONLY, /api/health). Cette étape consolide :
+
+- `src/lib/logger.ts` : commentaire de contrat d'audit + helper `audit({event, user, id, diff, meta})` standardisant la forme. Les actions existantes continuent d'appeler `logger.info` directement (pas de churn) ; ce helper est la voie recommandée pour les nouvelles.
+- `src/app/api/health/db/route.ts` : ping Postgres via `prisma.$queryRaw\`SELECT 1\`` — 200 si OK, 503 sinon. À la différence de `/api/health` qui reste DB-free (liveness), `/api/health/db` est la readiness (compose/k8s).
+- `src/proxy.ts` : `/api/health/db` ajouté à l'allowlist publique.
+- Audit `READ_ONLY` confirmé sur les 9 entités (grep cohérent : tous les actions de mutation testent `env.READ_ONLY` avant la moindre opération DB).
+
+---
