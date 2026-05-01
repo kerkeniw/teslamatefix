@@ -15,7 +15,24 @@
     "confirm": "Confirmer",
     "yes": "Oui",
     "no": "Non",
-    "logout": "Déconnexion"
+    "logout": "Déconnexion",
+    "actions": "Actions",
+    "id": "ID",
+    "readOnlyMode": "Application en lecture seule.",
+    "saving": "Enregistrement…",
+    "deleting": "Suppression…",
+    "saved": "Enregistré.",
+    "deleted": "Supprimé.",
+    "errorOccurred": "Une erreur est survenue.",
+    "validationError": "Données invalides.",
+    "notFound": "Ressource introuvable.",
+    "unique": "Cette valeur existe déjà.",
+    "required": "Champ obligatoire.",
+    "invalidJson": "JSON invalide.",
+    "invalidNumber": "Valeur numérique invalide.",
+    "invalidDate": "Date invalide.",
+    "previous": "Précédent",
+    "next": "Suivant"
   },
   "auth": {
     "loginTitle": "Connexion",
@@ -48,5 +65,143 @@
     "viewReleaseNotes": "Voir les notes de version",
     "anomalies": "Anomalies détectées",
     "summary": "Résumé"
+  },
+  "addresses": {
+    "title": "Adresses",
+    "subtitle": "Adresses Nominatim associées aux trajets et charges.",
+    "new": "Nouvelle adresse",
+    "edit": "Éditer l'adresse",
+    "create": "Créer une adresse",
+    "searchPlaceholder": "Rechercher (nom, rue, ville, pays)…",
+    "empty": "Aucune adresse.",
+    "sections": {
+      "identity": "Identité",
+      "location": "Localisation",
+      "osm": "OSM",
+      "raw": "Payload Nominatim brut"
+    },
+    "fields": {
+      "displayName": "Nom complet",
+      "name": "Nom court",
+      "houseNumber": "Numéro",
+      "road": "Rue",
+      "neighbourhood": "Quartier",
+      "city": "Ville",
+      "county": "Comté / département",
+      "postcode": "Code postal",
+      "state": "État / région",
+      "stateDistrict": "Sous-région",
+      "country": "Pays",
+      "latitude": "Latitude",
+      "longitude": "Longitude",
+      "osmId": "OSM id",
+      "osmType": "OSM type",
+      "raw": "JSON brut"
+    },
+    "hints": {
+      "displayName": "Texte affiché en page de détail (max 512 caractères).",
+      "lat": "Décimal entre −90 et 90, 6 décimales.",
+      "lon": "Décimal entre −180 et 180, 6 décimales.",
+      "osmReadOnly": "Ces identifiants OSM sont indexés en base : les modifier ne change pas l'enregistrement Nominatim correspondant.",
+      "rawPaste": "Coller un payload Nominatim JSON. Validé par JSON.parse côté client et serveur."
+    },
+    "delete": {
+      "title": "Supprimer cette adresse ?",
+      "description": "{drives} trajet(s) et {charging} charge(s) auront leur address_id mis à NULL. Action irréversible.",
+      "confirm": "Supprimer"
+    },
+    "errors": {
+      "uniqueOsm": "Une autre adresse utilise déjà ce couple (osm_id, osm_type).",
+      "invalidRaw": "Le champ JSON brut n'est pas un objet JSON valide.",
+      "invalidLat": "Latitude invalide.",
+      "invalidLon": "Longitude invalide."
+    },
+    "actions": {
+      "create": "Créer l'adresse",
+      "save": "Enregistrer",
+      "delete": "Supprimer"
+    }
+  },
+  "geofences": {
+    "title": "Géofences",
+    "subtitle": "Zones définies pour catégoriser trajets et charges.",
+    "new": "Nouvelle géofence",
+    "edit": "Éditer la géofence",
+    "create": "Créer une géofence",
+    "empty": "Aucune géofence.",
+    "sections": {
+      "identity": "Identité",
+      "location": "Localisation",
+      "billing": "Tarification"
+    },
+    "fields": {
+      "name": "Nom",
+      "latitude": "Latitude",
+      "longitude": "Longitude",
+      "radius": "Rayon (m)",
+      "billingType": "Mode de facturation",
+      "costPerUnit": "Coût par unité",
+      "sessionFee": "Frais de session"
+    },
+    "billingType": {
+      "per_kwh": "Par kWh",
+      "per_minute": "Par minute"
+    },
+    "hints": {
+      "radius": "Entre 1 et 32767 mètres (smallint Postgres).",
+      "costPerUnit": "Numeric(6,4) : 4 décimales, max 99.9999.",
+      "sessionFee": "Numeric(6,2) : 2 décimales, max 9999.99."
+    },
+    "delete": {
+      "title": "Supprimer cette géofence ?",
+      "description": "{drives} trajet(s) et {charging} charge(s) auront leur geofence_id mis à NULL. Action irréversible.",
+      "confirm": "Supprimer"
+    },
+    "actions": {
+      "create": "Créer la géofence",
+      "save": "Enregistrer",
+      "delete": "Supprimer"
+    }
+  },
+  "updates": {
+    "title": "Mises à jour firmware",
+    "subtitle": "Historique des mises à jour de chaque véhicule.",
+    "new": "Nouvelle mise à jour",
+    "edit": "Éditer la mise à jour",
+    "create": "Créer une mise à jour",
+    "empty": "Aucune mise à jour.",
+    "fields": {
+      "startDate": "Début",
+      "endDate": "Fin",
+      "version": "Version",
+      "carId": "Véhicule",
+      "duration": "Durée"
+    },
+    "hints": {
+      "endDate": "Laisser vide si la mise à jour est encore en cours.",
+      "version": "Format Tesla, ex. 2026.8.6.",
+      "endAfterStart": "La date de fin doit être postérieure ou égale à la date de début."
+    },
+    "ongoing": "En cours",
+    "duration": {
+      "minutes": "{m} min",
+      "hours": "{h} h {m} min",
+      "days": "{d} j {h} h"
+    },
+    "delete": {
+      "title": "Supprimer cette mise à jour ?",
+      "description": "Action irréversible. L'enregistrement de la mise à jour sera supprimé.",
+      "confirm": "Supprimer"
+    },
+    "errors": {
+      "endBeforeStart": "La date de fin ne peut pas être antérieure à la date de début.",
+      "carRequired": "Sélectionner un véhicule.",
+      "noCar": "Aucun véhicule disponible. Importer une voiture avant de créer une mise à jour."
+    },
+    "actions": {
+      "create": "Créer la mise à jour",
+      "save": "Enregistrer",
+      "delete": "Supprimer"
+    }
   }
 }

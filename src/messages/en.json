@@ -15,7 +15,24 @@
     "confirm": "Confirm",
     "yes": "Yes",
     "no": "No",
-    "logout": "Log out"
+    "logout": "Log out",
+    "actions": "Actions",
+    "id": "ID",
+    "readOnlyMode": "Application is in read-only mode.",
+    "saving": "Saving…",
+    "deleting": "Deleting…",
+    "saved": "Saved.",
+    "deleted": "Deleted.",
+    "errorOccurred": "An error occurred.",
+    "validationError": "Invalid data.",
+    "notFound": "Resource not found.",
+    "unique": "This value already exists.",
+    "required": "Required field.",
+    "invalidJson": "Invalid JSON.",
+    "invalidNumber": "Invalid number.",
+    "invalidDate": "Invalid date.",
+    "previous": "Previous",
+    "next": "Next"
   },
   "auth": {
     "loginTitle": "Sign in",
@@ -48,5 +65,143 @@
     "viewReleaseNotes": "View release notes",
     "anomalies": "Detected anomalies",
     "summary": "Summary"
+  },
+  "addresses": {
+    "title": "Addresses",
+    "subtitle": "Nominatim addresses associated with drives and charges.",
+    "new": "New address",
+    "edit": "Edit address",
+    "create": "Create address",
+    "searchPlaceholder": "Search (name, road, city, country)…",
+    "empty": "No address.",
+    "sections": {
+      "identity": "Identity",
+      "location": "Location",
+      "osm": "OSM",
+      "raw": "Raw Nominatim payload"
+    },
+    "fields": {
+      "displayName": "Display name",
+      "name": "Short name",
+      "houseNumber": "House number",
+      "road": "Road",
+      "neighbourhood": "Neighbourhood",
+      "city": "City",
+      "county": "County",
+      "postcode": "Postcode",
+      "state": "State / region",
+      "stateDistrict": "State district",
+      "country": "Country",
+      "latitude": "Latitude",
+      "longitude": "Longitude",
+      "osmId": "OSM id",
+      "osmType": "OSM type",
+      "raw": "Raw JSON"
+    },
+    "hints": {
+      "displayName": "Text shown on detail page (max 512 chars).",
+      "lat": "Decimal between -90 and 90, 6 decimals.",
+      "lon": "Decimal between -180 and 180, 6 decimals.",
+      "osmReadOnly": "These OSM identifiers are indexed: changing them does not update the matching Nominatim record.",
+      "rawPaste": "Paste a Nominatim JSON payload. Validated via JSON.parse on both client and server."
+    },
+    "delete": {
+      "title": "Delete this address?",
+      "description": "{drives} drive(s) and {charging} charging process(es) will have their address_id set to NULL. This cannot be undone.",
+      "confirm": "Delete"
+    },
+    "errors": {
+      "uniqueOsm": "Another address already uses this (osm_id, osm_type) pair.",
+      "invalidRaw": "Raw JSON field is not a valid JSON object.",
+      "invalidLat": "Invalid latitude.",
+      "invalidLon": "Invalid longitude."
+    },
+    "actions": {
+      "create": "Create address",
+      "save": "Save",
+      "delete": "Delete"
+    }
+  },
+  "geofences": {
+    "title": "Geofences",
+    "subtitle": "User-defined zones to categorise drives and charges.",
+    "new": "New geofence",
+    "edit": "Edit geofence",
+    "create": "Create geofence",
+    "empty": "No geofence.",
+    "sections": {
+      "identity": "Identity",
+      "location": "Location",
+      "billing": "Billing"
+    },
+    "fields": {
+      "name": "Name",
+      "latitude": "Latitude",
+      "longitude": "Longitude",
+      "radius": "Radius (m)",
+      "billingType": "Billing type",
+      "costPerUnit": "Cost per unit",
+      "sessionFee": "Session fee"
+    },
+    "billingType": {
+      "per_kwh": "Per kWh",
+      "per_minute": "Per minute"
+    },
+    "hints": {
+      "radius": "Between 1 and 32767 metres (Postgres smallint).",
+      "costPerUnit": "Numeric(6,4): 4 decimals, max 99.9999.",
+      "sessionFee": "Numeric(6,2): 2 decimals, max 9999.99."
+    },
+    "delete": {
+      "title": "Delete this geofence?",
+      "description": "{drives} drive(s) and {charging} charging process(es) will have their geofence_id set to NULL. This cannot be undone.",
+      "confirm": "Delete"
+    },
+    "actions": {
+      "create": "Create geofence",
+      "save": "Save",
+      "delete": "Delete"
+    }
+  },
+  "updates": {
+    "title": "Firmware updates",
+    "subtitle": "History of firmware updates per vehicle.",
+    "new": "New update",
+    "edit": "Edit update",
+    "create": "Create update",
+    "empty": "No update.",
+    "fields": {
+      "startDate": "Start",
+      "endDate": "End",
+      "version": "Version",
+      "carId": "Vehicle",
+      "duration": "Duration"
+    },
+    "hints": {
+      "endDate": "Leave blank if the update is still ongoing.",
+      "version": "Tesla format, e.g. 2026.8.6.",
+      "endAfterStart": "End date must be greater than or equal to start date."
+    },
+    "ongoing": "Ongoing",
+    "duration": {
+      "minutes": "{m} min",
+      "hours": "{h} h {m} min",
+      "days": "{d} d {h} h"
+    },
+    "delete": {
+      "title": "Delete this update?",
+      "description": "This cannot be undone. The update record will be removed.",
+      "confirm": "Delete"
+    },
+    "errors": {
+      "endBeforeStart": "End date cannot be earlier than start date.",
+      "carRequired": "Select a vehicle.",
+      "noCar": "No vehicle available. Import a car before creating an update."
+    },
+    "actions": {
+      "create": "Create update",
+      "save": "Save",
+      "delete": "Delete"
+    }
   }
 }
