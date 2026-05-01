@@ -1,0 +1,350 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  schemas  = ["private", "public"]
+}
+
+model addresses {
+  id                                        Int                  @id @default(autoincrement())
+  display_name                              String?              @db.VarChar(512)
+  latitude                                  Decimal?             @db.Decimal(8, 6)
+  longitude                                 Decimal?             @db.Decimal(9, 6)
+  name                                      String?              @db.VarChar(255)
+  house_number                              String?              @db.VarChar(255)
+  road                                      String?              @db.VarChar(255)
+  neighbourhood                             String?              @db.VarChar(255)
+  city                                      String?              @db.VarChar(255)
+  county                                    String?              @db.VarChar(255)
+  postcode                                  String?              @db.VarChar(255)
+  state                                     String?              @db.VarChar(255)
+  state_district                            String?              @db.VarChar(255)
+  country                                   String?              @db.VarChar(255)
+  raw                                       Json?
+  inserted_at                               DateTime             @db.Timestamp(0)
+  updated_at                                DateTime             @db.Timestamp(0)
+  osm_id                                    BigInt?
+  osm_type                                  String?
+  charging_processes                        charging_processes[]
+  drives_drives_end_address_idToaddresses   drives[]             @relation("drives_end_address_idToaddresses")
+  drives_drives_start_address_idToaddresses drives[]             @relation("drives_start_address_idToaddresses")
+
+  @@unique([osm_id, osm_type], map: "addresses_osm_id_osm_type_index")
+  @@schema("public")
+}
+
+model car_settings {
+  id                     BigInt  @id @default(autoincrement())
+  suspend_min            Int     @default(21)
+  suspend_after_idle_min Int     @default(15)
+  req_not_unlocked       Boolean @default(false)
+  free_supercharging     Boolean @default(false)
+  use_streaming_api      Boolean @default(true)
+  enabled                Boolean @default(true)
+  lfp_battery            Boolean @default(false)
+  cars                   cars?
+
+  @@schema("public")
+}
+
+model cars {
+  id                 Int                  @id @default(autoincrement()) @db.SmallInt
+  eid                BigInt               @unique(map: "cars_eid_index")
+  vid                BigInt               @unique(map: "cars_vid_index")
+  model              String?              @db.VarChar(255)
+  efficiency         Float?
+  inserted_at        DateTime             @db.Timestamp(0)
+  updated_at         DateTime             @db.Timestamp(0)
+  vin                String?              @unique(map: "cars_vin_index")
+  name               String?
+  trim_badging       String?
+  settings_id        BigInt               @unique(map: "cars_settings_id_index")
+  exterior_color     String?
+  spoiler_type       String?
+  wheel_type         String?
+  display_priority   Int                  @default(1) @db.SmallInt
+  marketing_name     String?              @db.VarChar(255)
+  car_settings       car_settings         @relation(fields: [settings_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  charging_processes charging_processes[]
+  drives             drives[]
+  positions          positions[]
+  states             states[]
+  updates            updates[]
+
+  @@schema("public")
+}
+
+model charges {
+  id                       Int                @id @default(autoincrement())
+  date                     DateTime           @db.Timestamp(6)
+  battery_heater_on        Boolean?
+  battery_level            Int?               @db.SmallInt
+  charge_energy_added      Decimal            @db.Decimal(8, 2)
+  charger_actual_current   Int?               @db.SmallInt
+  charger_phases           Int?               @db.SmallInt
+  charger_pilot_current    Int?               @db.SmallInt
+  charger_power            Int                @db.SmallInt
+  charger_voltage          Int?               @db.SmallInt
+  fast_charger_present     Boolean?
+  conn_charge_cable        String?            @db.VarChar(255)
+  fast_charger_brand       String?            @db.VarChar(255)
+  fast_charger_type        String?            @db.VarChar(255)
+  ideal_battery_range_km   Decimal            @db.Decimal(6, 2)
+  not_enough_power_to_heat Boolean?
+  outside_temp             Decimal?           @db.Decimal(4, 1)
+  charging_process_id      Int
+  battery_heater           Boolean?
+  battery_heater_no_power  Boolean?
+  rated_battery_range_km   Decimal?           @db.Decimal(6, 2)
+  usable_battery_level     Int?               @db.SmallInt
+  charging_processes       charging_processes @relation(fields: [charging_process_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([charging_process_id], map: "charges_charging_process_id_index")
+  @@index([date], map: "charges_date_index")
+  @@schema("public")
+}
+
+model charging_processes {
+  id                   Int        @id @default(autoincrement())
+  start_date           DateTime   @db.Timestamp(6)
+  end_date             DateTime?  @db.Timestamp(6)
+  charge_energy_added  Decimal?   @db.Decimal(8, 2)
+  start_ideal_range_km Decimal?   @db.Decimal(6, 2)
+  end_ideal_range_km   Decimal?   @db.Decimal(6, 2)
+  start_battery_level  Int?       @db.SmallInt
+  end_battery_level    Int?       @db.SmallInt
+  duration_min         Int?       @db.SmallInt
+  outside_temp_avg     Decimal?   @db.Decimal(4, 1)
+  car_id               Int        @db.SmallInt
+  position_id          Int
+  address_id           Int?
+  start_rated_range_km Decimal?   @db.Decimal(6, 2)
+  end_rated_range_km   Decimal?   @db.Decimal(6, 2)
+  geofence_id          Int?
+  charge_energy_used   Decimal?   @db.Decimal(8, 2)
+  cost                 Decimal?   @db.Decimal(6, 2)
+  charges              charges[]
+  addresses            addresses? @relation(fields: [address_id], references: [id], onUpdate: NoAction)
+  cars                 cars       @relation(fields: [car_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  geofences            geofences? @relation(fields: [geofence_id], references: [id], onUpdate: NoAction)
+  positions            positions  @relation(fields: [position_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([address_id], map: "charging_processes_address_id_index")
+  @@index([car_id], map: "charging_processes_car_id_index")
+  @@index([position_id], map: "charging_processes_position_id_index")
+  @@schema("public")
+}
+
+model drives {
+  id                                            Int         @id(map: "trips_pkey") @default(autoincrement())
+  start_date                                    DateTime    @db.Timestamp(6)
+  end_date                                      DateTime?   @db.Timestamp(6)
+  outside_temp_avg                              Decimal?    @db.Decimal(4, 1)
+  speed_max                                     Int?        @db.SmallInt
+  power_max                                     Int?        @db.SmallInt
+  power_min                                     Int?        @db.SmallInt
+  start_ideal_range_km                          Decimal?    @db.Decimal(6, 2)
+  end_ideal_range_km                            Decimal?    @db.Decimal(6, 2)
+  start_km                                      Float?
+  end_km                                        Float?
+  distance                                      Float?
+  duration_min                                  Int?        @db.SmallInt
+  car_id                                        Int         @db.SmallInt
+  inside_temp_avg                               Decimal?    @db.Decimal(4, 1)
+  start_address_id                              Int?
+  end_address_id                                Int?
+  start_rated_range_km                          Decimal?    @db.Decimal(6, 2)
+  end_rated_range_km                            Decimal?    @db.Decimal(6, 2)
+  start_position_id                             Int?
+  end_position_id                               Int?
+  start_geofence_id                             Int?
+  end_geofence_id                               Int?
+  ascent                                        Int?        @db.SmallInt
+  descent                                       Int?        @db.SmallInt
+  cars                                          cars        @relation(fields: [car_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  addresses_drives_end_address_idToaddresses    addresses?  @relation("drives_end_address_idToaddresses", fields: [end_address_id], references: [id], onUpdate: NoAction)
+  geofences_drives_end_geofence_idTogeofences   geofences?  @relation("drives_end_geofence_idTogeofences", fields: [end_geofence_id], references: [id], onUpdate: NoAction)
+  positions_drives_end_position_idTopositions   positions?  @relation("drives_end_position_idTopositions", fields: [end_position_id], references: [id], onUpdate: NoAction)
+  addresses_drives_start_address_idToaddresses  addresses?  @relation("drives_start_address_idToaddresses", fields: [start_address_id], references: [id], onUpdate: NoAction)
+  geofences_drives_start_geofence_idTogeofences geofences?  @relation("drives_start_geofence_idTogeofences", fields: [start_geofence_id], references: [id], onUpdate: NoAction)
+  positions_drives_start_position_idTopositions positions?  @relation("drives_start_position_idTopositions", fields: [start_position_id], references: [id], onUpdate: NoAction)
+  positions_positions_drive_idTodrives          positions[] @relation("positions_drive_idTodrives")
+
+  @@index([end_geofence_id], map: "drives_end_geofence_id_index")
+  @@index([end_position_id], map: "drives_end_position_id_index")
+  @@index([start_geofence_id], map: "drives_start_geofence_id_index")
+  @@index([start_position_id], map: "drives_start_position_id_index")
+  @@index([car_id], map: "trips_car_id_index")
+  @@index([end_address_id], map: "trips_end_address_id_index")
+  @@index([start_address_id], map: "trips_start_address_id_index")
+  @@schema("public")
+}
+
+model geofences {
+  id                                         Int                  @id @default(autoincrement())
+  name                                       String               @db.VarChar(255)
+  latitude                                   Decimal              @db.Decimal(8, 6)
+  longitude                                  Decimal              @db.Decimal(9, 6)
+  radius                                     Int                  @default(25) @db.SmallInt
+  inserted_at                                DateTime             @db.Timestamp(0)
+  updated_at                                 DateTime             @db.Timestamp(0)
+  cost_per_unit                              Decimal?             @db.Decimal(6, 4)
+  session_fee                                Decimal?             @db.Decimal(6, 2)
+  billing_type                               billing_type         @default(per_kwh)
+  charging_processes                         charging_processes[]
+  drives_drives_end_geofence_idTogeofences   drives[]             @relation("drives_end_geofence_idTogeofences")
+  drives_drives_start_geofence_idTogeofences drives[]             @relation("drives_start_geofence_idTogeofences")
+
+  @@schema("public")
+}
+
+model positions {
+  id                                         Int                  @id @default(autoincrement())
+  date                                       DateTime             @db.Timestamp(6)
+  latitude                                   Decimal              @db.Decimal(8, 6)
+  longitude                                  Decimal              @db.Decimal(9, 6)
+  speed                                      Int?                 @db.SmallInt
+  power                                      Int?                 @db.SmallInt
+  odometer                                   Float?
+  ideal_battery_range_km                     Decimal?             @db.Decimal(6, 2)
+  battery_level                              Int?                 @db.SmallInt
+  outside_temp                               Decimal?             @db.Decimal(4, 1)
+  elevation                                  Int?                 @db.SmallInt
+  fan_status                                 Int?
+  driver_temp_setting                        Decimal?             @db.Decimal(4, 1)
+  passenger_temp_setting                     Decimal?             @db.Decimal(4, 1)
+  is_climate_on                              Boolean?
+  is_rear_defroster_on                       Boolean?
+  is_front_defroster_on                      Boolean?
+  car_id                                     Int                  @db.SmallInt
+  drive_id                                   Int?
+  inside_temp                                Decimal?             @db.Decimal(4, 1)
+  battery_heater                             Boolean?
+  battery_heater_on                          Boolean?
+  battery_heater_no_power                    Boolean?
+  est_battery_range_km                       Decimal?             @db.Decimal(6, 2)
+  rated_battery_range_km                     Decimal?             @db.Decimal(6, 2)
+  usable_battery_level                       Int?                 @db.SmallInt
+  tpms_pressure_fl                           Decimal?             @db.Decimal(4, 1)
+  tpms_pressure_fr                           Decimal?             @db.Decimal(4, 1)
+  tpms_pressure_rl                           Decimal?             @db.Decimal(4, 1)
+  tpms_pressure_rr                           Decimal?             @db.Decimal(4, 1)
+  charging_processes                         charging_processes[]
+  drives_drives_end_position_idTopositions   drives[]             @relation("drives_end_position_idTopositions")
+  drives_drives_start_position_idTopositions drives[]             @relation("drives_start_position_idTopositions")
+  cars                                       cars                 @relation(fields: [car_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  drives_positions_drive_idTodrives          drives?              @relation("positions_drive_idTodrives", fields: [drive_id], references: [id], onUpdate: NoAction)
+
+  @@index([car_id], map: "positions_car_id_index")
+  @@index([date], map: "positions_date_index")
+  @@index([drive_id, date], map: "positions_drive_id_date_index")
+  @@schema("public")
+}
+
+/// Géré par TeslaMate (Ecto). Ne JAMAIS toucher depuis cette application.
+model schema_migrations {
+  version     BigInt    @id
+  inserted_at DateTime? @db.Timestamp(0)
+
+  @@schema("public")
+  @@ignore
+}
+
+model settings {
+  id                  BigInt              @id @default(autoincrement())
+  inserted_at         DateTime            @db.Timestamp(0)
+  updated_at          DateTime            @db.Timestamp(0)
+  unit_of_length      unit_of_length      @default(km)
+  unit_of_temperature unit_of_temperature @default(C)
+  preferred_range     range               @default(rated)
+  base_url            String?             @db.VarChar(255)
+  grafana_url         String?             @db.VarChar(255)
+  language            String              @default("en")
+  unit_of_pressure    unit_of_pressure    @default(bar)
+
+  @@schema("public")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model states {
+  id         Int           @id @default(autoincrement())
+  state      states_status
+  start_date DateTime      @db.Timestamp(6)
+  end_date   DateTime?     @db.Timestamp(6)
+  car_id     Int           @db.SmallInt
+  cars       cars          @relation(fields: [car_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([car_id], map: "states_car_id_index")
+  @@schema("public")
+}
+
+/// Tokens OAuth Tesla chiffrés (Cloak côté TeslaMate). Hors-périmètre — ne JAMAIS lire ni modifier.
+model tokens {
+  id          Int      @id @default(autoincrement())
+  inserted_at DateTime @db.Timestamp(0)
+  updated_at  DateTime @db.Timestamp(0)
+  refresh     Bytes?
+  access      Bytes?
+
+  @@schema("public")
+  @@ignore
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model updates {
+  id         Int       @id @default(autoincrement())
+  start_date DateTime  @db.Timestamp(6)
+  end_date   DateTime? @db.Timestamp(6)
+  version    String?   @db.VarChar(255)
+  car_id     Int       @db.SmallInt
+  cars       cars      @relation(fields: [car_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([car_id], map: "updates_car_id_index")
+  @@schema("public")
+}
+
+enum billing_type {
+  per_kwh
+  per_minute
+
+  @@schema("public")
+}
+
+enum range {
+  ideal
+  rated
+
+  @@schema("public")
+}
+
+enum states_status {
+  online
+  offline
+  asleep
+
+  @@schema("public")
+}
+
+enum unit_of_length {
+  km
+  mi
+
+  @@schema("public")
+}
+
+enum unit_of_pressure {
+  bar
+  psi
+
+  @@schema("public")
+}
+
+enum unit_of_temperature {
+  C
+  F
+
+  @@schema("public")
+}
