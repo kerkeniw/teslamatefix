@@ -349,5 +349,325 @@
       "save": "Enregistrer",
       "delete": "Supprimer"
     }
+  },
+  "drives": {
+    "title": "Trajets",
+    "subtitle": "Trajets enregistrés par TeslaMate (départ → arrivée).",
+    "new": "Nouveau trajet",
+    "edit": "Éditer le trajet",
+    "create": "Créer un trajet",
+    "empty": "Aucun trajet.",
+    "ongoing": "Ouvert",
+    "tabs": {
+      "drive": "Trajet",
+      "positions": "Positions",
+      "recalc": "Recalcul"
+    },
+    "sections": {
+      "time": "Temps",
+      "distance": "Distance & énergie",
+      "location": "Localisation",
+      "weather": "Météo",
+      "performance": "Performances"
+    },
+    "fields": {
+      "carId": "Véhicule",
+      "startDate": "Début",
+      "endDate": "Fin",
+      "startKm": "Odomètre départ (km)",
+      "endKm": "Odomètre arrivée (km)",
+      "distance": "Distance (km)",
+      "durationMin": "Durée (min)",
+      "startAddress": "Adresse départ",
+      "endAddress": "Adresse arrivée",
+      "startGeofence": "Géofence départ",
+      "endGeofence": "Géofence arrivée",
+      "startIdealRangeKm": "Autonomie idéale départ (km)",
+      "endIdealRangeKm": "Autonomie idéale arrivée (km)",
+      "startRatedRangeKm": "Autonomie rated départ (km)",
+      "endRatedRangeKm": "Autonomie rated arrivée (km)",
+      "outsideTempAvg": "Temp. extérieure moyenne (°C)",
+      "insideTempAvg": "Temp. intérieure moyenne (°C)",
+      "speedMax": "Vitesse max (km/h)",
+      "powerMin": "Puissance min (kW)",
+      "powerMax": "Puissance max (kW)",
+      "ascent": "Dénivelé positif (m)",
+      "descent": "Dénivelé négatif (m)",
+      "origin": "Origine",
+      "destination": "Destination"
+    },
+    "filters": {
+      "carId": "Véhicule",
+      "from": "Du",
+      "to": "Au",
+      "openOnly": "Ouverts seulement",
+      "all": "Tous",
+      "apply": "Appliquer",
+      "reset": "Réinitialiser"
+    },
+    "filtersHint": "Filtrez par véhicule et plage de dates pour limiter le résultat.",
+    "duration": {
+      "minutes": "{m} min",
+      "hours": "{h} h {m} min",
+      "days": "{d} j {h} h"
+    },
+    "delete": {
+      "title": "Supprimer ce trajet ?",
+      "description": "Action irréversible. Les positions associées garderont leur drive_id mis à NULL (FK SET NULL).",
+      "confirm": "Supprimer"
+    },
+    "errors": {
+      "endBeforeStart": "La date de fin ne peut pas être antérieure à la date de début.",
+      "carRequired": "Sélectionner un véhicule.",
+      "noCar": "Aucun véhicule disponible. Importer une voiture avant de créer un trajet."
+    },
+    "positionsTab": {
+      "totalCount": "{n} position(s) au total. Affichage des 50 premières.",
+      "viewAll": "Voir toutes les positions",
+      "empty": "Aucune position rattachée à ce trajet."
+    },
+    "recalc": {
+      "title": "Recalcul depuis les positions",
+      "description": "Lit toutes les positions associées à ce trajet et recalcule distance (Haversine), durée, dénivelés (somme des deltas d'élévation) et vitesse max.",
+      "compute": "Calculer",
+      "apply": "Appliquer",
+      "discard": "Annuler",
+      "computing": "Calcul…",
+      "applyConfirm": {
+        "title": "Appliquer le recalcul ?",
+        "description": "Les valeurs courantes seront écrasées par les valeurs calculées. Action réversible uniquement par recalcul ou édition manuelle.",
+        "confirm": "Appliquer"
+      },
+      "diff": {
+        "field": "Champ",
+        "before": "Actuel",
+        "after": "Calculé",
+        "noChange": "Aucun changement.",
+        "noPositions": "Aucune position : recalcul impossible."
+      },
+      "fields": {
+        "start_date": "Début",
+        "end_date": "Fin",
+        "distance": "Distance (km)",
+        "duration_min": "Durée (min)",
+        "ascent": "Ascension (m)",
+        "descent": "Descente (m)",
+        "speed_max": "Vitesse max"
+      },
+      "applied": "Recalcul appliqué."
+    },
+    "actions": {
+      "create": "Créer le trajet",
+      "save": "Enregistrer",
+      "delete": "Supprimer"
+    }
+  },
+  "charges": {
+    "title": "Charges",
+    "subtitle": "Sessions de charge et mesures associées.",
+    "new": "Nouvelle charge",
+    "edit": "Éditer la charge",
+    "create": "Créer une session de charge",
+    "empty": "Aucune session de charge.",
+    "ongoing": "En cours",
+    "tabs": {
+      "session": "Session",
+      "ticks": "Mesures",
+      "recalc": "Recalcul"
+    },
+    "sections": {
+      "time": "Temps",
+      "energy": "Énergie",
+      "battery": "Batterie",
+      "location": "Localisation",
+      "cost": "Coût",
+      "weather": "Météo"
+    },
+    "fields": {
+      "carId": "Véhicule",
+      "startDate": "Début",
+      "endDate": "Fin",
+      "durationMin": "Durée (min)",
+      "chargeEnergyAdded": "Énergie ajoutée (kWh)",
+      "chargeEnergyUsed": "Énergie consommée (kWh)",
+      "cost": "Coût",
+      "startBatteryLevel": "SOC départ (%)",
+      "endBatteryLevel": "SOC arrivée (%)",
+      "startIdealRangeKm": "Autonomie idéale départ (km)",
+      "endIdealRangeKm": "Autonomie idéale arrivée (km)",
+      "startRatedRangeKm": "Autonomie rated départ (km)",
+      "endRatedRangeKm": "Autonomie rated arrivée (km)",
+      "positionId": "Position",
+      "addressId": "Adresse",
+      "geofenceId": "Géofence",
+      "outsideTempAvg": "Temp. extérieure moyenne (°C)",
+      "place": "Lieu",
+      "type": "Type",
+      "ticks": "Mesures"
+    },
+    "filters": {
+      "carId": "Véhicule",
+      "from": "Du",
+      "to": "Au",
+      "all": "Tous",
+      "apply": "Appliquer",
+      "reset": "Réinitialiser"
+    },
+    "type": {
+      "ac": "AC",
+      "dc": "DC",
+      "unknown": "—"
+    },
+    "duration": {
+      "minutes": "{m} min",
+      "hours": "{h} h {m} min",
+      "days": "{d} j {h} h"
+    },
+    "delete": {
+      "title": "Supprimer cette session ?",
+      "description": "{n} mesure(s) seront supprimées en cascade. Action irréversible.",
+      "confirm": "Supprimer"
+    },
+    "errors": {
+      "carRequired": "Sélectionner un véhicule.",
+      "positionRequired": "Sélectionner une position (obligatoire).",
+      "endBeforeStart": "La date de fin ne peut pas être antérieure à la date de début.",
+      "noCar": "Aucun véhicule disponible. Importer une voiture avant de créer une charge.",
+      "noPosition": "Aucune position disponible pour ce véhicule. Créer une position d'abord."
+    },
+    "ticksTab": {
+      "totalCount": "{n} mesure(s)",
+      "empty": "Aucune mesure.",
+      "headers": {
+        "date": "Date",
+        "battery": "SOC",
+        "energy": "kWh",
+        "power": "kW",
+        "voltage": "V",
+        "current": "A",
+        "phases": "Phases",
+        "fast": "DC"
+      },
+      "deleteOne": {
+        "title": "Supprimer cette mesure ?",
+        "description": "Le tick #{id} sera supprimé. Les agrégats du parent ne sont PAS recalculés automatiquement.",
+        "confirm": "Supprimer"
+      }
+    },
+    "recalc": {
+      "title": "Recalcul depuis les mesures",
+      "description": "Lit les mesures (charges) liées à cette session et recalcule l'énergie ajoutée (max), la durée (max - min) et les niveaux batterie (premier / dernier tick).",
+      "compute": "Calculer",
+      "apply": "Appliquer",
+      "discard": "Annuler",
+      "computing": "Calcul…",
+      "applyConfirm": {
+        "title": "Appliquer le recalcul ?",
+        "description": "Les valeurs courantes seront écrasées par les valeurs calculées.",
+        "confirm": "Appliquer"
+      },
+      "diff": {
+        "field": "Champ",
+        "before": "Actuel",
+        "after": "Calculé",
+        "noChange": "Aucun changement.",
+        "noTicks": "Aucune mesure : recalcul impossible."
+      },
+      "fields": {
+        "start_date": "Début",
+        "end_date": "Fin",
+        "duration_min": "Durée (min)",
+        "charge_energy_added": "Énergie ajoutée (kWh)",
+        "start_battery_level": "SOC départ",
+        "end_battery_level": "SOC arrivée"
+      },
+      "applied": "Recalcul appliqué."
+    },
+    "actions": {
+      "create": "Créer la session",
+      "save": "Enregistrer",
+      "delete": "Supprimer"
+    }
+  },
+  "positions": {
+    "title": "Positions",
+    "subtitle": "Points GPS bruts. Volume très élevé — filtrez avant requête.",
+    "new": "Nouvelle position",
+    "edit": "Éditer la position",
+    "create": "Créer une position",
+    "empty": "Aucune position pour ce filtre.",
+    "filtersRequired": "Filtrez d'abord pour éviter une requête massive : choisissez un véhicule + plage de dates (≤ 31 jours), ou un trajet précis.",
+    "filterError": "Plage de dates trop large : maximum 31 jours.",
+    "filters": {
+      "carId": "Véhicule",
+      "from": "Du",
+      "to": "Au",
+      "driveId": "Trajet (id)",
+      "apply": "Appliquer",
+      "reset": "Réinitialiser",
+      "all": "Tous"
+    },
+    "sections": {
+      "core": "Données principales",
+      "battery": "Batterie",
+      "climate": "Climatisation",
+      "tpms": "Pression pneus"
+    },
+    "fields": {
+      "date": "Date",
+      "carId": "Véhicule",
+      "driveId": "Trajet",
+      "latitude": "Latitude",
+      "longitude": "Longitude",
+      "speed": "Vitesse (km/h)",
+      "power": "Puissance (kW)",
+      "odometer": "Odomètre (km)",
+      "elevation": "Altitude (m)",
+      "outsideTemp": "Temp. extérieure",
+      "insideTemp": "Temp. intérieure",
+      "batteryLevel": "SOC",
+      "usableBatteryLevel": "SOC utilisable",
+      "idealBatteryRangeKm": "Autonomie idéale (km)",
+      "ratedBatteryRangeKm": "Autonomie rated (km)",
+      "estBatteryRangeKm": "Autonomie estimée (km)",
+      "fanStatus": "Ventilation",
+      "driverTempSetting": "Consigne conducteur",
+      "passengerTempSetting": "Consigne passager",
+      "isClimateOn": "Clim. active",
+      "isRearDefrosterOn": "Dégivrage AR",
+      "isFrontDefrosterOn": "Dégivrage AV",
+      "batteryHeater": "Chauffage batterie",
+      "batteryHeaterOn": "Chauffage actif",
+      "batteryHeaterNoPower": "Chauffage no power",
+      "tpmsFl": "Pneu AVG",
+      "tpmsFr": "Pneu AVD",
+      "tpmsRl": "Pneu ARG",
+      "tpmsRr": "Pneu ARD"
+    },
+    "openOsm": "OSM",
+    "selected": "{n} sélectionnée(s)",
+    "deleteSelection": "Supprimer la sélection",
+    "delete": {
+      "title": "Supprimer cette position ?",
+      "description": "Action irréversible. Si cette position est référencée par un trajet (start/end_position_id), la FK passera à NULL ; si elle est référencée par une charge (position_id NOT NULL), la suppression échouera.",
+      "confirm": "Supprimer",
+      "many": {
+        "title": "Supprimer {n} position(s) ?",
+        "description": "Action irréversible. Les références (drives.start/end_position_id) passeront à NULL. Les positions liées à une charge ne pourront pas être supprimées.",
+        "confirm": "Supprimer"
+      },
+      "referencedByCharge": "Cette position est référencée par une charge (FK NOT NULL) : suppression refusée."
+    },
+    "errors": {
+      "carRequired": "Sélectionner un véhicule.",
+      "invalidLat": "Latitude invalide.",
+      "invalidLon": "Longitude invalide.",
+      "invalidDate": "Date invalide."
+    },
+    "actions": {
+      "create": "Créer la position",
+      "save": "Enregistrer",
+      "delete": "Supprimer"
+    }
   }
 }

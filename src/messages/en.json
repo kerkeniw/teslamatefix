@@ -349,5 +349,325 @@
       "save": "Save",
       "delete": "Delete"
     }
+  },
+  "drives": {
+    "title": "Drives",
+    "subtitle": "Drives recorded by TeslaMate (origin → destination).",
+    "new": "New drive",
+    "edit": "Edit drive",
+    "create": "Create drive",
+    "empty": "No drive.",
+    "ongoing": "Open",
+    "tabs": {
+      "drive": "Drive",
+      "positions": "Positions",
+      "recalc": "Recompute"
+    },
+    "sections": {
+      "time": "Time",
+      "distance": "Distance & energy",
+      "location": "Location",
+      "weather": "Weather",
+      "performance": "Performance"
+    },
+    "fields": {
+      "carId": "Vehicle",
+      "startDate": "Start",
+      "endDate": "End",
+      "startKm": "Start odometer (km)",
+      "endKm": "End odometer (km)",
+      "distance": "Distance (km)",
+      "durationMin": "Duration (min)",
+      "startAddress": "Start address",
+      "endAddress": "End address",
+      "startGeofence": "Start geofence",
+      "endGeofence": "End geofence",
+      "startIdealRangeKm": "Start ideal range (km)",
+      "endIdealRangeKm": "End ideal range (km)",
+      "startRatedRangeKm": "Start rated range (km)",
+      "endRatedRangeKm": "End rated range (km)",
+      "outsideTempAvg": "Outside temp avg (°C)",
+      "insideTempAvg": "Inside temp avg (°C)",
+      "speedMax": "Max speed (km/h)",
+      "powerMin": "Min power (kW)",
+      "powerMax": "Max power (kW)",
+      "ascent": "Ascent (m)",
+      "descent": "Descent (m)",
+      "origin": "Origin",
+      "destination": "Destination"
+    },
+    "filters": {
+      "carId": "Vehicle",
+      "from": "From",
+      "to": "To",
+      "openOnly": "Open only",
+      "all": "All",
+      "apply": "Apply",
+      "reset": "Reset"
+    },
+    "filtersHint": "Filter by vehicle and date range to narrow the result.",
+    "duration": {
+      "minutes": "{m} min",
+      "hours": "{h} h {m} min",
+      "days": "{d} d {h} h"
+    },
+    "delete": {
+      "title": "Delete this drive?",
+      "description": "This cannot be undone. Associated positions will keep drive_id set to NULL (FK SET NULL).",
+      "confirm": "Delete"
+    },
+    "errors": {
+      "endBeforeStart": "End date cannot be earlier than start date.",
+      "carRequired": "Select a vehicle.",
+      "noCar": "No vehicle available. Import a car before creating a drive."
+    },
+    "positionsTab": {
+      "totalCount": "{n} position(s) total. Showing first 50.",
+      "viewAll": "View all positions",
+      "empty": "No position attached to this drive."
+    },
+    "recalc": {
+      "title": "Recompute from positions",
+      "description": "Reads every position attached to this drive and recomputes distance (Haversine), duration, ascent/descent (sum of elevation deltas) and max speed.",
+      "compute": "Compute",
+      "apply": "Apply",
+      "discard": "Discard",
+      "computing": "Computing…",
+      "applyConfirm": {
+        "title": "Apply recompute?",
+        "description": "Current values will be overwritten with computed values. Reversible only via re-compute or manual edit.",
+        "confirm": "Apply"
+      },
+      "diff": {
+        "field": "Field",
+        "before": "Current",
+        "after": "Computed",
+        "noChange": "No change.",
+        "noPositions": "No position: cannot recompute."
+      },
+      "fields": {
+        "start_date": "Start",
+        "end_date": "End",
+        "distance": "Distance (km)",
+        "duration_min": "Duration (min)",
+        "ascent": "Ascent (m)",
+        "descent": "Descent (m)",
+        "speed_max": "Max speed"
+      },
+      "applied": "Recompute applied."
+    },
+    "actions": {
+      "create": "Create drive",
+      "save": "Save",
+      "delete": "Delete"
+    }
+  },
+  "charges": {
+    "title": "Charges",
+    "subtitle": "Charging sessions and per-tick measurements.",
+    "new": "New charge",
+    "edit": "Edit charge",
+    "create": "Create charging session",
+    "empty": "No charging session.",
+    "ongoing": "Ongoing",
+    "tabs": {
+      "session": "Session",
+      "ticks": "Measurements",
+      "recalc": "Recompute"
+    },
+    "sections": {
+      "time": "Time",
+      "energy": "Energy",
+      "battery": "Battery",
+      "location": "Location",
+      "cost": "Cost",
+      "weather": "Weather"
+    },
+    "fields": {
+      "carId": "Vehicle",
+      "startDate": "Start",
+      "endDate": "End",
+      "durationMin": "Duration (min)",
+      "chargeEnergyAdded": "Energy added (kWh)",
+      "chargeEnergyUsed": "Energy used (kWh)",
+      "cost": "Cost",
+      "startBatteryLevel": "Start SOC (%)",
+      "endBatteryLevel": "End SOC (%)",
+      "startIdealRangeKm": "Start ideal range (km)",
+      "endIdealRangeKm": "End ideal range (km)",
+      "startRatedRangeKm": "Start rated range (km)",
+      "endRatedRangeKm": "End rated range (km)",
+      "positionId": "Position",
+      "addressId": "Address",
+      "geofenceId": "Geofence",
+      "outsideTempAvg": "Outside temp avg (°C)",
+      "place": "Place",
+      "type": "Type",
+      "ticks": "Measurements"
+    },
+    "filters": {
+      "carId": "Vehicle",
+      "from": "From",
+      "to": "To",
+      "all": "All",
+      "apply": "Apply",
+      "reset": "Reset"
+    },
+    "type": {
+      "ac": "AC",
+      "dc": "DC",
+      "unknown": "—"
+    },
+    "duration": {
+      "minutes": "{m} min",
+      "hours": "{h} h {m} min",
+      "days": "{d} d {h} h"
+    },
+    "delete": {
+      "title": "Delete this session?",
+      "description": "{n} measurement(s) will be removed in cascade. This cannot be undone.",
+      "confirm": "Delete"
+    },
+    "errors": {
+      "carRequired": "Select a vehicle.",
+      "positionRequired": "Select a position (required).",
+      "endBeforeStart": "End date cannot be earlier than start date.",
+      "noCar": "No vehicle available. Import a car before creating a charge.",
+      "noPosition": "No position available for this vehicle. Create one first."
+    },
+    "ticksTab": {
+      "totalCount": "{n} measurement(s)",
+      "empty": "No measurement.",
+      "headers": {
+        "date": "Date",
+        "battery": "SOC",
+        "energy": "kWh",
+        "power": "kW",
+        "voltage": "V",
+        "current": "A",
+        "phases": "Phases",
+        "fast": "DC"
+      },
+      "deleteOne": {
+        "title": "Delete this measurement?",
+        "description": "Tick #{id} will be removed. Parent aggregates are NOT recomputed automatically.",
+        "confirm": "Delete"
+      }
+    },
+    "recalc": {
+      "title": "Recompute from measurements",
+      "description": "Reads the measurements (charges) of this session and recomputes added energy (max), duration (max - min) and battery levels (first / last tick).",
+      "compute": "Compute",
+      "apply": "Apply",
+      "discard": "Discard",
+      "computing": "Computing…",
+      "applyConfirm": {
+        "title": "Apply recompute?",
+        "description": "Current values will be overwritten with computed values.",
+        "confirm": "Apply"
+      },
+      "diff": {
+        "field": "Field",
+        "before": "Current",
+        "after": "Computed",
+        "noChange": "No change.",
+        "noTicks": "No measurement: cannot recompute."
+      },
+      "fields": {
+        "start_date": "Start",
+        "end_date": "End",
+        "duration_min": "Duration (min)",
+        "charge_energy_added": "Energy added (kWh)",
+        "start_battery_level": "Start SOC",
+        "end_battery_level": "End SOC"
+      },
+      "applied": "Recompute applied."
+    },
+    "actions": {
+      "create": "Create session",
+      "save": "Save",
+      "delete": "Delete"
+    }
+  },
+  "positions": {
+    "title": "Positions",
+    "subtitle": "Raw GPS points. Very high volume — filter before query.",
+    "new": "New position",
+    "edit": "Edit position",
+    "create": "Create position",
+    "empty": "No position for this filter.",
+    "filtersRequired": "Filter first to avoid a massive query: pick a vehicle + date range (<= 31 days), or a specific drive.",
+    "filterError": "Date range too wide: max 31 days.",
+    "filters": {
+      "carId": "Vehicle",
+      "from": "From",
+      "to": "To",
+      "driveId": "Drive (id)",
+      "apply": "Apply",
+      "reset": "Reset",
+      "all": "All"
+    },
+    "sections": {
+      "core": "Core data",
+      "battery": "Battery",
+      "climate": "Climate",
+      "tpms": "Tyre pressure"
+    },
+    "fields": {
+      "date": "Date",
+      "carId": "Vehicle",
+      "driveId": "Drive",
+      "latitude": "Latitude",
+      "longitude": "Longitude",
+      "speed": "Speed (km/h)",
+      "power": "Power (kW)",
+      "odometer": "Odometer (km)",
+      "elevation": "Elevation (m)",
+      "outsideTemp": "Outside temp",
+      "insideTemp": "Inside temp",
+      "batteryLevel": "SOC",
+      "usableBatteryLevel": "Usable SOC",
+      "idealBatteryRangeKm": "Ideal range (km)",
+      "ratedBatteryRangeKm": "Rated range (km)",
+      "estBatteryRangeKm": "Estimated range (km)",
+      "fanStatus": "Fan",
+      "driverTempSetting": "Driver setpoint",
+      "passengerTempSetting": "Passenger setpoint",
+      "isClimateOn": "Climate on",
+      "isRearDefrosterOn": "Rear defroster",
+      "isFrontDefrosterOn": "Front defroster",
+      "batteryHeater": "Battery heater",
+      "batteryHeaterOn": "Heater on",
+      "batteryHeaterNoPower": "Heater no power",
+      "tpmsFl": "FL tyre",
+      "tpmsFr": "FR tyre",
+      "tpmsRl": "RL tyre",
+      "tpmsRr": "RR tyre"
+    },
+    "openOsm": "OSM",
+    "selected": "{n} selected",
+    "deleteSelection": "Delete selection",
+    "delete": {
+      "title": "Delete this position?",
+      "description": "This cannot be undone. If this position is referenced by a drive (start/end_position_id), the FK will become NULL; if it is referenced by a charge (position_id NOT NULL), deletion will fail.",
+      "confirm": "Delete",
+      "many": {
+        "title": "Delete {n} position(s)?",
+        "description": "This cannot be undone. References (drives.start/end_position_id) will be set to NULL. Positions linked to a charge cannot be deleted.",
+        "confirm": "Delete"
+      },
+      "referencedByCharge": "This position is referenced by a charge (FK NOT NULL): deletion refused."
+    },
+    "errors": {
+      "carRequired": "Select a vehicle.",
+      "invalidLat": "Invalid latitude.",
+      "invalidLon": "Invalid longitude.",
+      "invalidDate": "Invalid date."
+    },
+    "actions": {
+      "create": "Create position",
+      "save": "Save",
+      "delete": "Delete"
+    }
   }
 }
