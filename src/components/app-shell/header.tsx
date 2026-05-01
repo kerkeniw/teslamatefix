@@ -3,6 +3,7 @@ import { LogOut } from "lucide-react";
 import { Link } from "@/i18n/navigation";
 import { Logo } from "@/components/tesla/logo";
 import { Button } from "@/components/ui/button";
+import { logoutAction } from "@/lib/auth-actions";
 
 /**
  * Header global : logo cliquable vers la home + slot droit (sélecteur langue,
@@ -18,7 +19,7 @@ export async function AppHeader({ rightSlot }: { rightSlot?: React.ReactNode }) 
         </Link>
         <div className="flex items-center gap-2">
           {rightSlot}
-          <form action="/api/auth/logout" method="post">
+          <form action={logoutAction}>
             <Button
               type="submit"
               variant="ghost"

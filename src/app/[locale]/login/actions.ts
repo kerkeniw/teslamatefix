@@ -17,6 +17,11 @@ export type LoginActionResult =
   | { error: string }
   | { error: undefined; redirectTo: string };
 
+// Bloque les chemins relatifs au protocole (`//evil.com`) et les variantes
+// Windows (`/\evil`) qui seraient interprétés comme des URLs absolues par le
+// navigateur en cas de redirect.
+const SAFE_FROM = /^\/[^/\\]/;
+
 export async function loginAction(
   _prev: LoginActionResult | null,
   formData: FormData,
@@ -53,7 +58,7 @@ export async function loginAction(
   logger.info({ event: "login.ok", user: parsed.data.username, ip }, "login ok");
 
   const safeFrom =
-    parsed.data.from && parsed.data.from.startsWith("/")
+    parsed.data.from && SAFE_FROM.test(parsed.data.from)
       ? parsed.data.from
       : "/";
   redirect(safeFrom);

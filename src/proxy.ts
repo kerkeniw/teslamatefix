@@ -43,7 +43,10 @@ function isLoginPath(pathname: string): boolean {
 export async function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
-  if (pathname === "/api/health" || pathname === "/api/health/db") {
+  // Seul le healthcheck léger reste public (probe Docker liveness).
+  // /api/health/db, qui ouvre une connexion Postgres, exige une session pour
+  // ne pas révéler la disponibilité du backend à un attaquant non authentifié.
+  if (pathname === "/api/health") {
     return NextResponse.next();
   }
 
