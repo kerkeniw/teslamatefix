@@ -57,14 +57,23 @@
   },
   "dashboard": {
     "title": "Tableau de bord",
+    "statusLabel": "Statut",
+    "quickActions": "Actions rapides",
     "lastCharge": "Dernière charge",
     "lastDrive": "Dernier trajet",
     "newCharge": "Nouvelle charge",
     "newDrive": "Nouveau trajet",
+    "newChargeHint": "Saisie manuelle d'une session de charge.",
+    "newDriveHint": "Saisie manuelle d'un trajet.",
+    "edit": "Modifier",
+    "create": "Créer",
     "firmware": "Firmware",
     "viewReleaseNotes": "Voir les notes de version",
     "anomalies": "Anomalies détectées",
-    "summary": "Résumé"
+    "summary": "Résumé",
+    "drivesThisMonth": "Trajets ce mois",
+    "chargesThisMonth": "Charges ce mois",
+    "openSince": "ouvert {time}"
   },
   "addresses": {
     "title": "Adresses",

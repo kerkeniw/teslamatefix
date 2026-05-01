@@ -1,8 +1,10 @@
-import { setRequestLocale, getTranslations } from "next-intl/server";
+import { setRequestLocale } from "next-intl/server";
 import { requireSession } from "@/lib/auth";
+import { getDashboardData } from "@/lib/dashboard";
 import { AppHeader } from "@/components/app-shell/header";
 import { MainNav } from "@/components/app-shell/main-nav";
 import { LocaleSwitcher } from "@/components/app-shell/locale-switcher";
+import { Dashboard } from "@/components/dashboard/dashboard";
 
 export default async function Home({
   params,
@@ -12,19 +14,14 @@ export default async function Home({
   const { locale } = await params;
   setRequestLocale(locale);
   await requireSession();
-  const t = await getTranslations("dashboard");
+  const data = await getDashboardData();
 
   return (
     <>
       <AppHeader rightSlot={<LocaleSwitcher />} />
       <MainNav />
-      <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8">
-        <div className="rounded-lg border bg-card p-6 shadow-sm">
-          <h1 className="text-xl font-semibold tracking-tight">{t("title")}</h1>
-          <p className="mt-2 text-sm text-muted-foreground">
-            Étapes 6–9 du plan : entités, dashboard avec firmware et anomalies.
-          </p>
-        </div>
+      <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6 md:py-8">
+        <Dashboard data={data} />
       </main>
     </>
   );

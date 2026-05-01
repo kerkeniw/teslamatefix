@@ -57,14 +57,23 @@
   },
   "dashboard": {
     "title": "Dashboard",
+    "statusLabel": "Status",
+    "quickActions": "Quick actions",
     "lastCharge": "Last charge",
     "lastDrive": "Last drive",
     "newCharge": "New charge",
     "newDrive": "New drive",
+    "newChargeHint": "Manually record a charging session.",
+    "newDriveHint": "Manually record a drive.",
+    "edit": "Edit",
+    "create": "Create",
     "firmware": "Firmware",
     "viewReleaseNotes": "View release notes",
     "anomalies": "Detected anomalies",
-    "summary": "Summary"
+    "summary": "Summary",
+    "drivesThisMonth": "Drives this month",
+    "chargesThisMonth": "Charges this month",
+    "openSince": "open {time}"
   },
   "addresses": {
     "title": "Addresses",
