@@ -16,16 +16,22 @@
     "postinstall": "prisma generate",
     "db:pull": "prisma db pull",
     "db:studio": "prisma studio",
-    "db:check": "node --env-file=.env scripts/check-db.mjs"
+    "db:check": "node --env-file=.env scripts/check-db.mjs",
+    "auth:hash": "node scripts/hash-password.mjs"
   },
   "dependencies": {
     "@prisma/client": "^6.19.3",
+    "bcryptjs": "^3.0.3",
+    "iron-session": "^8.0.4",
     "next": "16.2.4",
+    "pino": "^10.3.1",
     "react": "19.2.4",
-    "react-dom": "19.2.4"
+    "react-dom": "19.2.4",
+    "zod": "^4.4.1"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
+    "@types/bcryptjs": "^2.4.6",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
