@@ -28,10 +28,26 @@ if (AUTH_SECRET.length < 32) {
   );
 }
 
+// Format bcrypt attendu : $2[aby]$<cost>$<salt+hash>, exactement 60 caractères.
+// Si on tombe sur un hash plus court, c'est presque toujours dotenv-expand qui a
+// interprété les `$` comme variables shell. La seule façon d'échapper dans
+// `.env` chargé par `@next/env` est de préfixer chaque `$` par `\` :
+//   AUTH_PASSWORD_HASH=\$2b\$12\$abcdef...
+// Les single-quotes NE protègent PAS (dotenv-expand opère après le parsing).
+const AUTH_PASSWORD_HASH = required("AUTH_PASSWORD_HASH");
+if (!/^\$2[aby]\$\d{2}\$.{53}$/.test(AUTH_PASSWORD_HASH)) {
+  throw new Error(
+    `[teslamatefix] AUTH_PASSWORD_HASH n'est pas un hash bcrypt valide ` +
+      `(longueur ${AUTH_PASSWORD_HASH.length}, attendu 60 et préfixe \\$2x\\$). ` +
+      `Cause fréquente : les '$' du hash ne sont pas échappés dans .env. ` +
+      `Préfixer chaque '$' par '\\' : AUTH_PASSWORD_HASH=\\$2b\\$12\\$....`,
+  );
+}
+
 export const env = {
   DATABASE_URL: required("DATABASE_URL"),
   AUTH_USERNAME: required("AUTH_USERNAME"),
-  AUTH_PASSWORD_HASH: required("AUTH_PASSWORD_HASH"),
+  AUTH_PASSWORD_HASH,
   AUTH_SECRET,
   DEFAULT_LOCALE: optional("DEFAULT_LOCALE", "fr") as "fr" | "en",
   LOG_LEVEL: optional("LOG_LEVEL", "info"),
