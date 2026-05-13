@@ -5,6 +5,7 @@ import { useTranslations, useFormatter } from "next-intl";
 import { Pencil, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { ButtonLink } from "@/components/ui/button-link";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -120,10 +121,10 @@ export function PositionListClient({
               }
             />
           ) : null}
-          <Button render={<Link href="/positions/new" />}>
+          <ButtonLink href="/positions/new">
             <Plus className="size-4" aria-hidden />
             {t("new")}
-          </Button>
+          </ButtonLink>
         </div>
       </div>
 
@@ -193,15 +194,14 @@ export function PositionListClient({
                     )}
                   </TableCell>
                   <TableCell>
-                    <Button
+                    <ButtonLink
                       variant="ghost"
                       size="icon-sm"
-                      render={
-                        <Link href={`/positions/${row.id}`} aria-label={tCommon("edit")} />
-                      }
+                      href={`/positions/${row.id}`}
+                      aria-label={tCommon("edit")}
                     >
                       <Pencil className="size-3.5" aria-hidden />
-                    </Button>
+                    </ButtonLink>
                   </TableCell>
                 </TableRow>
               ))
@@ -252,14 +252,14 @@ export function PositionListClient({
                 <span>{row.battery_level != null ? `${row.battery_level}%` : "—"}</span>
               </div>
               <div className="pt-2">
-                <Button
+                <ButtonLink
                   size="sm"
                   variant="outline"
-                  render={<Link href={`/positions/${row.id}`} />}
+                  href={`/positions/${row.id}`}
                   className="w-full"
                 >
                   {tCommon("edit")}
-                </Button>
+                </ButtonLink>
               </div>
             </CardContent>
           </Card>

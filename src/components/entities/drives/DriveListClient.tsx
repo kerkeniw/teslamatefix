@@ -5,6 +5,7 @@ import { Plus } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { ButtonLink } from "@/components/ui/button-link";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -18,7 +19,6 @@ import { FormField } from "@/components/form/form-field";
 import { DateTimeInput } from "@/components/form/datetime-input";
 import { DataTable } from "@/components/data-table/data-table";
 import { OffsetPagination } from "@/components/data-table/pagination";
-import { Link } from "@/i18n/navigation";
 import {
   useDriveColumns,
   formatDuration,
@@ -133,10 +133,10 @@ export function DriveListClient({
       </div>
 
       <div className="flex items-center justify-end">
-        <Button render={<Link href="/drives/new" />}>
+        <ButtonLink href="/drives/new">
           <Plus className="size-4" aria-hidden />
           {t("new")}
-        </Button>
+        </ButtonLink>
       </div>
 
       <div className="hidden md:block">
@@ -183,14 +183,14 @@ export function DriveListClient({
                 <span>{formatDuration(row.duration_min, t)}</span>
               </div>
               <div className="pt-2">
-                <Button
+                <ButtonLink
                   size="sm"
                   variant="outline"
-                  render={<Link href={`/drives/${row.id}`} />}
+                  href={`/drives/${row.id}`}
                   className="w-full"
                 >
                   {tCommon("edit")}
-                </Button>
+                </ButtonLink>
               </div>
             </CardContent>
           </Card>

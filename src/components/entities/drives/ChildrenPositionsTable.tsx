@@ -10,8 +10,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Button } from "@/components/ui/button";
-import { Link } from "@/i18n/navigation";
+import { ButtonLink } from "@/components/ui/button-link";
 
 export type ChildPosition = {
   id: number;
@@ -41,13 +40,13 @@ export function ChildrenPositionsTable({
         <p className="text-sm text-muted-foreground">
           {t("positionsTab.totalCount", { n: total })}
         </p>
-        <Button
+        <ButtonLink
           size="sm"
           variant="outline"
-          render={<Link href={`/positions?drive_id=${driveId}`} />}
+          href={`/positions?drive_id=${driveId}`}
         >
           {t("positionsTab.viewAll")}
-        </Button>
+        </ButtonLink>
       </div>
       {positions.length === 0 ? (
         <p className="rounded-md border bg-muted/30 p-4 text-center text-sm text-muted-foreground">

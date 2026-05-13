@@ -4,7 +4,7 @@ import type { DashboardData } from "@/lib/dashboard";
 import { Link } from "@/i18n/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { ButtonLink } from "@/components/ui/button-link";
 import { FirmwareLink } from "@/components/tesla/firmware-link";
 
 function StateBadge({ state }: { state: "online" | "offline" | "asleep" }) {
@@ -114,11 +114,14 @@ export async function Dashboard({ data }: { data: DashboardData }) {
             </CardContent>
             <div className="p-4 pt-0">
               {data.lastCharge ? (
-                <Link href={`/charges/${data.lastCharge.id}`}>
-                  <Button variant="outline" size="sm" className="w-full">
-                    {t("edit")}
-                  </Button>
-                </Link>
+                <ButtonLink
+                  href={`/charges/${data.lastCharge.id}`}
+                  variant="outline"
+                  size="sm"
+                  className="w-full"
+                >
+                  {t("edit")}
+                </ButtonLink>
               ) : null}
             </div>
           </Card>
@@ -149,11 +152,14 @@ export async function Dashboard({ data }: { data: DashboardData }) {
             </CardContent>
             <div className="p-4 pt-0">
               {data.lastDrive ? (
-                <Link href={`/drives/${data.lastDrive.id}`}>
-                  <Button variant="outline" size="sm" className="w-full">
-                    {t("edit")}
-                  </Button>
-                </Link>
+                <ButtonLink
+                  href={`/drives/${data.lastDrive.id}`}
+                  variant="outline"
+                  size="sm"
+                  className="w-full"
+                >
+                  {t("edit")}
+                </ButtonLink>
               ) : null}
             </div>
           </Card>
@@ -167,11 +173,14 @@ export async function Dashboard({ data }: { data: DashboardData }) {
               {t("newChargeHint")}
             </CardContent>
             <div className="p-4 pt-0">
-              <Link href="/charges/new">
-                <Button variant="outline" size="sm" className="w-full">
-                  {t("create")}
-                </Button>
-              </Link>
+              <ButtonLink
+                href="/charges/new"
+                variant="outline"
+                size="sm"
+                className="w-full"
+              >
+                {t("create")}
+              </ButtonLink>
             </div>
           </Card>
 
@@ -184,11 +193,14 @@ export async function Dashboard({ data }: { data: DashboardData }) {
               {t("newDriveHint")}
             </CardContent>
             <div className="p-4 pt-0">
-              <Link href="/drives/new">
-                <Button variant="outline" size="sm" className="w-full">
-                  {t("create")}
-                </Button>
-              </Link>
+              <ButtonLink
+                href="/drives/new"
+                variant="outline"
+                size="sm"
+                className="w-full"
+              >
+                {t("create")}
+              </ButtonLink>
             </div>
           </Card>
         </div>

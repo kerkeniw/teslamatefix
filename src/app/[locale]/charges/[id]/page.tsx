@@ -11,8 +11,7 @@ import { ChargeTabs } from "@/components/entities/charges/ChargeTabs";
 import { TicksTable, type TickRow } from "@/components/entities/charges/TicksTable";
 import { ChargeRecalcPanel } from "@/components/entities/charges/RecalcPanel";
 import type { ChargeProcessFormValues } from "@/components/entities/charges/ChargeProcessForm";
-import { Link } from "@/i18n/navigation";
-import { Button } from "@/components/ui/button";
+import { ButtonLink } from "@/components/ui/button-link";
 import { ArrowLeft } from "lucide-react";
 import {
   updateChargeAction,
@@ -203,10 +202,10 @@ export default async function ChargeEditPage({
       <MainNav />
       <main className="mx-auto w-full max-w-4xl flex-1 px-4 py-6">
         <div className="mb-4">
-          <Button variant="ghost" size="sm" render={<Link href="/charges" />}>
+          <ButtonLink variant="ghost" size="sm" href="/charges">
             <ArrowLeft className="size-4" aria-hidden />
             {tCommon("back")}
-          </Button>
+          </ButtonLink>
         </div>
         <header className="mb-6">
           <h1 className="text-2xl font-semibold tracking-tight">{t("edit")}</h1>

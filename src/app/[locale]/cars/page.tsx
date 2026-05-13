@@ -6,8 +6,8 @@ import { MainNav } from "@/components/app-shell/main-nav";
 import { LocaleSwitcher } from "@/components/app-shell/locale-switcher";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Link, redirect } from "@/i18n/navigation";
+import { ButtonLink } from "@/components/ui/button-link";
+import { redirect } from "@/i18n/navigation";
 
 function CarPlaceholder() {
   return (
@@ -92,14 +92,14 @@ export default async function CarsPage({
                         {vinShort ? <div className="font-mono">{vinShort}</div> : null}
                       </div>
                     </div>
-                    <Button
+                    <ButtonLink
                       size="sm"
                       variant="outline"
-                      render={<Link href={`/cars/${c.id}`} />}
+                      href={`/cars/${c.id}`}
                       className="w-full"
                     >
                       {t("edit")}
-                    </Button>
+                    </ButtonLink>
                   </CardContent>
                 </Card>
               );

@@ -2,13 +2,12 @@
 
 import { useTranslations, useFormatter } from "next-intl";
 import { Plus } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { ButtonLink } from "@/components/ui/button-link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { DataTable } from "@/components/data-table/data-table";
 import { OffsetPagination } from "@/components/data-table/pagination";
 import { FirmwareLink } from "@/components/tesla/firmware-link";
-import { Link } from "@/i18n/navigation";
 import {
   useUpdateColumns,
   formatDuration,
@@ -34,10 +33,10 @@ export function UpdateListClient({
   return (
     <div className="space-y-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
-        <Button render={<Link href="/updates/new" />}>
+        <ButtonLink href="/updates/new">
           <Plus className="size-4" aria-hidden />
           {t("new")}
-        </Button>
+        </ButtonLink>
       </div>
 
       <div className="hidden md:block">
@@ -80,14 +79,14 @@ export function UpdateListClient({
                 <span>{formatDuration(row.start_date, row.end_date, t)}</span>
               </div>
               <div className="pt-2">
-                <Button
+                <ButtonLink
                   size="sm"
                   variant="outline"
-                  render={<Link href={`/updates/${row.id}`} />}
+                  href={`/updates/${row.id}`}
                   className="w-full"
                 >
                   {tCommon("edit")}
-                </Button>
+                </ButtonLink>
               </div>
             </CardContent>
           </Card>

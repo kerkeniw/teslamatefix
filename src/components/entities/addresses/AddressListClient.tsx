@@ -5,10 +5,11 @@ import { useTranslations } from "next-intl";
 import { Search, Plus } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { ButtonLink } from "@/components/ui/button-link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DataTable } from "@/components/data-table/data-table";
 import { OffsetPagination } from "@/components/data-table/pagination";
-import { Link, useRouter } from "@/i18n/navigation";
+import { useRouter } from "@/i18n/navigation";
 import { useSearchParams } from "next/navigation";
 import { useAddressColumns, type AddressRow } from "./AddressDataTableColumns";
 
@@ -66,10 +67,10 @@ export function AddressListClient({
             {tCommon("search")}
           </Button>
         </form>
-        <Button render={<Link href="/addresses/new" />}>
+        <ButtonLink href="/addresses/new">
           <Plus className="size-4" aria-hidden />
           {t("new")}
-        </Button>
+        </ButtonLink>
       </div>
 
       <div className="hidden md:block">
@@ -117,14 +118,14 @@ export function AddressListClient({
                 </div>
               ) : null}
               <div className="pt-2">
-                <Button
+                <ButtonLink
                   size="sm"
                   variant="outline"
-                  render={<Link href={`/addresses/${row.id}`} />}
+                  href={`/addresses/${row.id}`}
                   className="w-full"
                 >
                   {tCommon("edit")}
-                </Button>
+                </ButtonLink>
               </div>
             </CardContent>
           </Card>

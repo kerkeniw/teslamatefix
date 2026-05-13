@@ -2,12 +2,11 @@
 
 import { useTranslations, useFormatter } from "next-intl";
 import { Plus } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { ButtonLink } from "@/components/ui/button-link";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { DataTable } from "@/components/data-table/data-table";
 import { OffsetPagination } from "@/components/data-table/pagination";
-import { Link } from "@/i18n/navigation";
 import {
   useStateColumns,
   formatDuration,
@@ -34,10 +33,10 @@ export function StateListClient({
   return (
     <div className="space-y-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
-        <Button render={<Link href="/states/new" />}>
+        <ButtonLink href="/states/new">
           <Plus className="size-4" aria-hidden />
           {t("new")}
-        </Button>
+        </ButtonLink>
       </div>
 
       <div className="hidden md:block">
@@ -93,14 +92,14 @@ export function StateListClient({
                   <span>{formatDuration(row.start_date, row.end_date, t)}</span>
                 </div>
                 <div className="pt-2">
-                  <Button
+                  <ButtonLink
                     size="sm"
                     variant="outline"
-                    render={<Link href={`/states/${row.id}`} />}
+                    href={`/states/${row.id}`}
                     className="w-full"
                   >
                     {tCommon("edit")}
-                  </Button>
+                  </ButtonLink>
                 </div>
               </div>
             </CardContent>

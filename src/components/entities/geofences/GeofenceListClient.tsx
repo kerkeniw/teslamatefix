@@ -2,12 +2,11 @@
 
 import { useTranslations } from "next-intl";
 import { Plus } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { ButtonLink } from "@/components/ui/button-link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { DataTable } from "@/components/data-table/data-table";
 import { OffsetPagination } from "@/components/data-table/pagination";
-import { Link } from "@/i18n/navigation";
 import { useGeofenceColumns, type GeofenceRow } from "./GeofenceDataTableColumns";
 
 export function GeofenceListClient({
@@ -28,10 +27,10 @@ export function GeofenceListClient({
   return (
     <div className="space-y-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
-        <Button render={<Link href="/geofences/new" />}>
+        <ButtonLink href="/geofences/new">
           <Plus className="size-4" aria-hidden />
           {t("new")}
-        </Button>
+        </ButtonLink>
       </div>
 
       <div className="hidden md:block">
@@ -76,14 +75,14 @@ export function GeofenceListClient({
                 </div>
               ) : null}
               <div className="pt-2">
-                <Button
+                <ButtonLink
                   size="sm"
                   variant="outline"
-                  render={<Link href={`/geofences/${row.id}`} />}
+                  href={`/geofences/${row.id}`}
                   className="w-full"
                 >
                   {tCommon("edit")}
-                </Button>
+                </ButtonLink>
               </div>
             </CardContent>
           </Card>

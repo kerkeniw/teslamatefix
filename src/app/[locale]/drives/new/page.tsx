@@ -7,8 +7,7 @@ import { MainNav } from "@/components/app-shell/main-nav";
 import { LocaleSwitcher } from "@/components/app-shell/locale-switcher";
 import { DriveCreateClient } from "@/components/entities/drives/DriveCreateClient";
 import type { DriveFormValues } from "@/components/entities/drives/DriveForm";
-import { Link } from "@/i18n/navigation";
-import { Button } from "@/components/ui/button";
+import { ButtonLink } from "@/components/ui/button-link";
 import { ArrowLeft } from "lucide-react";
 import { createDriveAction } from "../actions";
 
@@ -89,10 +88,10 @@ export default async function NewDrivePage({
       <MainNav />
       <main className="mx-auto w-full max-w-4xl flex-1 px-4 py-6">
         <div className="mb-4">
-          <Button variant="ghost" size="sm" render={<Link href="/drives" />}>
+          <ButtonLink variant="ghost" size="sm" href="/drives">
             <ArrowLeft className="size-4" aria-hidden />
             {tCommon("back")}
-          </Button>
+          </ButtonLink>
         </div>
         <header className="mb-6">
           <h1 className="text-2xl font-semibold tracking-tight">{t("create")}</h1>

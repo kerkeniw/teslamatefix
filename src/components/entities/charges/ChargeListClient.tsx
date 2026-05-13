@@ -5,6 +5,7 @@ import { Plus } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { ButtonLink } from "@/components/ui/button-link";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -18,7 +19,6 @@ import { FormField } from "@/components/form/form-field";
 import { DateTimeInput } from "@/components/form/datetime-input";
 import { DataTable } from "@/components/data-table/data-table";
 import { OffsetPagination } from "@/components/data-table/pagination";
-import { Link } from "@/i18n/navigation";
 import {
   useChargeColumns,
   formatDuration,
@@ -113,10 +113,10 @@ export function ChargeListClient({
       </div>
 
       <div className="flex items-center justify-end">
-        <Button render={<Link href="/charges/new" />}>
+        <ButtonLink href="/charges/new">
           <Plus className="size-4" aria-hidden />
           {t("new")}
-        </Button>
+        </ButtonLink>
       </div>
 
       <div className="hidden md:block">
@@ -166,14 +166,14 @@ export function ChargeListClient({
                 <span>{formatDuration(row.duration_min, t)}</span>
               </div>
               <div className="pt-2">
-                <Button
+                <ButtonLink
                   size="sm"
                   variant="outline"
-                  render={<Link href={`/charges/${row.id}`} />}
+                  href={`/charges/${row.id}`}
                   className="w-full"
                 >
                   {tCommon("edit")}
-                </Button>
+                </ButtonLink>
               </div>
             </CardContent>
           </Card>
