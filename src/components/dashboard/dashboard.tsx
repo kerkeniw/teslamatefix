@@ -1,4 +1,4 @@
-import { getTranslations } from "next-intl/server";
+import { getFormatter, getTranslations } from "next-intl/server";
 import { AlertTriangle, BatteryCharging, Car, Plus } from "lucide-react";
 import type { DashboardData } from "@/lib/dashboard";
 import { Link } from "@/i18n/navigation";
@@ -40,14 +40,11 @@ function formatLocation(start: string | null, end: string | null): string {
 export async function Dashboard({ data }: { data: DashboardData }) {
   const t = await getTranslations("dashboard");
   const tn = await getTranslations("nav");
+  const format = await getFormatter();
 
   const car = data.car;
-  const dateFmt = new Intl.DateTimeFormat("fr-FR", {
-    day: "2-digit",
-    month: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+  const formatShort = (iso: string) =>
+    format.dateTime(new Date(iso), "short");
 
   return (
     <div className="space-y-6">
@@ -101,7 +98,7 @@ export async function Dashboard({ data }: { data: DashboardData }) {
             <CardContent className="flex-1 space-y-1 text-sm">
               {data.lastCharge ? (
                 <>
-                  <p>{dateFmt.format(new Date(data.lastCharge.startDateIso))}</p>
+                  <p>{formatShort(data.lastCharge.startDateIso)}</p>
                   <p className="text-muted-foreground">
                     {data.lastCharge.energyKwh != null
                       ? `${data.lastCharge.energyKwh.toFixed(1)} kWh`
@@ -134,7 +131,7 @@ export async function Dashboard({ data }: { data: DashboardData }) {
             <CardContent className="flex-1 space-y-1 text-sm">
               {data.lastDrive ? (
                 <>
-                  <p>{dateFmt.format(new Date(data.lastDrive.startDateIso))}</p>
+                  <p>{formatShort(data.lastDrive.startDateIso)}</p>
                   <p className="text-muted-foreground">
                     {data.lastDrive.distanceKm != null
                       ? `${data.lastDrive.distanceKm.toFixed(1)} km`
