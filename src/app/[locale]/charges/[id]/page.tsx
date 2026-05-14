@@ -143,7 +143,6 @@ export default async function ChargeEditPage({
     position_id: String(proc.position_id),
     start_date: proc.start_date.toISOString(),
     end_date: proc.end_date ? proc.end_date.toISOString() : "",
-    duration_min: proc.duration_min != null ? String(proc.duration_min) : "",
     charge_energy_added: decimalString(proc.charge_energy_added),
     charge_energy_used: decimalString(proc.charge_energy_used),
     cost: decimalString(proc.cost),

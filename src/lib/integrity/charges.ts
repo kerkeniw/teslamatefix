@@ -1,6 +1,36 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
 
+export async function findOverlappingSession(
+  carId: number,
+  startDate: Date,
+  endDate: Date | null,
+  excludeId: number | null = null,
+): Promise<{ id: number; start_date: Date; end_date: Date | null } | null> {
+  const idFilter = excludeId == null ? {} : { id: { not: excludeId } };
+  const range: Prisma.charging_processesWhereInput =
+    endDate == null
+      ? {
+          OR: [
+            { end_date: null },
+            { end_date: { gte: startDate } },
+          ],
+        }
+      : {
+          start_date: { lt: endDate },
+          OR: [
+            { end_date: null },
+            { end_date: { gt: startDate } },
+          ],
+        };
+
+  return prisma.charging_processes.findFirst({
+    where: { car_id: carId, ...idFilter, ...range },
+    select: { id: true, start_date: true, end_date: true },
+    orderBy: { start_date: "asc" },
+  });
+}
+
 export type ProcessRecalc = {
   start_date: Date | null;
   end_date: Date | null;

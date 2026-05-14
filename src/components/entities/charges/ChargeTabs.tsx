@@ -68,6 +68,10 @@ export function ChargeTabs({
     "carRequired",
     "positionRequired",
     "invalidNumber",
+    "endBatteryLowerThanStart",
+    "negativeValue",
+    "startDateInFuture",
+    "overlapsSession",
   ]);
   const fe: Record<string, string> = Object.fromEntries(
     Object.entries(rawFe).map(([k, v]) => [

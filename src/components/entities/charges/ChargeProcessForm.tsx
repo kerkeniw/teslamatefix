@@ -1,6 +1,9 @@
 "use client";
 
+import { useMemo, useState, useTransition } from "react";
 import { useTranslations } from "next-intl";
+import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { FormField } from "@/components/form/form-field";
 import { NumberInput } from "@/components/form/number-input";
@@ -9,13 +12,21 @@ import { FKCombobox, type FKOption } from "@/components/form/fk-combobox";
 import { searchAddressesAction } from "@/app/actions/search-addresses";
 import { searchGeofencesAction } from "@/app/actions/search-geofences";
 import { searchPositionsAction } from "@/app/actions/search-positions";
+import { deriveChargeEndsAction } from "@/app/actions/derive-charge-ends";
+
+function computeDurationMin(startDate: string, endDate: string): number | null {
+  if (!startDate || !endDate) return null;
+  const s = new Date(startDate).getTime();
+  const e = new Date(endDate).getTime();
+  if (Number.isNaN(s) || Number.isNaN(e)) return null;
+  return Math.round((e - s) / 60000);
+}
 
 export type ChargeProcessFormValues = {
   car_id: string;
   position_id: string;
   start_date: string;
   end_date: string;
-  duration_min: string;
   charge_energy_added: string;
   charge_energy_used: string;
   cost: string;
@@ -52,6 +63,71 @@ export function ChargeProcessForm({
   const t = useTranslations("charges");
   const fe = fieldErrors;
 
+  const [startDate, setStartDate] = useState(initial.start_date);
+  const [endDate, setEndDate] = useState(initial.end_date);
+  const duration = useMemo(
+    () => computeDurationMin(startDate, endDate),
+    [startDate, endDate],
+  );
+
+  const [chargeEnergyAdded, setChargeEnergyAdded] = useState(initial.charge_energy_added);
+  const [startBatteryLevel, setStartBatteryLevel] = useState(initial.start_battery_level);
+  const [endBatteryLevel, setEndBatteryLevel] = useState(initial.end_battery_level);
+  const [startIdealRangeKm, setStartIdealRangeKm] = useState(initial.start_ideal_range_km);
+  const [endIdealRangeKm, setEndIdealRangeKm] = useState(initial.end_ideal_range_km);
+  const [startRatedRangeKm, setStartRatedRangeKm] = useState(initial.start_rated_range_km);
+  const [endRatedRangeKm, setEndRatedRangeKm] = useState(initial.end_rated_range_km);
+
+  const [deriving, startDerive] = useTransition();
+
+  function parseNumberOrNull(s: string): number | null {
+    if (!s || s.trim() === "") return null;
+    const n = Number(s);
+    return Number.isFinite(n) ? n : null;
+  }
+
+  function handleEstimate() {
+    const energy = parseNumberOrNull(chargeEnergyAdded);
+    if (energy == null || energy <= 0) {
+      toast.error(t("estimateToast.missingEnergy"));
+      return;
+    }
+    startDerive(async () => {
+      const res = await deriveChargeEndsAction({
+        car_id: initialOptions.car.id,
+        start_battery_level: parseNumberOrNull(startBatteryLevel),
+        start_ideal_range_km: parseNumberOrNull(startIdealRangeKm),
+        start_rated_range_km: parseNumberOrNull(startRatedRangeKm),
+        charge_energy_added: energy,
+      });
+      if (!res.ok || !res.derived) {
+        toast.error(res.error ?? t("estimateToast.failed"));
+        return;
+      }
+      const d = res.derived;
+      let applied = 0;
+      if (d.end_battery_level != null) {
+        setEndBatteryLevel(String(d.end_battery_level));
+        applied++;
+      }
+      if (d.end_ideal_range_km != null) {
+        setEndIdealRangeKm(String(d.end_ideal_range_km));
+        applied++;
+      }
+      if (d.end_rated_range_km != null) {
+        setEndRatedRangeKm(String(d.end_rated_range_km));
+        applied++;
+      }
+      if (applied === 0) {
+        toast.warning(t("estimateToast.partial"));
+      } else if (applied < 3) {
+        toast.warning(t("estimateToast.partial"));
+      } else {
+        toast.success(t("estimateToast.success"));
+      }
+    });
+  }
+
   return (
     <div className="space-y-8">
       {/* car_id imposé par le sélecteur véhicule du header. */}
@@ -87,7 +163,8 @@ export function ChargeProcessForm({
             <DateTimeInput
               id="start_date"
               name="start_date"
-              defaultValue={initial.start_date || null}
+              value={startDate || ""}
+              onChange={(e) => setStartDate((e.target as HTMLInputElement).value)}
               required
               disabled={readOnly}
             />
@@ -96,24 +173,22 @@ export function ChargeProcessForm({
             <DateTimeInput
               id="end_date"
               name="end_date"
-              defaultValue={initial.end_date || null}
+              value={endDate || ""}
+              onChange={(e) => setEndDate((e.target as HTMLInputElement).value)}
               disabled={readOnly}
             />
           </FormField>
           <FormField
-            id="duration_min"
-            label={t("fields.durationMin")}
-            error={fe.duration_min}
+            id="duration_min_display"
+            label={t("fields.durationMinComputed")}
           >
-            <NumberInput
-              id="duration_min"
-              name="duration_min"
-              defaultValue={initial.duration_min}
-              step="1"
-              min={0}
-              max={32767}
-              disabled={readOnly}
-            />
+            <p
+              id="duration_min_display"
+              className="text-sm text-muted-foreground"
+              aria-live="polite"
+            >
+              {duration == null ? "—" : duration}
+            </p>
           </FormField>
         </div>
       </section>
@@ -131,7 +206,8 @@ export function ChargeProcessForm({
             <NumberInput
               id="charge_energy_added"
               name="charge_energy_added"
-              defaultValue={initial.charge_energy_added}
+              value={chargeEnergyAdded}
+              onChange={(e) => setChargeEnergyAdded((e.target as HTMLInputElement).value)}
               step="0.01"
               min={0}
               max={999999.99}
@@ -165,6 +241,17 @@ export function ChargeProcessForm({
             />
           </FormField>
         </div>
+        <div>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={handleEstimate}
+            disabled={readOnly || deriving}
+          >
+            {deriving ? t("estimateToast.estimating") : t("actions.estimateEndValues")}
+          </Button>
+        </div>
       </section>
 
       <Separator />
@@ -180,7 +267,8 @@ export function ChargeProcessForm({
             <NumberInput
               id="start_battery_level"
               name="start_battery_level"
-              defaultValue={initial.start_battery_level}
+              value={startBatteryLevel}
+              onChange={(e) => setStartBatteryLevel((e.target as HTMLInputElement).value)}
               step="1"
               min={0}
               max={100}
@@ -195,7 +283,8 @@ export function ChargeProcessForm({
             <NumberInput
               id="end_battery_level"
               name="end_battery_level"
-              defaultValue={initial.end_battery_level}
+              value={endBatteryLevel}
+              onChange={(e) => setEndBatteryLevel((e.target as HTMLInputElement).value)}
               step="1"
               min={0}
               max={100}
@@ -210,7 +299,8 @@ export function ChargeProcessForm({
             <NumberInput
               id="start_ideal_range_km"
               name="start_ideal_range_km"
-              defaultValue={initial.start_ideal_range_km}
+              value={startIdealRangeKm}
+              onChange={(e) => setStartIdealRangeKm((e.target as HTMLInputElement).value)}
               step="0.01"
               disabled={readOnly}
             />
@@ -223,7 +313,8 @@ export function ChargeProcessForm({
             <NumberInput
               id="end_ideal_range_km"
               name="end_ideal_range_km"
-              defaultValue={initial.end_ideal_range_km}
+              value={endIdealRangeKm}
+              onChange={(e) => setEndIdealRangeKm((e.target as HTMLInputElement).value)}
               step="0.01"
               disabled={readOnly}
             />
@@ -236,7 +327,8 @@ export function ChargeProcessForm({
             <NumberInput
               id="start_rated_range_km"
               name="start_rated_range_km"
-              defaultValue={initial.start_rated_range_km}
+              value={startRatedRangeKm}
+              onChange={(e) => setStartRatedRangeKm((e.target as HTMLInputElement).value)}
               step="0.01"
               disabled={readOnly}
             />
@@ -249,7 +341,8 @@ export function ChargeProcessForm({
             <NumberInput
               id="end_rated_range_km"
               name="end_rated_range_km"
-              defaultValue={initial.end_rated_range_km}
+              value={endRatedRangeKm}
+              onChange={(e) => setEndRatedRangeKm((e.target as HTMLInputElement).value)}
               step="0.01"
               disabled={readOnly}
             />

@@ -506,6 +506,7 @@
       "startDate": "Start",
       "endDate": "End",
       "durationMin": "Duration (min)",
+      "durationMinComputed": "Duration (min, computed)",
       "chargeEnergyAdded": "Energy added (kWh)",
       "chargeEnergyUsed": "Energy used (kWh)",
       "cost": "Cost",
@@ -551,7 +552,11 @@
       "positionRequired": "Select a position (required).",
       "endBeforeStart": "End date cannot be earlier than start date.",
       "noCar": "No vehicle available. Import a car before creating a charge.",
-      "noPosition": "No position available for this vehicle. Create one first."
+      "noPosition": "No position available for this vehicle. Create one first.",
+      "endBatteryLowerThanStart": "End battery level must be greater than or equal to start level.",
+      "negativeValue": "Negative value not allowed.",
+      "startDateInFuture": "Start date cannot be in the future.",
+      "overlapsSession": "Overlaps another charging session of the same vehicle."
     },
     "ticksTab": {
       "totalCount": "{n} measurement(s)",
@@ -604,7 +609,15 @@
     "actions": {
       "create": "Create session",
       "save": "Save",
-      "delete": "Delete"
+      "delete": "Delete",
+      "estimateEndValues": "Estimate end values"
+    },
+    "estimateToast": {
+      "success": "End values estimated.",
+      "partial": "Partial estimate (capacity or range unavailable).",
+      "failed": "Estimation failed.",
+      "missingEnergy": "Fill in added energy before estimating.",
+      "estimating": "Estimating…"
     }
   },
   "positions": {

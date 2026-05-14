@@ -506,6 +506,7 @@
       "startDate": "Début",
       "endDate": "Fin",
       "durationMin": "Durée (min)",
+      "durationMinComputed": "Durée (min, calculée)",
       "chargeEnergyAdded": "Énergie ajoutée (kWh)",
       "chargeEnergyUsed": "Énergie consommée (kWh)",
       "cost": "Coût",
@@ -551,7 +552,11 @@
       "positionRequired": "Sélectionner une position (obligatoire).",
       "endBeforeStart": "La date de fin ne peut pas être antérieure à la date de début.",
       "noCar": "Aucun véhicule disponible. Importer une voiture avant de créer une charge.",
-      "noPosition": "Aucune position disponible pour ce véhicule. Créer une position d'abord."
+      "noPosition": "Aucune position disponible pour ce véhicule. Créer une position d'abord.",
+      "endBatteryLowerThanStart": "Le niveau de batterie de fin doit être supérieur ou égal au niveau de départ.",
+      "negativeValue": "Valeur négative interdite.",
+      "startDateInFuture": "La date de début ne peut pas être dans le futur.",
+      "overlapsSession": "Chevauche une autre session de charge du même véhicule."
     },
     "ticksTab": {
       "totalCount": "{n} mesure(s)",
@@ -604,7 +609,15 @@
     "actions": {
       "create": "Créer la session",
       "save": "Enregistrer",
-      "delete": "Supprimer"
+      "delete": "Supprimer",
+      "estimateEndValues": "Estimer les valeurs de fin"
+    },
+    "estimateToast": {
+      "success": "Valeurs de fin estimées.",
+      "partial": "Estimation partielle (capacité ou autonomie indisponible).",
+      "failed": "Échec de l'estimation.",
+      "missingEnergy": "Renseigner l'énergie ajoutée avant d'estimer.",
+      "estimating": "Estimation…"
     }
   },
   "positions": {

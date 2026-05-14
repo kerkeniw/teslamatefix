@@ -11,6 +11,7 @@ import { logger } from "@/lib/logger";
 import {
   recalcFromTicks,
   applyRecalc as applyChargeRecalc,
+  findOverlappingSession,
   type ProcessRecalc,
 } from "@/lib/integrity/charges";
 
@@ -42,6 +43,18 @@ const optionalNumber = z
   .nullable()
   .refine((v) => v == null || Number.isFinite(Number(v)), {
     message: "invalidNumber",
+  });
+
+const optionalNonNegative = z
+  .string()
+  .transform((v) => v.trim())
+  .transform((v) => (v === "" ? null : v))
+  .nullable()
+  .refine((v) => v == null || Number.isFinite(Number(v)), {
+    message: "invalidNumber",
+  })
+  .refine((v) => v == null || Number(v) >= 0, {
+    message: "negativeValue",
   });
 
 const optionalIntId = z
@@ -81,10 +94,9 @@ const ChargeSchema = z
     position_id: positionIdSchema,
     start_date: dateString,
     end_date: optionalDate,
-    duration_min: optionalNumber,
-    charge_energy_added: optionalNumber,
-    charge_energy_used: optionalNumber,
-    cost: optionalNumber,
+    charge_energy_added: optionalNonNegative,
+    charge_energy_used: optionalNonNegative,
+    cost: optionalNonNegative,
     start_battery_level: optionalNumber,
     end_battery_level: optionalNumber,
     start_ideal_range_km: optionalNumber,
@@ -101,6 +113,13 @@ const ChargeSchema = z
       return new Date(d.end_date).getTime() >= new Date(d.start_date).getTime();
     },
     { path: ["end_date"], message: "endBeforeStart" },
+  )
+  .refine(
+    (d) => {
+      if (d.start_battery_level == null || d.end_battery_level == null) return true;
+      return Number(d.end_battery_level) >= Number(d.start_battery_level);
+    },
+    { path: ["end_battery_level"], message: "endBatteryLowerThanStart" },
   );
 
 function readOnly(): ChargeActionState {
@@ -126,12 +145,20 @@ function intOrNull(v: string | null) {
 }
 
 function toData(d: z.infer<typeof ChargeSchema>) {
+  const startDate = new Date(d.start_date);
+  const endDate = d.end_date ? new Date(d.end_date) : null;
+  // duration_min est toujours dérivée de (end - start). Le champ form est
+  // ignoré côté serveur, l'UI l'affiche en lecture seule.
+  const durationMin =
+    endDate != null
+      ? Math.round((endDate.getTime() - startDate.getTime()) / 60000)
+      : null;
   return {
     car_id: parseInt(d.car_id, 10),
     position_id: parseInt(d.position_id, 10),
-    start_date: new Date(d.start_date),
-    end_date: d.end_date ? new Date(d.end_date) : null,
-    duration_min: intOrNull(d.duration_min),
+    start_date: startDate,
+    end_date: endDate,
+    duration_min: durationMin,
     charge_energy_added: decimal(d.charge_energy_added),
     charge_energy_used: decimal(d.charge_energy_used),
     cost: decimal(d.cost),
@@ -147,6 +174,12 @@ function toData(d: z.infer<typeof ChargeSchema>) {
   } satisfies Prisma.charging_processesUncheckedCreateInput;
 }
 
+const CLOCK_TOLERANCE_MS = 5 * 60 * 1000;
+
+function isStartInFuture(startDate: Date): boolean {
+  return startDate.getTime() > Date.now() + CLOCK_TOLERANCE_MS;
+}
+
 export async function createChargeAction(
   _prev: ChargeActionState | null,
   formData: FormData,
@@ -160,10 +193,34 @@ export async function createChargeAction(
     return { ok: false, error: "Données invalides.", fieldErrors: feFromZod(parsed.error) };
   }
 
+  const data = toData(parsed.data);
+
+  if (isStartInFuture(data.start_date)) {
+    return {
+      ok: false,
+      error: "Données invalides.",
+      fieldErrors: { start_date: "startDateInFuture" },
+    };
+  }
+
+  const overlap = await findOverlappingSession(
+    data.car_id,
+    data.start_date,
+    data.end_date,
+    null,
+  );
+  if (overlap) {
+    return {
+      ok: false,
+      error: "Données invalides.",
+      fieldErrors: { start_date: "overlapsSession", end_date: "overlapsSession" },
+    };
+  }
+
   let createdId: number;
   try {
     const created = await prisma.charging_processes.create({
-      data: toData(parsed.data),
+      data,
       select: { id: true },
     });
     createdId = created.id;
@@ -198,10 +255,26 @@ export async function updateChargeAction(
     return { ok: false, error: "Données invalides.", fieldErrors: feFromZod(parsed.error) };
   }
 
+  const data = toData(parsed.data);
+
+  const overlap = await findOverlappingSession(
+    data.car_id,
+    data.start_date,
+    data.end_date,
+    id,
+  );
+  if (overlap) {
+    return {
+      ok: false,
+      error: "Données invalides.",
+      fieldErrors: { start_date: "overlapsSession", end_date: "overlapsSession" },
+    };
+  }
+
   try {
     await prisma.charging_processes.update({
       where: { id },
-      data: toData(parsed.data),
+      data,
     });
   } catch (e) {
     if (e instanceof Prisma.PrismaClientKnownRequestError) {
