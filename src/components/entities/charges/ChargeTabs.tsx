@@ -11,10 +11,7 @@ import { ConfirmDialog } from "@/components/tesla/confirm-dialog";
 import {
   ChargeProcessForm,
   type ChargeProcessFormValues,
-  type CarOption,
-  type PositionOption,
-  type AddressOption,
-  type GeofenceOption,
+  type ChargeProcessFormInitialOptions,
 } from "./ChargeProcessForm";
 import { useRouter } from "@/i18n/navigation";
 
@@ -27,10 +24,7 @@ export type ChargeActionState = {
 export function ChargeTabs({
   id,
   initial,
-  cars,
-  positions,
-  addresses,
-  geofences,
+  initialOptions,
   ticksCount,
   readOnly,
   saveAction,
@@ -40,10 +34,7 @@ export function ChargeTabs({
 }: {
   id: number;
   initial: ChargeProcessFormValues;
-  cars: CarOption[];
-  positions: PositionOption[];
-  addresses: AddressOption[];
-  geofences: GeofenceOption[];
+  initialOptions: ChargeProcessFormInitialOptions;
   ticksCount: number;
   readOnly: boolean;
   saveAction: (
@@ -120,10 +111,7 @@ export function ChargeTabs({
           <form action={formAction} className="space-y-6" data-charge-id={id}>
             <ChargeProcessForm
               initial={initial}
-              cars={cars}
-              positions={positions}
-              addresses={addresses}
-              geofences={geofences}
+              initialOptions={initialOptions}
               fieldErrors={fe}
               readOnly={readOnly}
               mode="edit"

@@ -16,6 +16,8 @@ import {
 import { FormField } from "@/components/form/form-field";
 import { NumberInput } from "@/components/form/number-input";
 import { DateTimeInput } from "@/components/form/datetime-input";
+import { FKCombobox } from "@/components/form/fk-combobox";
+import { searchDrivesAction } from "@/app/actions/search-drives";
 import { ConfirmDialog } from "@/components/tesla/confirm-dialog";
 import { useRouter } from "@/i18n/navigation";
 import { OsmLink } from "./OsmLink";
@@ -122,8 +124,8 @@ export function PositionForm({
   const router = useRouter();
   const noCars = cars.length === 0;
 
-  const [carId, setCarId] = useState(initial.car_id);
-  const [driveId, setDriveId] = useState(initial.drive_id);
+  const [carId] = useState(initial.car_id);
+  const [driveId] = useState(initial.drive_id);
   const [latitude, setLatitude] = useState(initial.latitude);
   const [longitude, setLongitude] = useState(initial.longitude);
   const [climate, setClimate] = useState(initial.is_climate_on);
@@ -192,44 +194,21 @@ export function PositionForm({
       <section className="space-y-4">
         <h2 className="text-base font-semibold">{t("sections.core")}</h2>
         <div className="grid gap-4 sm:grid-cols-2">
-          <FormField id="car_id" label={t("fields.carId")} required error={fe.car_id}>
+          <FormField id="car_label" label={t("fields.carId")} required error={fe.car_id}>
             <input type="hidden" name="car_id" value={carId} />
-            <Select
-              value={carId}
-              onValueChange={(v) => setCarId(typeof v === "string" ? v : "")}
-              disabled={readOnly || mode === "edit" || noCars}
-            >
-              <SelectTrigger id="car_id" className="w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {cars.map((c) => (
-                  <SelectItem key={c.id} value={String(c.id)}>
-                    {c.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <p className="text-sm">
+              {cars.find((c) => String(c.id) === carId)?.label ?? "—"}
+            </p>
           </FormField>
           <FormField id="drive_id" label={t("fields.driveId")} error={fe.drive_id}>
-            <input type="hidden" name="drive_id" value={driveId} />
-            <Select
-              value={driveId}
-              onValueChange={(v) => setDriveId(typeof v === "string" ? v : "")}
+            <FKCombobox
+              id="drive_id"
+              name="drive_id"
+              initial={drives.find((d) => String(d.id) === driveId) ?? null}
+              searchAction={searchDrivesAction}
               disabled={readOnly}
-            >
-              <SelectTrigger id="drive_id" className="w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="">—</SelectItem>
-                {drives.map((d) => (
-                  <SelectItem key={d.id} value={String(d.id)}>
-                    {d.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              allowClear
+            />
           </FormField>
           <FormField id="date" label={t("fields.date")} required error={fe.date}>
             <DateTimeInput

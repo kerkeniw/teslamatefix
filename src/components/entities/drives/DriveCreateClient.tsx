@@ -4,22 +4,24 @@ import { useActionState } from "react";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { DriveForm, type DriveFormValues, type CarOption, type AddressOption, type GeofenceOption } from "./DriveForm";
+import {
+  DriveForm,
+  type DriveFormValues,
+  type DriveFormInitialOptions,
+} from "./DriveForm";
 import type { DriveActionState } from "./DriveTabs";
 import { useRouter } from "@/i18n/navigation";
 
 export function DriveCreateClient({
   initial,
-  cars,
-  addresses,
-  geofences,
+  initialOptions,
+  hasCar,
   readOnly,
   createAction,
 }: {
   initial: DriveFormValues;
-  cars: CarOption[];
-  addresses: AddressOption[];
-  geofences: GeofenceOption[];
+  initialOptions: DriveFormInitialOptions;
+  hasCar: boolean;
   readOnly: boolean;
   createAction: (
     prev: DriveActionState | null,
@@ -29,7 +31,6 @@ export function DriveCreateClient({
   const t = useTranslations("drives");
   const tCommon = useTranslations("common");
   const router = useRouter();
-  const noCars = cars.length === 0;
 
   const [state, formAction, pending] = useActionState<DriveActionState | null, FormData>(
     createAction,
@@ -53,7 +54,7 @@ export function DriveCreateClient({
         </div>
       ) : null}
 
-      {noCars ? (
+      {!hasCar ? (
         <div role="alert" className="rounded-md border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
           {t("errors.noCar")}
         </div>
@@ -67,9 +68,7 @@ export function DriveCreateClient({
 
       <DriveForm
         initial={initial}
-        cars={cars}
-        addresses={addresses}
-        geofences={geofences}
+        initialOptions={initialOptions}
         fieldErrors={fe}
         readOnly={readOnly}
         mode="create"
@@ -78,7 +77,7 @@ export function DriveCreateClient({
       <Separator />
 
       <div className="flex flex-wrap gap-2">
-        <Button type="submit" disabled={pending || readOnly || noCars}>
+        <Button type="submit" disabled={pending || readOnly || !hasCar}>
           {pending ? tCommon("saving") : t("actions.create")}
         </Button>
         <Button

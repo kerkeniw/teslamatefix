@@ -1,32 +1,24 @@
 "use client";
 
-import { useActionState, useMemo, useState } from "react";
+import { useActionState, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { FormField } from "@/components/form/form-field";
 import { DateTimeInput } from "@/components/form/datetime-input";
+import { FKCombobox, type FKOption } from "@/components/form/fk-combobox";
+import { searchPositionsAction } from "@/app/actions/search-positions";
 import { useRouter } from "@/i18n/navigation";
 import type { ChargeActionState } from "./ChargeTabs";
 
-export type CarOption = { id: number; label: string };
-export type PositionOption = { id: number; car_id: number; label: string };
-
 export function ChargeCreateClient({
-  cars,
-  positionsByCar,
+  car,
+  hasCar,
   readOnly,
   createAction,
 }: {
-  cars: CarOption[];
-  positionsByCar: Record<number, PositionOption[]>;
+  car: FKOption | null;
+  hasCar: boolean;
   readOnly: boolean;
   createAction: (
     prev: ChargeActionState | null,
@@ -36,26 +28,8 @@ export function ChargeCreateClient({
   const t = useTranslations("charges");
   const tCommon = useTranslations("common");
   const router = useRouter();
-  const noCars = cars.length === 0;
 
-  const [carId, setCarId] = useState<string>(cars[0]?.id ? String(cars[0].id) : "");
-  const positions = useMemo(
-    () => (carId ? positionsByCar[parseInt(carId, 10)] ?? [] : []),
-    [carId, positionsByCar],
-  );
-  const [positionId, setPositionId] = useState<string>(
-    positions[0]?.id ? String(positions[0].id) : "",
-  );
   const [startDate, setStartDate] = useState(new Date().toISOString());
-
-  // Si on change de voiture, on remet à zéro la position (sinon on garde une
-  // FK incohérente). On le fait à la prochaine sélection plutôt qu'en effect
-  // pour éviter la cascade de re-renders.
-  function onCarChange(v: string) {
-    setCarId(v);
-    const next = positionsByCar[parseInt(v, 10)] ?? [];
-    setPositionId(next[0]?.id ? String(next[0].id) : "");
-  }
 
   const [state, formAction, pending] = useActionState<ChargeActionState | null, FormData>(
     createAction,
@@ -76,8 +50,6 @@ export function ChargeCreateClient({
     ]),
   );
 
-  const noPositions = !!carId && positions.length === 0;
-
   return (
     <form action={formAction} className="space-y-6">
       {readOnly ? (
@@ -86,15 +58,9 @@ export function ChargeCreateClient({
         </div>
       ) : null}
 
-      {noCars ? (
+      {!hasCar ? (
         <div role="alert" className="rounded-md border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
           {t("errors.noCar")}
-        </div>
-      ) : null}
-
-      {noPositions ? (
-        <div role="alert" className="rounded-md border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
-          {t("errors.noPosition")}
         </div>
       ) : null}
 
@@ -104,21 +70,13 @@ export function ChargeCreateClient({
         </div>
       ) : null}
 
+      <input type="hidden" name="car_id" value={car ? String(car.id) : ""} />
+
       <div className="grid gap-4 sm:grid-cols-2">
-        <FormField id="car_id" label={t("fields.carId")} required error={fe.car_id}>
-          <input type="hidden" name="car_id" value={carId} />
-          <Select value={carId} onValueChange={(v) => onCarChange(typeof v === "string" ? v : "")} disabled={readOnly || noCars}>
-            <SelectTrigger id="car_id" className="w-full">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {cars.map((c) => (
-                <SelectItem key={c.id} value={String(c.id)}>
-                  {c.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+        <FormField id="car_label" label={t("fields.carId")}>
+          <p className="text-sm">
+            {car?.label ?? "—"}
+          </p>
         </FormField>
 
         <FormField
@@ -127,23 +85,14 @@ export function ChargeCreateClient({
           required
           error={fe.position_id}
         >
-          <input type="hidden" name="position_id" value={positionId} />
-          <Select
-            value={positionId}
-            onValueChange={(v) => setPositionId(typeof v === "string" ? v : "")}
-            disabled={readOnly || noPositions}
-          >
-            <SelectTrigger id="position_id" className="w-full">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {positions.map((p) => (
-                <SelectItem key={p.id} value={String(p.id)}>
-                  {p.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <FKCombobox
+            id="position_id"
+            name="position_id"
+            initial={null}
+            searchAction={searchPositionsAction}
+            disabled={readOnly || !hasCar}
+            required
+          />
         </FormField>
 
         <FormField
@@ -166,7 +115,7 @@ export function ChargeCreateClient({
       <Separator />
 
       <div className="flex flex-wrap gap-2">
-        <Button type="submit" disabled={pending || readOnly || noCars || noPositions}>
+        <Button type="submit" disabled={pending || readOnly || !hasCar}>
           {pending ? tCommon("saving") : t("actions.create")}
         </Button>
         <Button

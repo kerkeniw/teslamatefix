@@ -38,6 +38,11 @@
     "label": "Vehicle",
     "placeholder": "Pick a vehicle"
   },
+  "combobox": {
+    "placeholder": "Search…",
+    "loading": "Searching…",
+    "noResults": "No results"
+  },
   "auth": {
     "loginTitle": "Sign in",
     "loginSubtitle": "Sign in to access the console.",

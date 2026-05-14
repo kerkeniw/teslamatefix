@@ -8,7 +8,11 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { ConfirmDialog } from "@/components/tesla/confirm-dialog";
-import { DriveForm, type DriveFormValues, type CarOption, type AddressOption, type GeofenceOption } from "./DriveForm";
+import {
+  DriveForm,
+  type DriveFormValues,
+  type DriveFormInitialOptions,
+} from "./DriveForm";
 import { useRouter } from "@/i18n/navigation";
 
 export type DriveActionState = {
@@ -20,9 +24,7 @@ export type DriveActionState = {
 export function DriveTabs({
   id,
   initial,
-  cars,
-  addresses,
-  geofences,
+  initialOptions,
   readOnly,
   saveAction,
   deleteAction,
@@ -31,9 +33,7 @@ export function DriveTabs({
 }: {
   id: number;
   initial: DriveFormValues;
-  cars: CarOption[];
-  addresses: AddressOption[];
-  geofences: GeofenceOption[];
+  initialOptions: DriveFormInitialOptions;
   readOnly: boolean;
   saveAction: (
     prev: DriveActionState | null,
@@ -108,9 +108,7 @@ export function DriveTabs({
           <form action={formAction} className="space-y-6" data-drive-id={id}>
             <DriveForm
               initial={initial}
-              cars={cars}
-              addresses={addresses}
-              geofences={geofences}
+              initialOptions={initialOptions}
               fieldErrors={fe}
               readOnly={readOnly}
               mode="edit"

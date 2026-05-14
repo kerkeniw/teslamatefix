@@ -1,29 +1,18 @@
 import { setRequestLocale, getTranslations } from "next-intl/server";
 import { requireSession } from "@/lib/auth";
 import { env } from "@/lib/env";
-import { prisma } from "@/lib/db";
+import { getSelectedCarOrDefault } from "@/lib/vehicle";
 import { AppHeader } from "@/components/app-shell/header";
 import { MainNav } from "@/components/app-shell/main-nav";
 import { LocaleSwitcher } from "@/components/app-shell/locale-switcher";
 import { DriveCreateClient } from "@/components/entities/drives/DriveCreateClient";
-import type { DriveFormValues } from "@/components/entities/drives/DriveForm";
+import type {
+  DriveFormValues,
+  DriveFormInitialOptions,
+} from "@/components/entities/drives/DriveForm";
 import { ButtonLink } from "@/components/ui/button-link";
 import { ArrowLeft } from "lucide-react";
 import { createDriveAction } from "../actions";
-
-const FK_LIST_LIMIT = 200;
-
-function carLabel(c: { id: number; name: string | null; vin: string | null; model: string | null }): string {
-  return c.name ?? c.vin ?? c.model ?? `#${c.id}`;
-}
-function addressLabel(a: {
-  id: number;
-  display_name: string | null;
-  city: string | null;
-  road: string | null;
-}): string {
-  return a.display_name ?? a.city ?? a.road ?? `#${a.id}`;
-}
 
 export default async function NewDrivePage({
   params,
@@ -36,29 +25,10 @@ export default async function NewDrivePage({
   const t = await getTranslations("drives");
   const tCommon = await getTranslations("common");
 
-  const [cars, addresses, geofences] = await Promise.all([
-    prisma.cars.findMany({
-      select: { id: true, name: true, vin: true, model: true },
-      orderBy: { id: "asc" },
-    }),
-    prisma.addresses.findMany({
-      select: { id: true, display_name: true, city: true, road: true },
-      orderBy: { id: "desc" },
-      take: FK_LIST_LIMIT,
-    }),
-    prisma.geofences.findMany({
-      select: { id: true, name: true },
-      orderBy: { id: "asc" },
-      take: FK_LIST_LIMIT,
-    }),
-  ]);
-
-  const carOptions = cars.map((c) => ({ id: c.id, label: carLabel(c) }));
-  const addressOptions = addresses.map((a) => ({ id: a.id, label: addressLabel(a) }));
-  const geofenceOptions = geofences.map((g) => ({ id: g.id, label: g.name }));
+  const selectedCar = await getSelectedCarOrDefault();
 
   const initial: DriveFormValues = {
-    car_id: carOptions[0]?.id ? String(carOptions[0].id) : "",
+    car_id: selectedCar ? String(selectedCar.id) : "",
     start_date: new Date().toISOString(),
     end_date: "",
     start_km: "",
@@ -82,6 +52,16 @@ export default async function NewDrivePage({
     descent: "",
   };
 
+  const initialOptions: DriveFormInitialOptions = {
+    car: selectedCar
+      ? { id: selectedCar.id, label: selectedCar.label }
+      : { id: 0, label: "" },
+    startAddress: null,
+    endAddress: null,
+    startGeofence: null,
+    endGeofence: null,
+  };
+
   return (
     <>
       <AppHeader rightSlot={<LocaleSwitcher />} />
@@ -98,9 +78,8 @@ export default async function NewDrivePage({
         </header>
         <DriveCreateClient
           initial={initial}
-          cars={carOptions}
-          addresses={addressOptions}
-          geofences={geofenceOptions}
+          initialOptions={initialOptions}
+          hasCar={selectedCar != null}
           readOnly={env.READ_ONLY}
           createAction={createDriveAction}
         />

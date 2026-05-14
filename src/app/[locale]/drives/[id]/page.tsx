@@ -3,15 +3,20 @@ import { setRequestLocale, getTranslations } from "next-intl/server";
 import { requireSession } from "@/lib/auth";
 import { env } from "@/lib/env";
 import { prisma } from "@/lib/db";
+import { getSelectedCarOrDefault } from "@/lib/vehicle";
 import { AppHeader } from "@/components/app-shell/header";
 import { MainNav } from "@/components/app-shell/main-nav";
 import { LocaleSwitcher } from "@/components/app-shell/locale-switcher";
 import { DriveTabs } from "@/components/entities/drives/DriveTabs";
 import { ChildrenPositionsTable } from "@/components/entities/drives/ChildrenPositionsTable";
 import { DriveRecalcPanel } from "@/components/entities/drives/RecalcPanel";
-import type { DriveFormValues } from "@/components/entities/drives/DriveForm";
+import type {
+  DriveFormValues,
+  DriveFormInitialOptions,
+} from "@/components/entities/drives/DriveForm";
 import { ButtonLink } from "@/components/ui/button-link";
 import { ArrowLeft } from "lucide-react";
+import type { FKOption } from "@/components/form/fk-combobox";
 import {
   updateDriveAction,
   deleteDriveAction,
@@ -19,18 +24,15 @@ import {
   applyRecalcDriveAction,
 } from "../actions";
 
-const FK_LIST_LIMIT = 200;
-
-function carLabel(c: { id: number; name: string | null; vin: string | null; model: string | null }): string {
-  return c.name ?? c.vin ?? c.model ?? `#${c.id}`;
-}
 function addressLabel(a: {
   id: number;
   display_name: string | null;
   city: string | null;
   road: string | null;
+  country: string | null;
 }): string {
-  return a.display_name ?? a.city ?? a.road ?? `#${a.id}`;
+  const parts = [a.road, a.city, a.country].filter(Boolean);
+  return parts.length > 0 ? parts.join(", ") : (a.display_name ?? `#${a.id}`);
 }
 
 function decimalString(v: { toString(): string } | null | undefined): string {
@@ -51,25 +53,9 @@ export default async function DriveEditPage({
   const id = parseInt(idStr, 10);
   if (!Number.isFinite(id)) notFound();
 
-  const [drive, cars, addresses, geofences, positionsCount, positionsHead] = await Promise.all([
+  const [drive, selectedCar, positionsCount, positionsHead] = await Promise.all([
     prisma.drives.findUnique({ where: { id } }),
-    prisma.cars.findMany({
-      select: { id: true, name: true, vin: true, model: true },
-      orderBy: { id: "asc" },
-    }),
-    // FK selects bornés à 200 lignes pour ne pas exploser le bundle ; pour
-    // les utilisateurs qui ont besoin d'une autre adresse, le champ texte
-    // pourra évoluer plus tard vers un combobox avec recherche.
-    prisma.addresses.findMany({
-      select: { id: true, display_name: true, city: true, road: true },
-      orderBy: { id: "desc" },
-      take: FK_LIST_LIMIT,
-    }),
-    prisma.geofences.findMany({
-      select: { id: true, name: true },
-      orderBy: { id: "asc" },
-      take: FK_LIST_LIMIT,
-    }),
+    getSelectedCarOrDefault(),
     prisma.positions.count({ where: { drive_id: id } }),
     prisma.positions.findMany({
       where: { drive_id: id },
@@ -85,23 +71,52 @@ export default async function DriveEditPage({
       },
     }),
   ]);
-  if (!drive) notFound();
+  if (!drive || !selectedCar) notFound();
 
-  const carOptions = cars.map((c) => ({ id: c.id, label: carLabel(c) }));
-  const addressOptions = addresses.map((a) => ({ id: a.id, label: addressLabel(a) }));
-  // Si le drive référence une adresse hors top 200, on l'ajoute en tête de liste.
-  const referenceAddressIds = new Set<number>();
-  if (drive.start_address_id) referenceAddressIds.add(drive.start_address_id);
-  if (drive.end_address_id) referenceAddressIds.add(drive.end_address_id);
-  for (const a of addressOptions) referenceAddressIds.delete(a.id);
-  if (referenceAddressIds.size > 0) {
-    const extra = await prisma.addresses.findMany({
-      where: { id: { in: [...referenceAddressIds] } },
-      select: { id: true, display_name: true, city: true, road: true },
-    });
-    for (const a of extra) addressOptions.unshift({ id: a.id, label: addressLabel(a) });
+  // Précharge uniquement les libellés des FK référencées par ce drive — la
+  // recherche typeahead complète passe par les server actions search-*.
+  const refAddressIds: number[] = [];
+  if (drive.start_address_id) refAddressIds.push(drive.start_address_id);
+  if (drive.end_address_id && drive.end_address_id !== drive.start_address_id) {
+    refAddressIds.push(drive.end_address_id);
   }
-  const geofenceOptions = geofences.map((g) => ({ id: g.id, label: g.name }));
+  const refGeofenceIds: number[] = [];
+  if (drive.start_geofence_id) refGeofenceIds.push(drive.start_geofence_id);
+  if (drive.end_geofence_id && drive.end_geofence_id !== drive.start_geofence_id) {
+    refGeofenceIds.push(drive.end_geofence_id);
+  }
+
+  const [refAddresses, refGeofences] = await Promise.all([
+    refAddressIds.length
+      ? prisma.addresses.findMany({
+          where: { id: { in: refAddressIds } },
+          select: {
+            id: true,
+            display_name: true,
+            city: true,
+            road: true,
+            country: true,
+          },
+        })
+      : Promise.resolve([]),
+    refGeofenceIds.length
+      ? prisma.geofences.findMany({
+          where: { id: { in: refGeofenceIds } },
+          select: { id: true, name: true },
+        })
+      : Promise.resolve([]),
+  ]);
+
+  function findAddress(id: number | null): FKOption | null {
+    if (id == null) return null;
+    const a = refAddresses.find((x) => x.id === id);
+    return a ? { id: a.id, label: addressLabel(a) } : { id, label: `#${id}` };
+  }
+  function findGeofence(id: number | null): FKOption | null {
+    if (id == null) return null;
+    const g = refGeofences.find((x) => x.id === id);
+    return g ? { id: g.id, label: g.name } : { id, label: `#${id}` };
+  }
 
   const initial: DriveFormValues = {
     car_id: String(drive.car_id),
@@ -126,6 +141,14 @@ export default async function DriveEditPage({
     power_max: drive.power_max != null ? String(drive.power_max) : "",
     ascent: drive.ascent != null ? String(drive.ascent) : "",
     descent: drive.descent != null ? String(drive.descent) : "",
+  };
+
+  const initialOptions: DriveFormInitialOptions = {
+    car: { id: selectedCar.id, label: selectedCar.label },
+    startAddress: findAddress(drive.start_address_id),
+    endAddress: findAddress(drive.end_address_id),
+    startGeofence: findGeofence(drive.start_geofence_id),
+    endGeofence: findGeofence(drive.end_geofence_id),
   };
 
   const positions = positionsHead.map((p) => ({
@@ -158,9 +181,7 @@ export default async function DriveEditPage({
         <DriveTabs
           id={drive.id}
           initial={initial}
-          cars={carOptions}
-          addresses={addressOptions}
-          geofences={geofenceOptions}
+          initialOptions={initialOptions}
           readOnly={env.READ_ONLY}
           saveAction={boundUpdate}
           deleteAction={boundDelete}

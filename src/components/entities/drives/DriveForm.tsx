@@ -1,18 +1,13 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { FormField } from "@/components/form/form-field";
 import { NumberInput } from "@/components/form/number-input";
 import { DateTimeInput } from "@/components/form/datetime-input";
-import { useState } from "react";
+import { FKCombobox, type FKOption } from "@/components/form/fk-combobox";
+import { searchAddressesAction } from "@/app/actions/search-addresses";
+import { searchGeofencesAction } from "@/app/actions/search-geofences";
 
 export type DriveFormValues = {
   car_id: string;
@@ -39,59 +34,41 @@ export type DriveFormValues = {
   descent: string;
 };
 
-export type CarOption = { id: number; label: string };
-export type AddressOption = { id: number; label: string };
-export type GeofenceOption = { id: number; label: string };
+export type DriveFormInitialOptions = {
+  car: FKOption;
+  startAddress: FKOption | null;
+  endAddress: FKOption | null;
+  startGeofence: FKOption | null;
+  endGeofence: FKOption | null;
+};
 
 export function DriveForm({
   initial,
-  cars,
-  addresses,
-  geofences,
+  initialOptions,
   fieldErrors = {},
   readOnly = false,
-  mode,
 }: {
   initial: DriveFormValues;
-  cars: CarOption[];
-  addresses: AddressOption[];
-  geofences: GeofenceOption[];
+  initialOptions: DriveFormInitialOptions;
   fieldErrors?: Record<string, string | undefined>;
   readOnly?: boolean;
   mode: "create" | "edit";
 }) {
   const t = useTranslations("drives");
-  const [carId, setCarId] = useState(initial.car_id);
-  const [startAddress, setStartAddress] = useState(initial.start_address_id);
-  const [endAddress, setEndAddress] = useState(initial.end_address_id);
-  const [startGeofence, setStartGeofence] = useState(initial.start_geofence_id);
-  const [endGeofence, setEndGeofence] = useState(initial.end_geofence_id);
   const fe = fieldErrors;
 
   return (
     <div className="space-y-8">
+      {/* car_id est imposé par le sélecteur de véhicule du header. On le rend
+         hidden + un libellé statique pour rappel. */}
+      <input type="hidden" name="car_id" value={initial.car_id} />
+
       <section className="space-y-4">
         <h2 className="text-base font-semibold">{t("sections.time")}</h2>
+        <p className="text-xs text-muted-foreground">
+          {t("fields.carId")} : <span className="font-medium text-foreground">{initialOptions.car.label}</span>
+        </p>
         <div className="grid gap-4 sm:grid-cols-2">
-          <FormField id="car_id" label={t("fields.carId")} required error={fe.car_id}>
-            <input type="hidden" name="car_id" value={carId} />
-            <Select
-              value={carId}
-              onValueChange={(v) => setCarId(typeof v === "string" ? v : "")}
-              disabled={readOnly || mode === "edit"}
-            >
-              <SelectTrigger id="car_id" className="w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {cars.map((c) => (
-                  <SelectItem key={c.id} value={String(c.id)}>
-                    {c.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </FormField>
           <FormField
             id="start_date"
             label={t("fields.startDate")}
@@ -232,104 +209,56 @@ export function DriveForm({
             label={t("fields.startAddress")}
             error={fe.start_address_id}
           >
-            <input type="hidden" name="start_address_id" value={startAddress} />
-            <Select
-              value={startAddress}
-              onValueChange={(v) =>
-                setStartAddress(typeof v === "string" ? v : "")
-              }
+            <FKCombobox
+              id="start_address_id"
+              name="start_address_id"
+              initial={initialOptions.startAddress}
+              searchAction={searchAddressesAction}
               disabled={readOnly}
-            >
-              <SelectTrigger id="start_address_id" className="w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="">—</SelectItem>
-                {addresses.map((a) => (
-                  <SelectItem key={a.id} value={String(a.id)}>
-                    {a.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              allowClear
+            />
           </FormField>
           <FormField
             id="end_address_id"
             label={t("fields.endAddress")}
             error={fe.end_address_id}
           >
-            <input type="hidden" name="end_address_id" value={endAddress} />
-            <Select
-              value={endAddress}
-              onValueChange={(v) =>
-                setEndAddress(typeof v === "string" ? v : "")
-              }
+            <FKCombobox
+              id="end_address_id"
+              name="end_address_id"
+              initial={initialOptions.endAddress}
+              searchAction={searchAddressesAction}
               disabled={readOnly}
-            >
-              <SelectTrigger id="end_address_id" className="w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="">—</SelectItem>
-                {addresses.map((a) => (
-                  <SelectItem key={a.id} value={String(a.id)}>
-                    {a.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              allowClear
+            />
           </FormField>
           <FormField
             id="start_geofence_id"
             label={t("fields.startGeofence")}
             error={fe.start_geofence_id}
           >
-            <input type="hidden" name="start_geofence_id" value={startGeofence} />
-            <Select
-              value={startGeofence}
-              onValueChange={(v) =>
-                setStartGeofence(typeof v === "string" ? v : "")
-              }
+            <FKCombobox
+              id="start_geofence_id"
+              name="start_geofence_id"
+              initial={initialOptions.startGeofence}
+              searchAction={searchGeofencesAction}
               disabled={readOnly}
-            >
-              <SelectTrigger id="start_geofence_id" className="w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="">—</SelectItem>
-                {geofences.map((g) => (
-                  <SelectItem key={g.id} value={String(g.id)}>
-                    {g.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              allowClear
+            />
           </FormField>
           <FormField
             id="end_geofence_id"
             label={t("fields.endGeofence")}
             error={fe.end_geofence_id}
           >
-            <input type="hidden" name="end_geofence_id" value={endGeofence} />
-            <Select
-              value={endGeofence}
-              onValueChange={(v) =>
-                setEndGeofence(typeof v === "string" ? v : "")
-              }
+            <FKCombobox
+              id="end_geofence_id"
+              name="end_geofence_id"
+              initial={initialOptions.endGeofence}
+              searchAction={searchGeofencesAction}
               disabled={readOnly}
-            >
-              <SelectTrigger id="end_geofence_id" className="w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="">—</SelectItem>
-                {geofences.map((g) => (
-                  <SelectItem key={g.id} value={String(g.id)}>
-                    {g.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              allowClear
+            />
           </FormField>
         </div>
       </section>
@@ -426,7 +355,6 @@ export function DriveForm({
           </FormField>
         </div>
       </section>
-
     </div>
   );
 }

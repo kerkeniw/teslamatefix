@@ -4,15 +4,20 @@ import { Prisma } from "@prisma/client";
 import { requireSession } from "@/lib/auth";
 import { env } from "@/lib/env";
 import { prisma } from "@/lib/db";
+import { getSelectedCarOrDefault } from "@/lib/vehicle";
 import { AppHeader } from "@/components/app-shell/header";
 import { MainNav } from "@/components/app-shell/main-nav";
 import { LocaleSwitcher } from "@/components/app-shell/locale-switcher";
 import { ChargeTabs } from "@/components/entities/charges/ChargeTabs";
 import { TicksTable, type TickRow } from "@/components/entities/charges/TicksTable";
 import { ChargeRecalcPanel } from "@/components/entities/charges/RecalcPanel";
-import type { ChargeProcessFormValues } from "@/components/entities/charges/ChargeProcessForm";
+import type {
+  ChargeProcessFormValues,
+  ChargeProcessFormInitialOptions,
+} from "@/components/entities/charges/ChargeProcessForm";
 import { ButtonLink } from "@/components/ui/button-link";
 import { ArrowLeft } from "lucide-react";
+import type { FKOption } from "@/components/form/fk-combobox";
 import {
   updateChargeAction,
   deleteChargeAction,
@@ -21,19 +26,15 @@ import {
   applyRecalcChargeAction,
 } from "../actions";
 
-const FK_LIST_LIMIT = 200;
-const POSITION_LIST_LIMIT = 100;
-
-function carLabel(c: { id: number; name: string | null; vin: string | null; model: string | null }): string {
-  return c.name ?? c.vin ?? c.model ?? `#${c.id}`;
-}
 function addressLabel(a: {
   id: number;
   display_name: string | null;
   city: string | null;
   road: string | null;
+  country: string | null;
 }): string {
-  return a.display_name ?? a.city ?? a.road ?? `#${a.id}`;
+  const parts = [a.road, a.city, a.country].filter(Boolean);
+  return parts.length > 0 ? parts.join(", ") : (a.display_name ?? `#${a.id}`);
 }
 function decimalString(v: { toString(): string } | null | undefined): string {
   return v == null ? "" : v.toString();
@@ -63,8 +64,11 @@ export default async function ChargeEditPage({
   const id = parseInt(idStr, 10);
   if (!Number.isFinite(id)) notFound();
 
-  const proc = await prisma.charging_processes.findUnique({ where: { id } });
-  if (!proc) notFound();
+  const [proc, selectedCar] = await Promise.all([
+    prisma.charging_processes.findUnique({ where: { id } }),
+    getSelectedCarOrDefault(),
+  ]);
+  if (!proc || !selectedCar) notFound();
 
   const tickPageSize = parseTickPageSize(sp.tps);
   const cursor = sp.tcursor && /^\d+$/.test(sp.tcursor) ? parseInt(sp.tcursor, 10) : null;
@@ -79,21 +83,7 @@ export default async function ChargeEditPage({
     else ticksWhere.id = { gt: cursor };
   }
 
-  const [cars, addresses, geofences, ticksRaw, ticksTotal] = await Promise.all([
-    prisma.cars.findMany({
-      select: { id: true, name: true, vin: true, model: true },
-      orderBy: { id: "asc" },
-    }),
-    prisma.addresses.findMany({
-      select: { id: true, display_name: true, city: true, road: true },
-      orderBy: { id: "desc" },
-      take: FK_LIST_LIMIT,
-    }),
-    prisma.geofences.findMany({
-      select: { id: true, name: true },
-      orderBy: { id: "asc" },
-      take: FK_LIST_LIMIT,
-    }),
+  const [ticksRaw, ticksTotal, refPosition, refAddress, refGeofence] = await Promise.all([
     prisma.charges.findMany({
       where: ticksWhere,
       orderBy: { id: direction === "prev" ? "asc" : "desc" },
@@ -111,44 +101,42 @@ export default async function ChargeEditPage({
       },
     }),
     prisma.charges.count({ where: { charging_process_id: id } }),
-  ]);
-
-  // Positions du véhicule (limité). Inclut la position référencée si elle
-  // n'est pas dans la liste des dernières.
-  const positionsRaw = await prisma.positions.findMany({
-    where: { car_id: proc.car_id },
-    orderBy: { id: "desc" },
-    take: POSITION_LIST_LIMIT,
-    select: { id: true, date: true, latitude: true, longitude: true },
-  });
-  const positionOptions = positionsRaw.map((p) => ({
-    id: p.id,
-    label: `#${p.id} — ${p.date.toISOString().slice(0, 16).replace("T", " ")} (${p.latitude.toString()}, ${p.longitude.toString()})`,
-  }));
-  if (!positionOptions.some((p) => p.id === proc.position_id)) {
-    const refPos = await prisma.positions.findUnique({
+    prisma.positions.findUnique({
       where: { id: proc.position_id },
       select: { id: true, date: true, latitude: true, longitude: true },
-    });
-    if (refPos) {
-      positionOptions.unshift({
-        id: refPos.id,
-        label: `#${refPos.id} — ${refPos.date.toISOString().slice(0, 16).replace("T", " ")} (${refPos.latitude.toString()}, ${refPos.longitude.toString()})`,
-      });
-    }
-  }
+    }),
+    proc.address_id
+      ? prisma.addresses.findUnique({
+          where: { id: proc.address_id },
+          select: {
+            id: true,
+            display_name: true,
+            city: true,
+            road: true,
+            country: true,
+          },
+        })
+      : Promise.resolve(null),
+    proc.geofence_id
+      ? prisma.geofences.findUnique({
+          where: { id: proc.geofence_id },
+          select: { id: true, name: true },
+        })
+      : Promise.resolve(null),
+  ]);
 
-  const carOptions = cars.map((c) => ({ id: c.id, label: carLabel(c) }));
-  const addressOptions = addresses.map((a) => ({ id: a.id, label: addressLabel(a) }));
-  // Si l'adresse référencée est hors top, on l'ajoute.
-  if (proc.address_id && !addressOptions.some((a) => a.id === proc.address_id)) {
-    const ref = await prisma.addresses.findUnique({
-      where: { id: proc.address_id },
-      select: { id: true, display_name: true, city: true, road: true },
-    });
-    if (ref) addressOptions.unshift({ id: ref.id, label: addressLabel(ref) });
-  }
-  const geofenceOptions = geofences.map((g) => ({ id: g.id, label: g.name }));
+  const positionOption: FKOption | null = refPosition
+    ? {
+        id: refPosition.id,
+        label: `#${refPosition.id} · ${refPosition.date.toISOString().slice(0, 16).replace("T", " ")} (${Number(refPosition.latitude).toFixed(4)}, ${Number(refPosition.longitude).toFixed(4)})`,
+      }
+    : null;
+  const addressOption: FKOption | null = refAddress
+    ? { id: refAddress.id, label: addressLabel(refAddress) }
+    : null;
+  const geofenceOption: FKOption | null = refGeofence
+    ? { id: refGeofence.id, label: refGeofence.name }
+    : null;
 
   const initial: ChargeProcessFormValues = {
     car_id: String(proc.car_id),
@@ -170,10 +158,16 @@ export default async function ChargeEditPage({
     outside_temp_avg: decimalString(proc.outside_temp_avg),
   };
 
+  const initialOptions: ChargeProcessFormInitialOptions = {
+    car: { id: selectedCar.id, label: selectedCar.label },
+    position: positionOption,
+    address: addressOption,
+    geofence: geofenceOption,
+  };
+
   // Pagination cursor : trim à pageSize, calcule hasMore et hasPrev.
   const hasMore = ticksRaw.length > tickPageSize;
   const trimmed = hasMore ? ticksRaw.slice(0, tickPageSize) : ticksRaw;
-  // Si on a paginé en arrière, l'ordre est asc — on ré-inverse pour afficher desc.
   const ordered = direction === "prev" ? [...trimmed].reverse() : trimmed;
 
   const ticks: TickRow[] = ordered.map((t) => ({
@@ -214,10 +208,7 @@ export default async function ChargeEditPage({
         <ChargeTabs
           id={proc.id}
           initial={initial}
-          cars={carOptions}
-          positions={positionOptions}
-          addresses={addressOptions}
-          geofences={geofenceOptions}
+          initialOptions={initialOptions}
           ticksCount={ticksTotal}
           readOnly={env.READ_ONLY}
           saveAction={boundUpdate}

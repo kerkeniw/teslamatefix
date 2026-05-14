@@ -1,18 +1,14 @@
 "use client";
 
-import { useState } from "react";
 import { useTranslations } from "next-intl";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { FormField } from "@/components/form/form-field";
 import { NumberInput } from "@/components/form/number-input";
 import { DateTimeInput } from "@/components/form/datetime-input";
+import { FKCombobox, type FKOption } from "@/components/form/fk-combobox";
+import { searchAddressesAction } from "@/app/actions/search-addresses";
+import { searchGeofencesAction } from "@/app/actions/search-geofences";
+import { searchPositionsAction } from "@/app/actions/search-positions";
 
 export type ChargeProcessFormValues = {
   car_id: string;
@@ -34,84 +30,53 @@ export type ChargeProcessFormValues = {
   outside_temp_avg: string;
 };
 
-export type CarOption = { id: number; label: string };
-export type PositionOption = { id: number; label: string };
-export type AddressOption = { id: number; label: string };
-export type GeofenceOption = { id: number; label: string };
+export type ChargeProcessFormInitialOptions = {
+  car: FKOption;
+  position: FKOption | null;
+  address: FKOption | null;
+  geofence: FKOption | null;
+};
 
 export function ChargeProcessForm({
   initial,
-  cars,
-  positions,
-  addresses,
-  geofences,
+  initialOptions,
   fieldErrors = {},
   readOnly = false,
-  mode,
 }: {
   initial: ChargeProcessFormValues;
-  cars: CarOption[];
-  positions: PositionOption[];
-  addresses: AddressOption[];
-  geofences: GeofenceOption[];
+  initialOptions: ChargeProcessFormInitialOptions;
   fieldErrors?: Record<string, string | undefined>;
   readOnly?: boolean;
   mode: "create" | "edit";
 }) {
   const t = useTranslations("charges");
-  const [carId, setCarId] = useState(initial.car_id);
-  const [positionId, setPositionId] = useState(initial.position_id);
-  const [addressId, setAddressId] = useState(initial.address_id);
-  const [geofenceId, setGeofenceId] = useState(initial.geofence_id);
   const fe = fieldErrors;
 
   return (
     <div className="space-y-8">
+      {/* car_id imposé par le sélecteur véhicule du header. */}
+      <input type="hidden" name="car_id" value={initial.car_id} />
+
       <section className="space-y-4">
         <h2 className="text-base font-semibold">{t("sections.time")}</h2>
+        <p className="text-xs text-muted-foreground">
+          {t("fields.carId")} : <span className="font-medium text-foreground">{initialOptions.car.label}</span>
+        </p>
         <div className="grid gap-4 sm:grid-cols-2">
-          <FormField id="car_id" label={t("fields.carId")} required error={fe.car_id}>
-            <input type="hidden" name="car_id" value={carId} />
-            <Select
-              value={carId}
-              onValueChange={(v) => setCarId(typeof v === "string" ? v : "")}
-              disabled={readOnly || mode === "edit"}
-            >
-              <SelectTrigger id="car_id" className="w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {cars.map((c) => (
-                  <SelectItem key={c.id} value={String(c.id)}>
-                    {c.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </FormField>
           <FormField
             id="position_id"
             label={t("fields.positionId")}
             required
             error={fe.position_id}
           >
-            <input type="hidden" name="position_id" value={positionId} />
-            <Select
-              value={positionId}
-              onValueChange={(v) => setPositionId(typeof v === "string" ? v : "")}
+            <FKCombobox
+              id="position_id"
+              name="position_id"
+              initial={initialOptions.position}
+              searchAction={searchPositionsAction}
               disabled={readOnly}
-            >
-              <SelectTrigger id="position_id" className="w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {positions.map((p) => (
-                  <SelectItem key={p.id} value={String(p.id)}>
-                    {p.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              required
+            />
           </FormField>
           <FormField
             id="start_date"
@@ -298,44 +263,24 @@ export function ChargeProcessForm({
         <h2 className="text-base font-semibold">{t("sections.location")}</h2>
         <div className="grid gap-4 sm:grid-cols-2">
           <FormField id="address_id" label={t("fields.addressId")} error={fe.address_id}>
-            <input type="hidden" name="address_id" value={addressId} />
-            <Select
-              value={addressId}
-              onValueChange={(v) => setAddressId(typeof v === "string" ? v : "")}
+            <FKCombobox
+              id="address_id"
+              name="address_id"
+              initial={initialOptions.address}
+              searchAction={searchAddressesAction}
               disabled={readOnly}
-            >
-              <SelectTrigger id="address_id" className="w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="">—</SelectItem>
-                {addresses.map((a) => (
-                  <SelectItem key={a.id} value={String(a.id)}>
-                    {a.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              allowClear
+            />
           </FormField>
           <FormField id="geofence_id" label={t("fields.geofenceId")} error={fe.geofence_id}>
-            <input type="hidden" name="geofence_id" value={geofenceId} />
-            <Select
-              value={geofenceId}
-              onValueChange={(v) => setGeofenceId(typeof v === "string" ? v : "")}
+            <FKCombobox
+              id="geofence_id"
+              name="geofence_id"
+              initial={initialOptions.geofence}
+              searchAction={searchGeofencesAction}
               disabled={readOnly}
-            >
-              <SelectTrigger id="geofence_id" className="w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="">—</SelectItem>
-                {geofences.map((g) => (
-                  <SelectItem key={g.id} value={String(g.id)}>
-                    {g.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              allowClear
+            />
           </FormField>
         </div>
       </section>
