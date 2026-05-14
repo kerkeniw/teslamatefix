@@ -70,11 +70,6 @@ export function useStateColumns(): ColumnDef<StateRow>[] {
       cell: ({ row }) => <StateBadge state={row.original.state} />,
     },
     {
-      accessorKey: "car_id",
-      header: t("fields.carId"),
-      cell: ({ row }) => row.original.car_label,
-    },
-    {
       accessorKey: "start_date",
       header: t("fields.startDate"),
       cell: ({ row }) => format.dateTime(new Date(row.original.start_date), "short"),

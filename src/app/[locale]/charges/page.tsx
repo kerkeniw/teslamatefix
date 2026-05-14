@@ -2,6 +2,7 @@ import { Prisma } from "@prisma/client";
 import { setRequestLocale, getTranslations } from "next-intl/server";
 import { requireSession } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import { getSelectedCarOrDefault } from "@/lib/vehicle";
 import { AppHeader } from "@/components/app-shell/header";
 import { MainNav } from "@/components/app-shell/main-nav";
 import { LocaleSwitcher } from "@/components/app-shell/locale-switcher";
@@ -11,7 +12,6 @@ import type { ChargeRow } from "@/components/entities/charges/ChargeDataTableCol
 type SP = {
   page?: string;
   pageSize?: string;
-  car_id?: string;
   from?: string;
   to?: string;
 };
@@ -23,9 +23,6 @@ function parsePage(v?: string) {
 function parsePageSize(v?: string) {
   const n = v ? parseInt(v, 10) : 25;
   return [25, 50, 100].includes(n) ? n : 25;
-}
-function carLabel(c: { id: number; name: string | null; vin: string | null; model: string | null }): string {
-  return c.name ?? c.vin ?? c.model ?? `#${c.id}`;
 }
 
 export default async function ChargesPage({
@@ -43,19 +40,20 @@ export default async function ChargesPage({
 
   const page = parsePage(sp.page);
   const pageSize = parsePageSize(sp.pageSize);
-  const carId = sp.car_id && /^\d+$/.test(sp.car_id) ? parseInt(sp.car_id, 10) : null;
   const from = sp.from && !Number.isNaN(new Date(sp.from).getTime()) ? new Date(sp.from) : null;
   const to = sp.to && !Number.isNaN(new Date(sp.to).getTime()) ? new Date(sp.to) : null;
 
+  const selectedCar = await getSelectedCarOrDefault();
+
   const where: Prisma.charging_processesWhereInput = {};
-  if (carId != null) where.car_id = carId;
+  if (selectedCar) where.car_id = selectedCar.id;
   if (from || to) {
     where.start_date = {};
     if (from) (where.start_date as Prisma.DateTimeFilter).gte = from;
     if (to) (where.start_date as Prisma.DateTimeFilter).lte = to;
   }
 
-  const [rawRows, total, cars] = await Promise.all([
+  const [rawRows, total] = await Promise.all([
     prisma.charging_processes.findMany({
       where,
       orderBy: { start_date: "desc" },
@@ -74,7 +72,6 @@ export default async function ChargesPage({
       },
     }),
     prisma.charging_processes.count({ where }),
-    prisma.cars.findMany({ select: { id: true, name: true, vin: true, model: true } }),
   ]);
 
   // Pour distinguer AC/DC sans rejoindre des millions de ticks, on regarde le
@@ -92,21 +89,18 @@ export default async function ChargesPage({
     lastTicks.map((t) => [t.charging_process_id, t.fast_charger_present]),
   );
 
-  const carMap = new Map(cars.map((c) => [c.id, carLabel(c)]));
   const rows: ChargeRow[] = rawRows.map((r) => ({
     id: r.id,
     start_date: r.start_date.toISOString(),
     end_date: r.end_date ? r.end_date.toISOString() : null,
     car_id: r.car_id,
-    car_label: carMap.get(r.car_id) ?? `#${r.car_id}`,
+    car_label: selectedCar?.label ?? `#${r.car_id}`,
     place: r.geofences?.name ?? r.addresses?.display_name ?? r.addresses?.city ?? null,
     charge_energy_added: r.charge_energy_added != null ? Number(r.charge_energy_added) : null,
     duration_min: r.duration_min ?? null,
     cost: r.cost != null ? Number(r.cost) : null,
     fast_charger: fastByProcess.get(r.id) ?? null,
   }));
-
-  const carOptions = cars.map((c) => ({ id: c.id, label: carLabel(c) }));
 
   return (
     <>
@@ -122,9 +116,7 @@ export default async function ChargesPage({
           total={total}
           page={page}
           pageSize={pageSize}
-          cars={carOptions}
           filters={{
-            car_id: carId != null ? String(carId) : "",
             from: sp.from ?? "",
             to: sp.to ?? "",
           }}

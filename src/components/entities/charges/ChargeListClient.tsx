@@ -8,13 +8,6 @@ import { Button } from "@/components/ui/button";
 import { ButtonLink } from "@/components/ui/button-link";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { FormField } from "@/components/form/form-field";
 import { DateTimeInput } from "@/components/form/datetime-input";
 import { DataTable } from "@/components/data-table/data-table";
@@ -30,15 +23,13 @@ export function ChargeListClient({
   total,
   page,
   pageSize,
-  cars,
   filters,
 }: {
   data: ChargeRow[];
   total: number;
   page: number;
   pageSize: number;
-  cars: { id: number; label: string }[];
-  filters: { car_id: string; from: string; to: string };
+  filters: { from: string; to: string };
 }) {
   const t = useTranslations("charges");
   const tCommon = useTranslations("common");
@@ -47,14 +38,11 @@ export function ChargeListClient({
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  const [carId, setCarId] = useState(filters.car_id);
   const [from, setFrom] = useState(filters.from);
   const [to, setTo] = useState(filters.to);
 
   function applyFilters() {
     const params = new URLSearchParams(searchParams.toString());
-    if (carId) params.set("car_id", carId);
-    else params.delete("car_id");
     if (from) params.set("from", from);
     else params.delete("from");
     if (to) params.set("to", to);
@@ -64,7 +52,6 @@ export function ChargeListClient({
   }
 
   function resetFilters() {
-    setCarId("");
     setFrom("");
     setTo("");
     router.push("?");
@@ -73,22 +60,7 @@ export function ChargeListClient({
   return (
     <div className="space-y-4">
       <div className="rounded-md border bg-card p-4">
-        <div className="grid gap-3 sm:grid-cols-3">
-          <FormField id="filter_car_id" label={t("filters.carId")}>
-            <Select value={carId} onValueChange={(v) => setCarId(typeof v === "string" ? v : "")}>
-              <SelectTrigger id="filter_car_id" className="w-full">
-                <SelectValue placeholder={t("filters.all")} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="">{t("filters.all")}</SelectItem>
-                {cars.map((c) => (
-                  <SelectItem key={c.id} value={String(c.id)}>
-                    {c.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </FormField>
+        <div className="grid gap-3 sm:grid-cols-2">
           <FormField id="filter_from" label={t("filters.from")}>
             <DateTimeInput
               id="filter_from"
@@ -140,10 +112,6 @@ export function ChargeListClient({
                 ) : row.fast_charger === false ? (
                   <Badge variant="outline">{t("type.ac")}</Badge>
                 ) : null}
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">{t("fields.carId")}</span>
-                <span>{row.car_label}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">{t("fields.startDate")}</span>

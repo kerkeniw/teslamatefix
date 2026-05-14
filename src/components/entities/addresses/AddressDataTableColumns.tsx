@@ -3,8 +3,7 @@
 import type { ColumnDef } from "@tanstack/react-table";
 import { useTranslations } from "next-intl";
 import { Pencil } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Link } from "@/i18n/navigation";
+import { ButtonLink } from "@/components/ui/button-link";
 
 export type AddressRow = {
   id: number;
@@ -64,18 +63,14 @@ export function useAddressColumns(): ColumnDef<AddressRow>[] {
       header: () => <span className="sr-only">{tCommon("actions")}</span>,
       cell: ({ row }) => (
         <div className="flex justify-end">
-          <Button
+          <ButtonLink
             variant="ghost"
             size="icon-sm"
-            render={
-              <Link
-                href={`/addresses/${row.original.id}`}
-                aria-label={tCommon("edit")}
-              />
-            }
+            href={`/addresses/${row.original.id}`}
+            aria-label={tCommon("edit")}
           >
             <Pencil className="size-3.5" aria-hidden />
-          </Button>
+          </ButtonLink>
         </div>
       ),
     },

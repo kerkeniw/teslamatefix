@@ -4,8 +4,7 @@ import type { ColumnDef } from "@tanstack/react-table";
 import { useTranslations } from "next-intl";
 import { Pencil } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Link } from "@/i18n/navigation";
+import { ButtonLink } from "@/components/ui/button-link";
 
 export type GeofenceRow = {
   id: number;
@@ -72,18 +71,14 @@ export function useGeofenceColumns(): ColumnDef<GeofenceRow>[] {
       header: () => <span className="sr-only">{tCommon("actions")}</span>,
       cell: ({ row }) => (
         <div className="flex justify-end">
-          <Button
+          <ButtonLink
             variant="ghost"
             size="icon-sm"
-            render={
-              <Link
-                href={`/geofences/${row.original.id}`}
-                aria-label={tCommon("edit")}
-              />
-            }
+            href={`/geofences/${row.original.id}`}
+            aria-label={tCommon("edit")}
           >
             <Pencil className="size-3.5" aria-hidden />
-          </Button>
+          </ButtonLink>
         </div>
       ),
     },

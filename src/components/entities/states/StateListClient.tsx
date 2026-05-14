@@ -74,10 +74,6 @@ export function StateListClient({
                   ) : null}
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">{t("fields.carId")}</span>
-                  <span>{row.car_label}</span>
-                </div>
-                <div className="flex justify-between">
                   <span className="text-muted-foreground">{t("fields.startDate")}</span>
                   <span>{format.dateTime(new Date(row.start_date), "short")}</span>
                 </div>

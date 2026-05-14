@@ -1,6 +1,7 @@
 import { setRequestLocale, getTranslations } from "next-intl/server";
 import { requireSession } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import { getSelectedCarOrDefault } from "@/lib/vehicle";
 import { AppHeader } from "@/components/app-shell/header";
 import { MainNav } from "@/components/app-shell/main-nav";
 import { LocaleSwitcher } from "@/components/app-shell/locale-switcher";
@@ -18,10 +19,6 @@ function parsePageSize(v?: string) {
   return [25, 50, 100].includes(n) ? n : 25;
 }
 
-function carLabel(c: { id: number; name: string | null; vin: string | null; model: string | null }): string {
-  return c.name ?? c.vin ?? c.model ?? `#${c.id}`;
-}
-
 export default async function StatesPage({
   params,
   searchParams,
@@ -37,20 +34,18 @@ export default async function StatesPage({
 
   const page = parsePage(sp.page);
   const pageSize = parsePageSize(sp.pageSize);
+  const selectedCar = await getSelectedCarOrDefault();
+  const where = selectedCar ? { car_id: selectedCar.id } : {};
 
-  const [rawRows, total, cars] = await Promise.all([
+  const [rawRows, total] = await Promise.all([
     prisma.states.findMany({
+      where,
       orderBy: { start_date: "desc" },
       skip: (page - 1) * pageSize,
       take: pageSize,
     }),
-    prisma.states.count(),
-    prisma.cars.findMany({
-      select: { id: true, name: true, vin: true, model: true },
-    }),
+    prisma.states.count({ where }),
   ]);
-
-  const carMap = new Map(cars.map((c) => [c.id, carLabel(c)]));
 
   const rows: StateRow[] = rawRows.map((r) => ({
     id: r.id,
@@ -58,7 +53,7 @@ export default async function StatesPage({
     start_date: r.start_date.toISOString(),
     end_date: r.end_date ? r.end_date.toISOString() : null,
     car_id: r.car_id,
-    car_label: carMap.get(r.car_id) ?? `#${r.car_id}`,
+    car_label: selectedCar?.label ?? `#${r.car_id}`,
   }));
 
   return (

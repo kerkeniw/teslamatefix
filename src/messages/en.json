@@ -34,6 +34,10 @@
     "previous": "Previous",
     "next": "Next"
   },
+  "vehiclePicker": {
+    "label": "Vehicle",
+    "placeholder": "Pick a vehicle"
+  },
   "auth": {
     "loginTitle": "Sign in",
     "loginSubtitle": "Sign in to access the console.",

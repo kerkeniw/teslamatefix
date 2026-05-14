@@ -4,9 +4,8 @@ import type { ColumnDef } from "@tanstack/react-table";
 import { useTranslations, useFormatter } from "next-intl";
 import { Pencil } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { ButtonLink } from "@/components/ui/button-link";
 import { FirmwareLink } from "@/components/tesla/firmware-link";
-import { Link } from "@/i18n/navigation";
 
 export type UpdateRow = {
   id: number;
@@ -47,11 +46,6 @@ export function useUpdateColumns(): ColumnDef<UpdateRow>[] {
       cell: ({ row }) => <span className="font-mono text-xs">{row.original.id}</span>,
     },
     {
-      accessorKey: "car_id",
-      header: t("fields.carId"),
-      cell: ({ row }) => row.original.car_label,
-    },
-    {
       accessorKey: "start_date",
       header: t("fields.startDate"),
       cell: ({ row }) => format.dateTime(new Date(row.original.start_date), "short"),
@@ -85,18 +79,14 @@ export function useUpdateColumns(): ColumnDef<UpdateRow>[] {
       header: () => <span className="sr-only">{tCommon("actions")}</span>,
       cell: ({ row }) => (
         <div className="flex justify-end">
-          <Button
+          <ButtonLink
             variant="ghost"
             size="icon-sm"
-            render={
-              <Link
-                href={`/updates/${row.original.id}`}
-                aria-label={tCommon("edit")}
-              />
-            }
+            href={`/updates/${row.original.id}`}
+            aria-label={tCommon("edit")}
           >
             <Pencil className="size-3.5" aria-hidden />
-          </Button>
+          </ButtonLink>
         </div>
       ),
     },

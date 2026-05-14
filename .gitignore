@@ -16,6 +16,9 @@
 /playwright-report/
 /playwright/.cache/
 
+# Playwright MCP debug artifacts (snapshots, console logs)
+.playwright-mcp/
+
 # next.js
 /.next/
 /out/

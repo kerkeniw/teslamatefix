@@ -1,4 +1,5 @@
 import { prisma } from "./db";
+import { getSelectedCarId } from "./vehicle";
 
 export type DashboardData = {
   car: {
@@ -48,16 +49,30 @@ export async function getDashboardData(): Promise<DashboardData> {
   const now = new Date();
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
 
-  const car = await prisma.cars.findFirst({
-    orderBy: { display_priority: "asc" },
-    select: {
-      id: true,
-      name: true,
-      vin: true,
-      model: true,
-      marketing_name: true,
-    },
-  });
+  // Le dashboard suit le véhicule sélectionné dans le cookie ; fallback sur le
+  // premier (display_priority asc) si rien de cohérent en cookie.
+  const selectedId = await getSelectedCarId();
+  const car = selectedId
+    ? await prisma.cars.findUnique({
+        where: { id: selectedId },
+        select: {
+          id: true,
+          name: true,
+          vin: true,
+          model: true,
+          marketing_name: true,
+        },
+      })
+    : await prisma.cars.findFirst({
+        orderBy: { display_priority: "asc" },
+        select: {
+          id: true,
+          name: true,
+          vin: true,
+          model: true,
+          marketing_name: true,
+        },
+      });
 
   const [
     currentState,

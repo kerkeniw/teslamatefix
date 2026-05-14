@@ -48,11 +48,6 @@ export function useChargeColumns(): ColumnDef<ChargeRow>[] {
       cell: ({ row }) => format.dateTime(new Date(row.original.start_date), "short"),
     },
     {
-      accessorKey: "car_id",
-      header: t("fields.carId"),
-      cell: ({ row }) => row.original.car_label,
-    },
-    {
       accessorKey: "place",
       header: t("fields.place"),
       cell: ({ row }) => row.original.place ?? "—",

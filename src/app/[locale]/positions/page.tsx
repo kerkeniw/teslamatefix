@@ -2,6 +2,7 @@ import { Prisma } from "@prisma/client";
 import { setRequestLocale, getTranslations } from "next-intl/server";
 import { requireSession } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import { getSelectedCarOrDefault } from "@/lib/vehicle";
 import { AppHeader } from "@/components/app-shell/header";
 import { MainNav } from "@/components/app-shell/main-nav";
 import { LocaleSwitcher } from "@/components/app-shell/locale-switcher";
@@ -10,7 +11,6 @@ import { PositionListClient, type PositionRow } from "@/components/entities/posi
 import { bulkDeletePositionsAction } from "./actions";
 
 type SP = {
-  car_id?: string;
   drive_id?: string;
   from?: string;
   to?: string;
@@ -26,10 +26,6 @@ function parsePageSize(v?: string) {
   return [25, 50, 100].includes(n) ? n : 50;
 }
 
-function carLabel(c: { id: number; name: string | null; vin: string | null; model: string | null }): string {
-  return c.name ?? c.vin ?? c.model ?? `#${c.id}`;
-}
-
 export default async function PositionsPage({
   params,
   searchParams,
@@ -43,13 +39,7 @@ export default async function PositionsPage({
   const sp = await searchParams;
   const t = await getTranslations("positions");
 
-  const cars = await prisma.cars.findMany({
-    select: { id: true, name: true, vin: true, model: true },
-    orderBy: { id: "asc" },
-  });
-  const carOptions = cars.map((c) => ({ id: c.id, label: carLabel(c) }));
-
-  const carId = sp.car_id && /^\d+$/.test(sp.car_id) ? parseInt(sp.car_id, 10) : null;
+  const selectedCar = await getSelectedCarOrDefault();
   const driveId = sp.drive_id && /^\d+$/.test(sp.drive_id) ? parseInt(sp.drive_id, 10) : null;
   const from = sp.from && !Number.isNaN(new Date(sp.from).getTime()) ? new Date(sp.from) : null;
   const to = sp.to && !Number.isNaN(new Date(sp.to).getTime()) ? new Date(sp.to) : null;
@@ -59,11 +49,11 @@ export default async function PositionsPage({
 
   // Garde-fou : on REFUSE de scanner positions sans filtre étroit. Soit on a
   // un drive_id (l'index drive_id+date filtre déjà à quelques milliers), soit
-  // on a (car_id + plage de dates ≤ 31 jours).
+  // on a (véhicule sélectionné + plage de dates ≤ 31 jours).
   let filtersValid = false;
   if (driveId != null) {
     filtersValid = true;
-  } else if (carId != null && from && to) {
+  } else if (selectedCar && from && to) {
     const rangeMs = to.getTime() - from.getTime();
     if (rangeMs >= 0 && rangeMs <= MAX_RANGE_DAYS * 86400_000) filtersValid = true;
   }
@@ -79,7 +69,7 @@ export default async function PositionsPage({
     if (driveId != null) {
       where.drive_id = driveId;
     } else {
-      where.car_id = carId!;
+      where.car_id = selectedCar!.id;
       if (from || to) {
         where.date = {};
         if (from) (where.date as Prisma.DateTimeFilter).gte = from;
@@ -139,9 +129,7 @@ export default async function PositionsPage({
         </header>
         <div className="space-y-4">
           <PositionFilters
-            cars={carOptions}
             filters={{
-              car_id: carId != null ? String(carId) : "",
               from: sp.from ?? "",
               to: sp.to ?? "",
               drive_id: driveId != null ? String(driveId) : "",

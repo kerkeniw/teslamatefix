@@ -47,11 +47,6 @@ export function useDriveColumns(): ColumnDef<DriveRow>[] {
       cell: ({ row }) => format.dateTime(new Date(row.original.start_date), "short"),
     },
     {
-      accessorKey: "car_id",
-      header: t("fields.carId"),
-      cell: ({ row }) => row.original.car_label,
-    },
-    {
       id: "route",
       header: () => `${t("fields.origin")} → ${t("fields.destination")}`,
       cell: ({ row }) => (

@@ -5,36 +5,29 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { FormField } from "@/components/form/form-field";
 import { DateTimeInput } from "@/components/form/datetime-input";
 
+/**
+ * Filtres pour la vue Positions. Le `car_id` n'est plus ici : il est imposé
+ * par le sélecteur de véhicule du header. Restent : plage de date (≤ 31j en
+ * combinaison) ou drive_id pour cibler les positions d'un trajet précis.
+ */
 export function PositionFilters({
-  cars,
   filters,
 }: {
-  cars: { id: number; label: string }[];
-  filters: { car_id: string; from: string; to: string; drive_id: string };
+  filters: { from: string; to: string; drive_id: string };
 }) {
   const t = useTranslations("positions");
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  const [carId, setCarId] = useState(filters.car_id);
   const [from, setFrom] = useState(filters.from);
   const [to, setTo] = useState(filters.to);
   const [driveId, setDriveId] = useState(filters.drive_id);
 
   function applyFilters() {
     const params = new URLSearchParams(searchParams.toString());
-    if (carId) params.set("car_id", carId);
-    else params.delete("car_id");
     if (from) params.set("from", from);
     else params.delete("from");
     if (to) params.set("to", to);
@@ -47,7 +40,6 @@ export function PositionFilters({
   }
 
   function resetFilters() {
-    setCarId("");
     setFrom("");
     setTo("");
     setDriveId("");
@@ -56,22 +48,7 @@ export function PositionFilters({
 
   return (
     <div className="rounded-md border bg-card p-4">
-      <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-4">
-        <FormField id="filter_car_id" label={t("filters.carId")}>
-          <Select value={carId} onValueChange={(v) => setCarId(typeof v === "string" ? v : "")}>
-            <SelectTrigger id="filter_car_id" className="w-full">
-              <SelectValue placeholder={t("filters.all")} />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="">{t("filters.all")}</SelectItem>
-              {cars.map((c) => (
-                <SelectItem key={c.id} value={String(c.id)}>
-                  {c.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </FormField>
+      <div className="grid gap-3 sm:grid-cols-3">
         <FormField id="filter_from" label={t("filters.from")}>
           <DateTimeInput
             id="filter_from"
