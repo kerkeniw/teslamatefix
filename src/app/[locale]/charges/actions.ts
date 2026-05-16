@@ -14,6 +14,10 @@ import {
   findOverlappingSession,
   type ProcessRecalc,
 } from "@/lib/integrity/charges";
+import {
+  AC_POWERS_KW,
+  DC_POWERS_KW,
+} from "@/lib/integrity/charger-specs";
 
 export type ChargeActionState = {
   ok: boolean;
@@ -403,4 +407,473 @@ export async function applyRecalcChargeAction(
   );
   revalidatePath(`/charges/${processId}`);
   return { ok: true };
+}
+
+// =====================================================================
+// createChargeWithTicksAction — wizard de création métier
+// =====================================================================
+//
+// Le wizard envoie en plus du form de session classique :
+// - charger_type, charger_power_kw  (saisie utilisateur étape 1)
+// - charger_voltage, charger_phases, charger_actual_current, charger_power,
+//   fast_charger_present (pré-remplis étape 2, éditables)
+// - position_before_id, position_before_initial_<f>, position_before_<f>
+// - position_after_id (optionnel) + initial_<f> + <f>
+//
+// L'action :
+// 1) valide ; 2) check overlap ; 3) pour chaque position soumise, compare
+//    snapshot initial vs valeurs soumises — si différent insère une nouvelle
+//    positions ; 4) crée charging_processes + 2 ticks dans une transaction.
+
+const EDITABLE_POSITION_FIELDS = [
+  "latitude",
+  "longitude",
+  "odometer",
+  "outside_temp",
+  "inside_temp",
+  "battery_level",
+  "usable_battery_level",
+  "ideal_battery_range_km",
+  "rated_battery_range_km",
+] as const;
+type EditablePositionField = (typeof EDITABLE_POSITION_FIELDS)[number];
+
+type PositionEdit = {
+  id: number;
+  values: Record<EditablePositionField, string>;
+  initial: Record<EditablePositionField, string>;
+};
+
+function readPositionEdit(
+  raw: Record<string, string>,
+  prefix: string,
+): PositionEdit | null {
+  const idRaw = raw[`${prefix}_id`];
+  if (!idRaw || !/^\d+$/.test(idRaw)) return null;
+  const values = {} as Record<EditablePositionField, string>;
+  const initial = {} as Record<EditablePositionField, string>;
+  for (const f of EDITABLE_POSITION_FIELDS) {
+    values[f] = raw[`${prefix}_${f}`] ?? "";
+    initial[f] = raw[`${prefix}_initial_${f}`] ?? "";
+  }
+  return { id: Number(idRaw), values, initial };
+}
+
+function positionWasEdited(edit: PositionEdit): boolean {
+  for (const f of EDITABLE_POSITION_FIELDS) {
+    if (edit.values[f].trim() !== edit.initial[f].trim()) return true;
+  }
+  return false;
+}
+
+async function insertModifiedPosition(
+  tx: Prisma.TransactionClient,
+  originalId: number,
+  edit: PositionEdit,
+): Promise<number> {
+  const original = await tx.positions.findUnique({ where: { id: originalId } });
+  if (!original) {
+    throw new Error(`Position d'origine ${originalId} introuvable.`);
+  }
+
+  const decOrNull = (s: string) =>
+    s.trim() === "" ? null : new Prisma.Decimal(s);
+  const intOrNullLocal = (s: string) =>
+    s.trim() === "" ? null : Math.trunc(Number(s));
+  const floatOrNull = (s: string) =>
+    s.trim() === "" ? null : Number(s);
+
+  const latitude = decOrNull(edit.values.latitude);
+  const longitude = decOrNull(edit.values.longitude);
+  if (latitude == null || longitude == null) {
+    throw new Error("Latitude/longitude requises pour la position.");
+  }
+
+  // On clone l'original puis on surcharge avec les valeurs éditées.
+  // `id` est supprimé pour laisser autoincrement. La date d'origine est
+  // conservée car elle représente l'instant GPS, pas l'instant de la session.
+  const { id: _ignored, ...rest } = original;
+  const data: Prisma.positionsUncheckedCreateInput = {
+    ...rest,
+    latitude,
+    longitude,
+    odometer: floatOrNull(edit.values.odometer),
+    outside_temp: decOrNull(edit.values.outside_temp),
+    inside_temp: decOrNull(edit.values.inside_temp),
+    battery_level: intOrNullLocal(edit.values.battery_level),
+    usable_battery_level: intOrNullLocal(edit.values.usable_battery_level),
+    ideal_battery_range_km: decOrNull(edit.values.ideal_battery_range_km),
+    rated_battery_range_km: decOrNull(edit.values.rated_battery_range_km),
+    // Une position créée hors d'un drive n'appartient pas à un drive.
+    drive_id: null,
+  };
+  const created = await tx.positions.create({ data, select: { id: true } });
+  return created.id;
+}
+
+type ResolvedPosition = { id: number; date: Date };
+
+async function resolvePosition(
+  tx: Prisma.TransactionClient,
+  edit: PositionEdit,
+): Promise<ResolvedPosition> {
+  let useId = edit.id;
+  if (positionWasEdited(edit)) {
+    useId = await insertModifiedPosition(tx, edit.id, edit);
+  }
+  const row = await tx.positions.findUnique({
+    where: { id: useId },
+    select: { id: true, date: true },
+  });
+  if (!row) {
+    throw new Error(`Position ${useId} introuvable après résolution.`);
+  }
+  return row;
+}
+
+/**
+ * Valeurs typées d'une position lues depuis le FORM (pas depuis la DB).
+ * Source de vérité pour les ticks et `charging_processes.start_*` /
+ * `end_*` : ce que l'utilisateur a vu et validé à l'écran, avec
+ * éventuels fallbacks d'enrichissement déjà appliqués côté Step2.
+ */
+type PositionFormValues = {
+  battery_level: number | null;
+  usable_battery_level: number | null;
+  outside_temp: Prisma.Decimal | null;
+  inside_temp: Prisma.Decimal | null;
+  ideal_battery_range_km: Prisma.Decimal | null;
+  rated_battery_range_km: Prisma.Decimal | null;
+};
+
+function readPositionForm(
+  raw: Record<string, string>,
+  prefix: string,
+): PositionFormValues {
+  const intF = (s: string) =>
+    s.trim() === "" ? null : Math.trunc(Number(s));
+  const decF = (s: string) =>
+    s.trim() === "" ? null : new Prisma.Decimal(s);
+  return {
+    battery_level: intF(raw[`${prefix}_battery_level`] ?? ""),
+    usable_battery_level: intF(raw[`${prefix}_usable_battery_level`] ?? ""),
+    outside_temp: decF(raw[`${prefix}_outside_temp`] ?? ""),
+    inside_temp: decF(raw[`${prefix}_inside_temp`] ?? ""),
+    ideal_battery_range_km: decF(raw[`${prefix}_ideal_battery_range_km`] ?? ""),
+    rated_battery_range_km: decF(raw[`${prefix}_rated_battery_range_km`] ?? ""),
+  };
+}
+
+function resolveIdealRangeForTick(p: PositionFormValues): Prisma.Decimal {
+  if (p.ideal_battery_range_km != null) return p.ideal_battery_range_km;
+  if (p.rated_battery_range_km != null) return p.rated_battery_range_km;
+  return new Prisma.Decimal(0);
+}
+
+function pickStartSoc(p: PositionFormValues): number | null {
+  return p.usable_battery_level ?? p.battery_level ?? null;
+}
+
+const chargerTypeSchema = z.enum(["AC", "DC"]);
+const chargerPowerKwSchema = z
+  .string()
+  .transform((v) => v.trim())
+  .refine((v) => /^\d+$/.test(v), { message: "invalidNumber" })
+  .transform((v) => Number(v));
+
+const optionalSmallInt = z
+  .string()
+  .transform((v) => v.trim())
+  .transform((v) => (v === "" ? null : v))
+  .nullable()
+  .refine(
+    (v) => {
+      if (v == null) return true;
+      const n = Number(v);
+      return Number.isFinite(n);
+    },
+    { message: "invalidNumber" },
+  );
+
+const positiveIntField = z
+  .string()
+  .transform((v) => v.trim())
+  .refine((v) => /^\d+$/.test(v), { message: "invalidNumber" })
+  .transform((v) => Number(v));
+
+const optionalString = z
+  .string()
+  .transform((v) => v.trim())
+  .transform((v) => (v === "" ? null : v))
+  .nullable();
+
+const boolString = z
+  .string()
+  .transform((v) => v.trim())
+  .transform((v) => v === "true");
+
+const CreateWithTicksSchema = z
+  .object({
+    car_id: carIdSchema,
+    start_date: dateString,
+    end_date: dateString,
+    charge_energy_added: optionalNonNegative,
+    charge_energy_used: optionalNonNegative,
+    cost: optionalNonNegative,
+    charger_type: chargerTypeSchema,
+    charger_power_kw: chargerPowerKwSchema,
+    charger_voltage: optionalSmallInt,
+    charger_phases: optionalSmallInt,
+    charger_actual_current: optionalSmallInt,
+    charger_pilot_current: optionalSmallInt,
+    charger_power: positiveIntField,
+    fast_charger_present: z.enum(["true", "false"]).transform((v) => v === "true"),
+    conn_charge_cable: optionalString,
+    fast_charger_brand: optionalString,
+    fast_charger_type: optionalString,
+    battery_heater_on: boolString,
+    battery_heater: boolString,
+    address_id: optionalIntId,
+    geofence_id: optionalIntId,
+    position_before_id: positionIdSchema,
+    // position_after_id est lu hors Zod (présent si non vide).
+  })
+  .refine(
+    (d) => new Date(d.end_date).getTime() >= new Date(d.start_date).getTime(),
+    { path: ["end_date"], message: "endBeforeStart" },
+  )
+  .refine(
+    (d) => {
+      if (d.charger_type === "AC") {
+        return AC_POWERS_KW.includes(
+          d.charger_power_kw as (typeof AC_POWERS_KW)[number],
+        );
+      }
+      return DC_POWERS_KW.includes(
+        d.charger_power_kw as (typeof DC_POWERS_KW)[number],
+      );
+    },
+    { path: ["charger_power_kw"], message: "invalidChargerPower" },
+  );
+
+/**
+ * Normalise une chaîne décimale envoyée par le navigateur : supprime espaces,
+ * accepte virgule OU point comme séparateur décimal. Aucun arrondi, aucun
+ * troncage — uniquement remplacement de séparateur. Évite les surprises
+ * locales fr-FR sur `<input type="number" step="0.01">`.
+ */
+function normalizeDecimalString(v: string | undefined): string {
+  if (v == null) return "";
+  return v.replace(/\s+/g, "").replace(",", ".");
+}
+
+export async function createChargeWithTicksAction(
+  _prev: ChargeActionState | null,
+  formData: FormData,
+): Promise<ChargeActionState> {
+  const session = await requireSession();
+  if (env.READ_ONLY) return readOnly();
+
+  const raw = Object.fromEntries(formData.entries()) as Record<string, string>;
+
+  // Itération 4 — trace les valeurs brutes reçues avant validation. Permet
+  // de diagnostiquer toute divergence saisie utilisateur ↔ valeur stockée.
+  const costRaw = raw.cost ?? "";
+  const energyAddedRaw = raw.charge_energy_added ?? "";
+  const energyUsedRaw = raw.charge_energy_used ?? "";
+  raw.cost = normalizeDecimalString(costRaw);
+  raw.charge_energy_added = normalizeDecimalString(energyAddedRaw);
+  raw.charge_energy_used = normalizeDecimalString(energyUsedRaw);
+
+  logger.info(
+    {
+      event: "charges.createWithTicks.received",
+      cost_raw: costRaw,
+      cost_normalized: raw.cost,
+      energy_added_raw: energyAddedRaw,
+      energy_added_normalized: raw.charge_energy_added,
+      energy_used_raw: energyUsedRaw,
+      energy_used_normalized: raw.charge_energy_used,
+    },
+    "charges.createWithTicks.received",
+  );
+
+  const parsed = CreateWithTicksSchema.safeParse(raw);
+  if (!parsed.success) {
+    return {
+      ok: false,
+      error: "Données invalides.",
+      fieldErrors: feFromZod(parsed.error),
+    };
+  }
+  const d = parsed.data;
+
+  const carId = parseInt(d.car_id, 10);
+  const startDate = new Date(d.start_date);
+  const endDate = new Date(d.end_date);
+
+  if (isStartInFuture(startDate)) {
+    return {
+      ok: false,
+      error: "Données invalides.",
+      fieldErrors: { start_date: "startDateInFuture" },
+    };
+  }
+
+  const overlap = await findOverlappingSession(carId, startDate, endDate, null);
+  if (overlap) {
+    return {
+      ok: false,
+      error: "Données invalides.",
+      fieldErrors: { start_date: "overlapsSession", end_date: "overlapsSession" },
+    };
+  }
+
+  const editBefore = readPositionEdit(raw, "position_before");
+  if (!editBefore) {
+    return {
+      ok: false,
+      error: "Données invalides.",
+      fieldErrors: { position_before_id: "positionRequired" },
+    };
+  }
+  const editAfter = readPositionEdit(raw, "position_after");
+
+  const energyAdded = d.charge_energy_added == null ? 0 : Number(d.charge_energy_added);
+
+  // Source de vérité pour les valeurs batterie/temp/range : le FORM (ce que
+  // l'utilisateur a vu et validé après enrichissement Step2 + modifs).
+  const beforeFormValues = readPositionForm(raw, "position_before");
+  const afterFormValues = editAfter
+    ? readPositionForm(raw, "position_after")
+    : beforeFormValues;
+
+  let createdProcessId: number;
+  try {
+    createdProcessId = await prisma.$transaction(async (tx) => {
+      const startPos = await resolvePosition(tx, editBefore);
+      const endPos = editAfter ? await resolvePosition(tx, editAfter) : startPos;
+
+      const durationMin = Math.round((endDate.getTime() - startDate.getTime()) / 60000);
+
+      const outsideTempAvg = (() => {
+        const a =
+          beforeFormValues.outside_temp == null
+            ? null
+            : Number(beforeFormValues.outside_temp);
+        const b =
+          afterFormValues.outside_temp == null
+            ? null
+            : Number(afterFormValues.outside_temp);
+        if (a == null && b == null) return null;
+        if (a == null) return new Prisma.Decimal(b!);
+        if (b == null) return new Prisma.Decimal(a);
+        return new Prisma.Decimal((a + b) / 2);
+      })();
+
+      const startSoc = pickStartSoc(beforeFormValues);
+      const endSoc = pickStartSoc(afterFormValues);
+
+      const proc = await tx.charging_processes.create({
+        data: {
+          car_id: carId,
+          position_id: startPos.id,
+          start_date: startDate,
+          end_date: endDate,
+          duration_min: durationMin,
+          charge_energy_added: decimal(d.charge_energy_added),
+          charge_energy_used: decimal(d.charge_energy_used),
+          cost: decimal(d.cost),
+          start_battery_level: startSoc,
+          end_battery_level: endSoc,
+          start_ideal_range_km: beforeFormValues.ideal_battery_range_km,
+          end_ideal_range_km: afterFormValues.ideal_battery_range_km,
+          start_rated_range_km: beforeFormValues.rated_battery_range_km,
+          end_rated_range_km: afterFormValues.rated_battery_range_km,
+          address_id: intOrNull(d.address_id),
+          geofence_id: intOrNull(d.geofence_id),
+          outside_temp_avg: outsideTempAvg,
+        },
+        select: { id: true },
+      });
+
+      // Configuration borne stable sur la session ; éditée par l'utilisateur
+      // au Step2 (V/phases/A/pilot/power/fast + détails câble/marque/type
+      // + chauffage batterie). On l'applique aux 2 ticks.
+      const chargerCommon = {
+        charger_voltage: intOrNull(d.charger_voltage),
+        charger_phases: intOrNull(d.charger_phases),
+        charger_actual_current: intOrNull(d.charger_actual_current),
+        charger_pilot_current: intOrNull(d.charger_pilot_current),
+        charger_power: d.charger_power,
+        fast_charger_present: d.fast_charger_present,
+        conn_charge_cable: d.conn_charge_cable,
+        fast_charger_brand: d.fast_charger_brand,
+        fast_charger_type: d.fast_charger_type,
+        battery_heater_on: d.battery_heater_on,
+        battery_heater: d.battery_heater,
+      };
+
+      await tx.charges.createMany({
+        data: [
+          {
+            charging_process_id: proc.id,
+            date: startDate,
+            battery_level: beforeFormValues.battery_level,
+            usable_battery_level: beforeFormValues.usable_battery_level,
+            ideal_battery_range_km: resolveIdealRangeForTick(beforeFormValues),
+            rated_battery_range_km: beforeFormValues.rated_battery_range_km,
+            outside_temp: beforeFormValues.outside_temp,
+            charge_energy_added: new Prisma.Decimal(0),
+            ...chargerCommon,
+          },
+          {
+            charging_process_id: proc.id,
+            date: endDate,
+            battery_level: afterFormValues.battery_level,
+            usable_battery_level: afterFormValues.usable_battery_level,
+            ideal_battery_range_km: resolveIdealRangeForTick(afterFormValues),
+            rated_battery_range_km: afterFormValues.rated_battery_range_km,
+            outside_temp: afterFormValues.outside_temp,
+            charge_energy_added: new Prisma.Decimal(energyAdded),
+            ...chargerCommon,
+          },
+        ],
+      });
+
+      // endPos est résolu (utilisé pour potentielle insertion de nouvelle
+      // position) mais ses valeurs ne sont pas relues : tout vient du form.
+      void endPos;
+
+      return proc.id;
+    });
+  } catch (e) {
+    if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2003") {
+      return {
+        ok: false,
+        error: "Référence introuvable (véhicule, position, adresse ou géofence).",
+      };
+    }
+    logger.error(
+      { event: "charges.createWithTicks.error", err: String(e) },
+      "charges.createWithTicks failed",
+    );
+    return { ok: false, error: "Une erreur est survenue." };
+  }
+
+  logger.info(
+    {
+      event: "charges.createWithTicks",
+      user: session.userId,
+      id: createdProcessId,
+      car_id: carId,
+      cost: d.cost,
+      charge_energy_added: d.charge_energy_added,
+      charge_energy_used: d.charge_energy_used,
+    },
+    "charges.createWithTicks",
+  );
+
+  revalidatePath("/charges");
+  redirect(`/charges/${createdProcessId}`);
 }
