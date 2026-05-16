@@ -499,7 +499,9 @@
       "battery": "Battery",
       "location": "Location",
       "cost": "Cost",
-      "weather": "Weather"
+      "weather": "Weather",
+      "charger": "Charging station",
+      "chargerDetails": "Charger details"
     },
     "fields": {
       "carId": "Vehicle",
@@ -522,7 +524,35 @@
       "outsideTempAvg": "Outside temp avg (°C)",
       "place": "Place",
       "type": "Type",
-      "ticks": "Measurements"
+      "ticks": "Measurements",
+      "efficiencyPct": "Efficiency (%)",
+      "costPerKwh": "Unit cost (€/kWh)",
+      "chargerType": "Charger type",
+      "chargerPowerKw": "Charger power (kW)",
+      "chargerTypePower": "Charger",
+      "chargerVoltage": "Voltage (V)",
+      "chargerPhases": "Phases",
+      "chargerCurrent": "Current (A)",
+      "fastChargerPresent": "Fast charging (DC)",
+      "latitude": "Latitude",
+      "longitude": "Longitude",
+      "odometer": "Odometer (km)",
+      "batteryLevel": "SOC (%)",
+      "usableBatteryLevel": "Usable SOC (%)",
+      "outsideTemp": "Outside temp (°C)",
+      "insideTemp": "Inside temp (°C)",
+      "idealBatteryRangeKm": "Ideal range (km)",
+      "ratedBatteryRangeKm": "Rated range (km)",
+      "chargerPilotCurrent": "Pilot current (A)",
+      "connChargeCable": "Cable type",
+      "fastChargerBrand": "Fast charger brand",
+      "fastChargerType": "Fast charger type",
+      "batteryHeaterOn": "Battery heater active",
+      "batteryHeater": "Battery heater available"
+    },
+    "hints": {
+      "chargeEnergyAdded": "Visible in the Tesla app (rounded to kWh).",
+      "chargeEnergyUsed": "Energy billed by the station. May be missing if the car had no network."
     },
     "filters": {
       "carId": "Vehicle",
@@ -556,7 +586,13 @@
       "endBatteryLowerThanStart": "End battery level must be greater than or equal to start level.",
       "negativeValue": "Negative value not allowed.",
       "startDateInFuture": "Start date cannot be in the future.",
-      "overlapsSession": "Overlaps another charging session of the same vehicle."
+      "overlapsSession": "Overlaps another charging session of the same vehicle.",
+      "invalidDate": "Invalid date.",
+      "invalidNumber": "Invalid numeric value.",
+      "requiredField": "Required field.",
+      "invalidChargerPower": "Power not supported for this charger type.",
+      "invalidContext": "Could not prepare the session context.",
+      "noPositionBefore": "No position recorded before the start date for this vehicle. Import a GPS position before creating this session."
     },
     "ticksTab": {
       "totalCount": "{n} measurement(s)",
@@ -611,6 +647,29 @@
       "save": "Save",
       "delete": "Delete",
       "estimateEndValues": "Estimate end values"
+    },
+    "create": {
+      "title": "Create charging session",
+      "step1": {
+        "title": "Session details"
+      },
+      "step2": {
+        "title": "Verification and enrichment"
+      },
+      "actions": {
+        "validateStep1": "Validate",
+        "confirmCreate": "Create session",
+        "backToStep1": "Back to details"
+      },
+      "positions": {
+        "before": "Position before start",
+        "after": "Position after end",
+        "afterMissing": "No position found after the end date: the start position will be used for the end tick.",
+        "editedHint": "values edited (new position will be created)"
+      },
+      "warnings": {
+        "acLimitedTo11kW": "Tesla cars typically cap AC charging at 11 kW, even on a 22 kW station."
+      }
     },
     "estimateToast": {
       "success": "End values estimated.",

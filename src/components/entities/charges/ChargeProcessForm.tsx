@@ -13,14 +13,7 @@ import { searchAddressesAction } from "@/app/actions/search-addresses";
 import { searchGeofencesAction } from "@/app/actions/search-geofences";
 import { searchPositionsAction } from "@/app/actions/search-positions";
 import { deriveChargeEndsAction } from "@/app/actions/derive-charge-ends";
-
-function computeDurationMin(startDate: string, endDate: string): number | null {
-  if (!startDate || !endDate) return null;
-  const s = new Date(startDate).getTime();
-  const e = new Date(endDate).getTime();
-  if (Number.isNaN(s) || Number.isNaN(e)) return null;
-  return Math.round((e - s) / 60000);
-}
+import { computeDurationMin } from "@/lib/format/duration";
 
 export type ChargeProcessFormValues = {
   car_id: string;

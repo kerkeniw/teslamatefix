@@ -5,10 +5,10 @@ import { getSelectedCarOrDefault } from "@/lib/vehicle";
 import { AppHeader } from "@/components/app-shell/header";
 import { MainNav } from "@/components/app-shell/main-nav";
 import { LocaleSwitcher } from "@/components/app-shell/locale-switcher";
-import { ChargeCreateClient } from "@/components/entities/charges/ChargeCreateClient";
+import { ChargeCreateWizard } from "@/components/entities/charges/ChargeCreateWizard";
 import { ButtonLink } from "@/components/ui/button-link";
 import { ArrowLeft } from "lucide-react";
-import { createChargeAction } from "../actions";
+import { createChargeWithTicksAction } from "../actions";
 
 export default async function NewChargePage({
   params,
@@ -35,13 +35,13 @@ export default async function NewChargePage({
           </ButtonLink>
         </div>
         <header className="mb-6">
-          <h1 className="text-2xl font-semibold tracking-tight">{t("create")}</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">{t("create.title")}</h1>
         </header>
-        <ChargeCreateClient
+        <ChargeCreateWizard
           car={selectedCar ? { id: selectedCar.id, label: selectedCar.label } : null}
           hasCar={selectedCar != null}
           readOnly={env.READ_ONLY}
-          createAction={createChargeAction}
+          createAction={createChargeWithTicksAction}
         />
       </main>
     </>

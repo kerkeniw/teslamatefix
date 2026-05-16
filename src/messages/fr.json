@@ -499,7 +499,9 @@
       "battery": "Batterie",
       "location": "Localisation",
       "cost": "Coût",
-      "weather": "Météo"
+      "weather": "Météo",
+      "charger": "Borne de recharge",
+      "chargerDetails": "Détails borne"
     },
     "fields": {
       "carId": "Véhicule",
@@ -522,7 +524,35 @@
       "outsideTempAvg": "Temp. extérieure moyenne (°C)",
       "place": "Lieu",
       "type": "Type",
-      "ticks": "Mesures"
+      "ticks": "Mesures",
+      "efficiencyPct": "Efficacité (%)",
+      "costPerKwh": "Coût unitaire (€/kWh)",
+      "chargerType": "Type de borne",
+      "chargerPowerKw": "Puissance de la borne (kW)",
+      "chargerTypePower": "Borne",
+      "chargerVoltage": "Tension (V)",
+      "chargerPhases": "Phases",
+      "chargerCurrent": "Courant (A)",
+      "fastChargerPresent": "Recharge rapide (DC)",
+      "latitude": "Latitude",
+      "longitude": "Longitude",
+      "odometer": "Odomètre (km)",
+      "batteryLevel": "SOC (%)",
+      "usableBatteryLevel": "SOC utilisable (%)",
+      "outsideTemp": "Temp. extérieure (°C)",
+      "insideTemp": "Temp. intérieure (°C)",
+      "idealBatteryRangeKm": "Autonomie idéale (km)",
+      "ratedBatteryRangeKm": "Autonomie rated (km)",
+      "chargerPilotCurrent": "Courant pilote (A)",
+      "connChargeCable": "Type de câble",
+      "fastChargerBrand": "Marque borne rapide",
+      "fastChargerType": "Type borne rapide",
+      "batteryHeaterOn": "Chauffage batterie actif",
+      "batteryHeater": "Chauffage batterie disponible"
+    },
+    "hints": {
+      "chargeEnergyAdded": "Visible dans l'application Tesla (arrondi au kWh).",
+      "chargeEnergyUsed": "Énergie facturée par la borne. Peut être absente si la voiture n'avait pas de réseau."
     },
     "filters": {
       "carId": "Véhicule",
@@ -556,7 +586,13 @@
       "endBatteryLowerThanStart": "Le niveau de batterie de fin doit être supérieur ou égal au niveau de départ.",
       "negativeValue": "Valeur négative interdite.",
       "startDateInFuture": "La date de début ne peut pas être dans le futur.",
-      "overlapsSession": "Chevauche une autre session de charge du même véhicule."
+      "overlapsSession": "Chevauche une autre session de charge du même véhicule.",
+      "invalidDate": "Date invalide.",
+      "invalidNumber": "Valeur numérique invalide.",
+      "requiredField": "Champ obligatoire.",
+      "invalidChargerPower": "Puissance non supportée pour ce type de borne.",
+      "invalidContext": "Impossible de préparer le contexte de la session.",
+      "noPositionBefore": "Aucune position trouvée avant la date de début pour ce véhicule. Importer une position GPS avant de créer cette session."
     },
     "ticksTab": {
       "totalCount": "{n} mesure(s)",
@@ -611,6 +647,29 @@
       "save": "Enregistrer",
       "delete": "Supprimer",
       "estimateEndValues": "Estimer les valeurs de fin"
+    },
+    "create": {
+      "title": "Créer une session de charge",
+      "step1": {
+        "title": "Saisie de la session"
+      },
+      "step2": {
+        "title": "Vérification et enrichissement"
+      },
+      "actions": {
+        "validateStep1": "Valider",
+        "confirmCreate": "Créer la session",
+        "backToStep1": "Retour à la saisie"
+      },
+      "positions": {
+        "before": "Position avant le début",
+        "after": "Position après la fin",
+        "afterMissing": "Aucune position après la date de fin : la position de début sera utilisée pour le tick de fin.",
+        "editedHint": "valeurs modifiées (nouvelle position créée)"
+      },
+      "warnings": {
+        "acLimitedTo11kW": "La voiture plafonne généralement à 11 kW en AC, même sur une borne 22 kW."
+      }
     },
     "estimateToast": {
       "success": "Valeurs de fin estimées.",
