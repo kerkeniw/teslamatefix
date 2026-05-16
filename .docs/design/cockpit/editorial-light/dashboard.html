@@ -1,0 +1,344 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Editorial Light — Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Jost:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --paper: #faf8f3;
+        --paper-2: #f3efe5;
+        --ink: #1c1917;
+        --ink-soft: #57534e;
+        --rule: #e7e2d3;
+        --accent: #b45309;
+        --ok: #166534;
+        --warn: #b45309;
+        --critical: #b91c1c;
+      }
+      body {
+        font-family: "Jost", system-ui, sans-serif;
+        background: var(--paper);
+        color: var(--ink);
+        font-feature-settings: "ss01" on;
+      }
+      .serif {
+        font-family: "Bodoni Moda", "Times New Roman", serif;
+      }
+      .mono {
+        font-family: "JetBrains Mono", ui-monospace, monospace;
+        font-variant-numeric: tabular-nums;
+      }
+      .rule {
+        border-color: var(--rule);
+      }
+      .pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-family: "Jost";
+        font-size: 11px;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        padding: 4px 10px;
+        border-radius: 999px;
+        border: 1px solid var(--rule);
+        background: rgba(255, 255, 255, 0.55);
+      }
+      .dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 999px;
+      }
+      .grid-decor {
+        background-image:
+          linear-gradient(rgba(0, 0, 0, 0.04) 1px, transparent 1px);
+        background-size: 100% 32px;
+      }
+      .frame {
+        background: white;
+        border: 1px solid var(--rule);
+        border-radius: 18px;
+        box-shadow:
+          0 1px 0 rgba(255, 255, 255, 0.6) inset,
+          0 1px 2px rgba(28, 25, 23, 0.04);
+      }
+      .underline-soft {
+        background-image: linear-gradient(currentColor, currentColor);
+        background-size: 100% 1px;
+        background-position: 0 100%;
+        background-repeat: no-repeat;
+      }
+    </style>
+  </head>
+  <body class="min-h-screen pb-12">
+    <!-- Masthead -->
+    <header class="border-b rule">
+      <div class="mx-auto flex max-w-6xl items-center justify-between gap-4 px-6 py-5">
+        <div class="flex items-center gap-3">
+          <div class="grid h-9 w-9 place-items-center rounded-full" style="background: var(--ink)">
+            <span class="serif italic text-white text-lg leading-none">T</span>
+          </div>
+          <div>
+            <p class="serif text-lg font-semibold leading-none">TeslaMateFix</p>
+            <p class="mono text-[10px] uppercase tracking-[0.2em] text-stone-500">No. 0517 · Mai 2026</p>
+          </div>
+        </div>
+        <nav class="hidden items-center gap-5 text-sm md:flex">
+          <a class="underline-soft">Aperçu</a>
+          <a class="text-stone-500 hover:text-stone-900">Trajets</a>
+          <a class="text-stone-500 hover:text-stone-900">Charges</a>
+          <a class="text-stone-500 hover:text-stone-900">Positions</a>
+          <a class="text-stone-500 hover:text-stone-900">Lieux</a>
+          <a class="text-stone-500 hover:text-stone-900">Réglages</a>
+        </nav>
+        <div class="flex items-center gap-2">
+          <button class="pill">
+            <span class="dot" style="background: var(--ok)"></span>
+            Model 3 LR · F-WKE
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+          </button>
+          <div class="grid h-9 w-9 place-items-center rounded-full bg-stone-100 ring-1 ring-stone-200 mono text-xs">WK</div>
+        </div>
+      </div>
+    </header>
+
+    <main class="mx-auto max-w-6xl space-y-12 px-6 py-10">
+      <!-- Hero / Editorial intro -->
+      <section class="grid gap-8 md:grid-cols-12 md:items-end">
+        <div class="md:col-span-7">
+          <p class="mono text-[11px] uppercase tracking-[0.22em] text-stone-500">Édition du 17 mai 2026</p>
+          <h1 class="serif mt-3 text-4xl font-semibold leading-[1.05] tracking-tight md:text-6xl">
+            Bonjour Wicem, <em class="italic font-medium">votre Model 3 a roulé bien.</em>
+          </h1>
+          <p class="mt-4 max-w-xl text-stone-600">
+            <span class="mono">2 418 km</span> parcourus ce mois,
+            <span class="mono">412.7 kWh</span> rechargés.
+            Sept incidents demandent votre œil — rien d'urgent, mais cinq minutes y suffiront.
+          </p>
+          <div class="mt-6 flex flex-wrap items-center gap-3">
+            <a href="#fixqueue" class="rounded-full bg-stone-900 px-5 py-3 text-sm font-medium text-white hover:bg-stone-800">
+              Ouvrir la file de correction →
+            </a>
+            <a class="rounded-full border border-stone-300 bg-white px-5 py-3 text-sm hover:bg-stone-50">
+              Voir le journal
+            </a>
+          </div>
+        </div>
+        <div class="md:col-span-5">
+          <figure class="frame overflow-hidden">
+            <div class="grid-decor p-6">
+              <p class="mono text-[10px] uppercase tracking-[0.2em] text-stone-500">Au compteur</p>
+              <p class="serif mt-3 text-7xl font-semibold leading-none">170</p>
+              <p class="mt-1 mono text-sm text-stone-600">Wh / km · moyenne du mois</p>
+              <svg viewBox="0 0 300 80" class="mt-4 w-full">
+                <polyline points="0,60 30,55 60,58 90,40 120,52 150,30 180,42 210,28 240,38 270,18 300,32" fill="none" stroke="#1c1917" stroke-width="1.5"/>
+                <line x1="0" y1="62" x2="300" y2="62" stroke="#e7e2d3"/>
+              </svg>
+            </div>
+            <figcaption class="border-t rule px-6 py-3 mono text-[10px] uppercase tracking-[0.2em] text-stone-500">
+              Tendance 30 jours · −4% vs avril
+            </figcaption>
+          </figure>
+        </div>
+      </section>
+
+      <!-- Three-column data band -->
+      <section class="grid gap-px overflow-hidden rounded-2xl border rule bg-[var(--rule)] md:grid-cols-3">
+        <article class="bg-white p-6">
+          <p class="mono text-[10px] uppercase tracking-[0.2em] text-stone-500">Trajets</p>
+          <p class="serif mt-2 text-5xl font-semibold leading-none">42</p>
+          <p class="mt-2 text-sm text-stone-600">
+            dont <span class="mono">3</span> nécessitent un géocodage et
+            <span class="mono">1</span> a un delta nul.
+          </p>
+        </article>
+        <article class="bg-white p-6">
+          <p class="mono text-[10px] uppercase tracking-[0.2em] text-stone-500">Charges</p>
+          <p class="serif mt-2 text-5xl font-semibold leading-none">14</p>
+          <p class="mt-2 text-sm text-stone-600">
+            <span class="mono">412.7 kWh</span> · dont
+            <span class="mono">8</span> en AC et <span class="mono">6</span> en DC.
+          </p>
+        </article>
+        <article class="bg-white p-6">
+          <p class="mono text-[10px] uppercase tracking-[0.2em] text-stone-500">À corriger</p>
+          <p class="serif mt-2 text-5xl font-semibold leading-none" style="color: var(--critical)">7</p>
+          <p class="mt-2 text-sm text-stone-600">
+            <span class="mono">3</span> AC plafond, <span class="mono">2</span> artefacts DC,
+            <span class="mono">2</span> divers.
+          </p>
+        </article>
+      </section>
+
+      <!-- The Journal: drives -->
+      <section>
+        <header class="flex items-end justify-between border-b rule pb-4">
+          <div>
+            <p class="mono text-[10px] uppercase tracking-[0.22em] text-stone-500">Le Journal</p>
+            <h2 class="serif mt-1 text-3xl font-semibold tracking-tight">Trajets récents</h2>
+          </div>
+          <a class="text-sm underline-soft">tout voir →</a>
+        </header>
+        <ol class="mt-6 space-y-6">
+          <li class="grid grid-cols-12 items-baseline gap-4 border-b rule pb-6">
+            <p class="serif col-span-2 text-2xl font-semibold leading-none">15<span class="text-base text-stone-400 italic ml-1">mai</span></p>
+            <div class="col-span-7">
+              <p class="text-base"><strong>Domicile · Bordeaux</strong> <span class="text-stone-400">→</span> Carrefour Mérignac</p>
+              <p class="mt-1 text-sm text-stone-500">18:42 → 19:14 · adresses validées · profil de conduite calme</p>
+            </div>
+            <div class="col-span-3 text-right">
+              <p class="mono text-lg">12.8 <span class="text-sm text-stone-500">km</span></p>
+              <p class="mono text-xs text-stone-500">162 Wh/km</p>
+            </div>
+          </li>
+          <li class="grid grid-cols-12 items-baseline gap-4 border-b rule pb-6">
+            <p class="serif col-span-2 text-2xl font-semibold leading-none">14<span class="text-base text-stone-400 italic ml-1">mai</span></p>
+            <div class="col-span-7">
+              <p class="text-base"><strong>A89 · km 12</strong> <span class="text-stone-400">→</span> A89 · km 89</p>
+              <p class="mt-1 text-sm" style="color: var(--warn)">
+                <span class="pill" style="background: rgba(180,83,9,0.08); color: var(--warn); border-color: rgba(180,83,9,0.25)">
+                  <span class="dot" style="background: var(--warn)"></span>GPS gap 4 min
+                </span>
+                interpolation suggérée
+              </p>
+            </div>
+            <div class="col-span-3 text-right">
+              <p class="mono text-lg">76.4 <span class="text-sm text-stone-500">km</span></p>
+              <p class="mono text-xs" style="color: var(--warn)">≈ 198 Wh/km</p>
+            </div>
+          </li>
+          <li class="grid grid-cols-12 items-baseline gap-4 border-b rule pb-6">
+            <p class="serif col-span-2 text-2xl font-semibold leading-none">13<span class="text-base text-stone-400 italic ml-1">mai</span></p>
+            <div class="col-span-7">
+              <p class="text-base"><strong class="italic text-stone-500">Inconnu</strong> <span class="text-stone-400">→</span> <span class="italic text-stone-500">Inconnu</span></p>
+              <p class="mt-1 text-sm" style="color: var(--critical)">
+                <span class="pill" style="background: rgba(185,28,28,0.08); color: var(--critical); border-color: rgba(185,28,28,0.25)">
+                  <span class="dot" style="background: var(--critical)"></span>distance = 0
+                </span>
+                trajet douteux — à fusionner ou ignorer
+              </p>
+            </div>
+            <div class="col-span-3 text-right">
+              <p class="mono text-lg">0.4 <span class="text-sm text-stone-500">km</span></p>
+              <p class="mono text-xs text-stone-500">22:11 · 2 min</p>
+            </div>
+          </li>
+          <li class="grid grid-cols-12 items-baseline gap-4">
+            <p class="serif col-span-2 text-2xl font-semibold leading-none">13<span class="text-base text-stone-400 italic ml-1">mai</span></p>
+            <div class="col-span-7">
+              <p class="text-base"><strong>Bureau Decade</strong> <span class="text-stone-400">→</span> Domicile · Bordeaux</p>
+              <p class="mt-1 text-sm text-stone-500">18:30 → 19:02 · trajet récurrent</p>
+            </div>
+            <div class="col-span-3 text-right">
+              <p class="mono text-lg">14.2 <span class="text-sm text-stone-500">km</span></p>
+              <p class="mono text-xs text-stone-500">175 Wh/km</p>
+            </div>
+          </li>
+        </ol>
+      </section>
+
+      <!-- Charges + Fix queue -->
+      <section class="grid gap-8 md:grid-cols-3">
+        <!-- Charges -->
+        <div class="md:col-span-2 space-y-4">
+          <header class="flex items-end justify-between border-b rule pb-3">
+            <h2 class="serif text-2xl font-semibold tracking-tight">Charges récentes</h2>
+            <span class="mono text-xs text-stone-500">14 ce mois</span>
+          </header>
+          <div class="grid gap-4 sm:grid-cols-2">
+            <article class="frame p-5">
+              <div class="flex items-center justify-between">
+                <span class="pill">AC · Wallbox</span>
+                <span class="mono text-[11px] text-stone-500">10 mai · 23:11</span>
+              </div>
+              <h3 class="serif mt-4 text-xl">Domicile</h3>
+              <p class="mono mt-2 text-3xl font-semibold">31.2 <span class="text-sm text-stone-500">kWh</span></p>
+              <dl class="mt-3 grid grid-cols-3 gap-2 text-xs">
+                <div><dt class="text-stone-500 mono">pic</dt><dd class="mono">7.4 kW</dd></div>
+                <div><dt class="text-stone-500 mono">durée</dt><dd class="mono">4h15</dd></div>
+                <div><dt class="text-stone-500 mono">soc</dt><dd class="mono">28→90%</dd></div>
+              </dl>
+              <p class="mt-3 text-xs" style="color: var(--ok)">✓ session propre, rien à corriger.</p>
+            </article>
+            <article class="frame p-5">
+              <div class="flex items-center justify-between">
+                <span class="pill">AC · Borne publique</span>
+                <span class="mono text-[11px] text-stone-500">15 mai · 19:20</span>
+              </div>
+              <h3 class="serif mt-4 text-xl">Carrefour Mérignac</h3>
+              <p class="mono mt-2 text-3xl font-semibold">18.4 <span class="text-sm text-stone-500">kWh</span></p>
+              <dl class="mt-3 grid grid-cols-3 gap-2 text-xs">
+                <div><dt class="text-stone-500 mono">pic</dt><dd class="mono">10.8 kW</dd></div>
+                <div><dt class="text-stone-500 mono">durée</dt><dd class="mono">1h42</dd></div>
+                <div><dt class="text-stone-500 mono">soc</dt><dd class="mono">42→78%</dd></div>
+              </dl>
+              <p class="mt-3 text-xs" style="color: var(--warn)">⚠ valeur 22 kW non-physique — capping appliqué.</p>
+            </article>
+            <article class="frame p-5 sm:col-span-2">
+              <div class="flex items-center justify-between">
+                <span class="pill" style="background: rgba(185,28,28,0.06); border-color: rgba(185,28,28,0.2); color: var(--critical)">DC · Supercharger</span>
+                <span class="mono text-[11px] text-stone-500">12 mai · 14:08</span>
+              </div>
+              <div class="mt-4 grid items-baseline gap-3 md:grid-cols-3">
+                <div>
+                  <h3 class="serif text-xl">Niort Nord</h3>
+                  <p class="mono text-[11px] text-stone-500">A10 · aire de service</p>
+                </div>
+                <p class="mono text-3xl font-semibold">52.1 <span class="text-sm text-stone-500">kWh</span></p>
+                <div class="text-right">
+                  <p class="mono text-xs text-stone-500">pic <span class="text-stone-900">186 kW</span> · 22 min · SoC 12→78%</p>
+                  <p class="mt-1 text-xs" style="color: var(--critical)">⚠ 1<sup>er</sup> sample : 2 V / 0 A.</p>
+                </div>
+              </div>
+            </article>
+          </div>
+        </div>
+
+        <!-- Fix queue -->
+        <aside id="fixqueue" class="frame p-5">
+          <header class="flex items-center justify-between border-b rule pb-3">
+            <h2 class="serif text-xl font-semibold tracking-tight">À corriger</h2>
+            <span class="pill" style="background: rgba(185,28,28,0.06); border-color: rgba(185,28,28,0.2); color: var(--critical)">
+              <span class="dot" style="background: var(--critical)"></span>7
+            </span>
+          </header>
+          <ol class="mt-3 divide-y rule">
+            <li class="py-3">
+              <p class="text-sm font-medium">Capping AC &gt; 11 kW</p>
+              <p class="mt-0.5 mono text-[11px] text-stone-500">3 sessions · plafond automatique</p>
+            </li>
+            <li class="py-3">
+              <p class="text-sm font-medium">Artefacts DC (2 V / 0 A)</p>
+              <p class="mt-0.5 mono text-[11px] text-stone-500">2 sessions · samples au démarrage</p>
+            </li>
+            <li class="py-3">
+              <p class="text-sm font-medium">Trajets sans adresse</p>
+              <p class="mt-0.5 mono text-[11px] text-stone-500">1 trajet · géocodage manuel</p>
+            </li>
+            <li class="py-3">
+              <p class="text-sm font-medium">SoC incohérent</p>
+              <p class="mt-0.5 mono text-[11px] text-stone-500">1 charge · fin avant début</p>
+            </li>
+          </ol>
+          <button class="mt-4 w-full rounded-full bg-stone-900 px-4 py-2.5 text-sm font-medium text-white hover:bg-stone-800">
+            Commencer →
+          </button>
+        </aside>
+      </section>
+
+      <!-- Footer note -->
+      <footer class="border-t rule pt-6 text-xs text-stone-500 flex justify-between">
+        <p class="mono uppercase tracking-[0.2em]">TeslaMateFix · données locales · v0.1</p>
+        <p><a href="../index.html" class="underline-soft">← retour aux propositions</a></p>
+      </footer>
+    </main>
+  </body>
+</html>

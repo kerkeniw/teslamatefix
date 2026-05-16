@@ -1,0 +1,362 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Editorial Light — Édition d'une charge</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Jost:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --paper: #faf8f3;
+        --paper-2: #f3efe5;
+        --ink: #1c1917;
+        --ink-soft: #57534e;
+        --rule: #e7e2d3;
+        --accent: #b45309;
+        --ok: #166534;
+        --warn: #b45309;
+        --critical: #b91c1c;
+      }
+      body {
+        font-family: "Jost", system-ui, sans-serif;
+        background: var(--paper);
+        color: var(--ink);
+      }
+      .serif { font-family: "Bodoni Moda", serif; }
+      .mono { font-family: "JetBrains Mono", ui-monospace, monospace; font-variant-numeric: tabular-nums; }
+      .rule { border-color: var(--rule); }
+      .frame {
+        background: white;
+        border: 1px solid var(--rule);
+        border-radius: 18px;
+      }
+      .pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 11px;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        padding: 4px 10px;
+        border-radius: 999px;
+        border: 1px solid var(--rule);
+        background: rgba(255, 255, 255, 0.6);
+      }
+      .dot { width: 6px; height: 6px; border-radius: 999px; }
+      .field { display: flex; flex-direction: column; gap: 6px; padding: 14px 0; border-bottom: 1px dashed var(--rule); }
+      .field:last-child { border-bottom: 0; }
+      .field-row { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; }
+      .field-label { color: var(--ink-soft); font-size: 13px; }
+      .field-value { font-family: "JetBrains Mono", ui-monospace, monospace; font-size: 15px; }
+      .field-value input {
+        background: transparent;
+        border: 0;
+        outline: none;
+        text-align: right;
+        font-family: inherit;
+        font-size: inherit;
+        color: inherit;
+        width: 140px;
+      }
+      .field-value input:focus { box-shadow: 0 1px 0 var(--ink); }
+      .field-unit { color: var(--ink-soft); font-size: 11px; margin-left: 4px; }
+      .underline-soft {
+        background-image: linear-gradient(currentColor, currentColor);
+        background-size: 100% 1px;
+        background-position: 0 100%;
+        background-repeat: no-repeat;
+      }
+      .auto-pill {
+        background: rgba(180, 83, 9, 0.08);
+        color: var(--accent);
+        border: 1px solid rgba(180, 83, 9, 0.2);
+        border-radius: 999px;
+        font-size: 10px;
+        padding: 2px 7px;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+      }
+    </style>
+  </head>
+  <body class="min-h-screen pb-28">
+    <!-- Masthead -->
+    <header class="border-b rule">
+      <div class="mx-auto flex max-w-6xl items-center justify-between gap-4 px-6 py-4">
+        <div class="flex items-center gap-3">
+          <a href="dashboard.html" class="text-sm text-stone-500 hover:text-stone-900 flex items-center gap-1">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+            Charges
+          </a>
+          <span class="text-stone-300">·</span>
+          <p class="mono text-[11px] uppercase tracking-[0.2em] text-stone-500">Édition</p>
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="pill" style="background: rgba(180,83,9,0.06); color: var(--warn); border-color: rgba(180,83,9,0.25)">
+            <span class="dot" style="background: var(--warn)"></span>2 alertes
+          </span>
+          <span class="pill"><span class="mono">brouillon · auto-save</span></span>
+        </div>
+      </div>
+    </header>
+
+    <main class="mx-auto max-w-6xl px-6 py-10">
+      <!-- Title block -->
+      <section class="border-b rule pb-8">
+        <p class="mono text-[11px] uppercase tracking-[0.2em] text-stone-500">
+          Charge no. 2 184 · vendredi 15 mai 2026
+        </p>
+        <h1 class="serif mt-3 text-5xl font-semibold tracking-tight md:text-6xl">
+          Carrefour Mérignac,
+          <em class="italic font-medium">une session honnête.</em>
+        </h1>
+        <p class="mt-4 max-w-2xl text-stone-600">
+          Borne AC 22 kW annoncée — votre voiture la lit à
+          <span class="mono">10.8 kW</span> réels (240 V / 2 phases / 16 A).
+          Le plafond a été appliqué automatiquement, à vous de confirmer.
+        </p>
+
+        <dl class="mt-8 grid grid-cols-2 gap-x-8 gap-y-6 md:grid-cols-4">
+          <div>
+            <dt class="mono text-[11px] uppercase tracking-[0.2em] text-stone-500">Énergie</dt>
+            <dd class="serif mt-1 text-4xl font-semibold">18.4<span class="text-base text-stone-500 ml-1">kWh</span></dd>
+          </div>
+          <div>
+            <dt class="mono text-[11px] uppercase tracking-[0.2em] text-stone-500">Pic</dt>
+            <dd class="serif mt-1 text-4xl font-semibold" style="color: var(--warn)">10.8<span class="text-base text-stone-500 ml-1">kW</span></dd>
+          </div>
+          <div>
+            <dt class="mono text-[11px] uppercase tracking-[0.2em] text-stone-500">Durée</dt>
+            <dd class="serif mt-1 text-4xl font-semibold">1<span class="italic font-normal text-stone-500 text-2xl">h</span>42</dd>
+          </div>
+          <div>
+            <dt class="mono text-[11px] uppercase tracking-[0.2em] text-stone-500">SoC</dt>
+            <dd class="serif mt-1 text-4xl font-semibold">42 <span class="italic text-stone-500 text-2xl">→</span> 78<span class="text-base text-stone-500 ml-1">%</span></dd>
+          </div>
+        </dl>
+      </section>
+
+      <!-- Two columns: form + side panel -->
+      <section class="mt-10 grid gap-10 lg:grid-cols-3">
+        <!-- LEFT: form -->
+        <div class="lg:col-span-2 space-y-10">
+          <!-- Curve -->
+          <article>
+            <header class="flex items-end justify-between border-b rule pb-3">
+              <h2 class="serif text-2xl font-semibold tracking-tight">La courbe</h2>
+              <span class="mono text-xs text-stone-500">612 samples</span>
+            </header>
+            <figure class="frame mt-5 overflow-hidden">
+              <div class="p-5">
+                <svg viewBox="0 0 600 170" class="w-full h-44">
+                  <defs>
+                    <linearGradient id="g" x1="0" x2="0" y1="0" y2="1">
+                      <stop offset="0%" stop-color="#1c1917" stop-opacity="0.16"/>
+                      <stop offset="100%" stop-color="#1c1917" stop-opacity="0"/>
+                    </linearGradient>
+                  </defs>
+                  <g stroke="#e7e2d3">
+                    <line x1="0" y1="40" x2="600" y2="40"/>
+                    <line x1="0" y1="80" x2="600" y2="80"/>
+                    <line x1="0" y1="120" x2="600" y2="120"/>
+                  </g>
+                  <!-- threshold -->
+                  <line x1="0" y1="55" x2="600" y2="55" stroke="#b91c1c" stroke-dasharray="3 4" opacity="0.5"/>
+                  <text x="600" y="50" text-anchor="end" font-family="JetBrains Mono" font-size="10" fill="#b91c1c">plafond physique 11 kW</text>
+                  <!-- capping zone -->
+                  <rect x="130" y="40" width="280" height="20" fill="#b45309" opacity="0.1"/>
+                  <text x="270" y="34" font-family="JetBrains Mono" font-size="10" fill="#b45309">zone plafonnée · 22 kW déclarés</text>
+                  <!-- area -->
+                  <path d="M0,150 L20,95 L40,75 L80,64 L130,60 L200,58 L280,58 L350,59 L420,62 L480,72 L540,95 L600,135 L600,170 L0,170 Z" fill="url(#g)"/>
+                  <polyline points="0,150 20,95 40,75 80,64 130,60 200,58 280,58 350,59 420,62 480,72 540,95 600,135" fill="none" stroke="#1c1917" stroke-width="1.6"/>
+                </svg>
+              </div>
+              <figcaption class="border-t rule px-5 py-3 mono text-[11px] text-stone-500">
+                Hypothèse : capteur véhicule plus fiable que la borne — on garde la valeur lue.
+                <button class="underline-soft text-stone-900">voir la règle →</button>
+              </figcaption>
+            </figure>
+          </article>
+
+          <!-- Data block -->
+          <article>
+            <header class="flex items-end justify-between border-b rule pb-3">
+              <h2 class="serif text-2xl font-semibold tracking-tight">Les données</h2>
+              <span class="mono text-xs text-stone-500">cliquer pour éditer</span>
+            </header>
+            <div class="frame mt-5 px-6">
+              <div class="field">
+                <div class="field-row">
+                  <span class="field-label">Début</span>
+                  <span class="field-value"><input value="2026-05-15  19:20:14" size="20"/><span class="field-unit">UTC+2</span></span>
+                </div>
+              </div>
+              <div class="field">
+                <div class="field-row">
+                  <span class="field-label">Fin <span class="auto-pill ml-1">auto</span></span>
+                  <span class="field-value"><input value="2026-05-15  21:02:48" size="20"/><span class="field-unit">UTC+2</span></span>
+                </div>
+                <p class="text-xs text-stone-500">Calculée à partir du dernier sample &gt; 100 W.</p>
+              </div>
+              <div class="field">
+                <div class="field-row">
+                  <span class="field-label">Énergie ajoutée</span>
+                  <span class="field-value"><input value="18.4"/><span class="field-unit">kWh</span></span>
+                </div>
+              </div>
+              <div class="field">
+                <div class="field-row">
+                  <span class="field-label">Coût</span>
+                  <span class="field-value"><input value="0.00"/><span class="field-unit">EUR</span></span>
+                </div>
+                <p class="text-xs text-stone-500">Suggestion : <span class="underline-soft">utiliser le tarif "gratuit Carrefour"</span>.</p>
+              </div>
+              <div class="field">
+                <div class="field-row">
+                  <span class="field-label">Tension nominale</span>
+                  <span class="field-value"><input value="240"/><span class="field-unit">V</span></span>
+                </div>
+              </div>
+              <div class="field">
+                <div class="field-row">
+                  <span class="field-label">Courant max</span>
+                  <span class="field-value"><input value="16"/><span class="field-unit">A · 2 phases</span></span>
+                </div>
+              </div>
+              <div class="field">
+                <div class="field-row">
+                  <span class="field-label">Puissance max théorique <span class="auto-pill ml-1">auto</span></span>
+                  <span class="field-value text-stone-400">11.0 <span class="field-unit">kW</span></span>
+                </div>
+              </div>
+            </div>
+          </article>
+
+          <!-- Location -->
+          <article>
+            <header class="flex items-end justify-between border-b rule pb-3">
+              <h2 class="serif text-2xl font-semibold tracking-tight">Le lieu</h2>
+              <button class="text-sm underline-soft">corriger l'adresse →</button>
+            </header>
+            <div class="mt-5 grid gap-5 md:grid-cols-3">
+              <div class="md:col-span-2 frame px-6">
+                <div class="field">
+                  <div class="field-row">
+                    <span class="field-label">Adresse</span>
+                    <span class="field-value text-sm">Carrefour Mérignac, av. des Pyrénées, 33700</span>
+                  </div>
+                </div>
+                <div class="field">
+                  <div class="field-row">
+                    <span class="field-label">Coordonnées</span>
+                    <span class="field-value text-sm">44.84033 °N · −0.69142 °E</span>
+                  </div>
+                </div>
+                <div class="field">
+                  <div class="field-row">
+                    <span class="field-label">Géofence</span>
+                    <span class="field-value text-sm">Carrefour Mérignac (12 m)</span>
+                  </div>
+                </div>
+              </div>
+              <figure class="frame relative h-48 md:h-full overflow-hidden">
+                <svg viewBox="0 0 200 200" class="absolute inset-0 h-full w-full">
+                  <rect width="200" height="200" fill="#f3efe5"/>
+                  <g stroke="#e0d9c6" stroke-width="1">
+                    <path d="M0 40 L200 60"/>
+                    <path d="M0 120 L200 90"/>
+                    <path d="M40 0 L80 200"/>
+                    <path d="M140 0 L120 200"/>
+                  </g>
+                  <circle cx="100" cy="100" r="36" fill="rgba(28,25,23,0.04)" stroke="#1c1917" stroke-dasharray="3 3"/>
+                  <circle cx="100" cy="100" r="4" fill="#1c1917"/>
+                </svg>
+                <figcaption class="absolute bottom-3 left-3 mono text-[10px] uppercase tracking-[0.18em] text-stone-700 bg-white/80 px-2 py-1 rounded-full">12 m · ok</figcaption>
+              </figure>
+            </div>
+          </article>
+        </div>
+
+        <!-- RIGHT: integrity panel -->
+        <aside class="space-y-6 lg:sticky lg:top-6 self-start">
+          <section class="frame p-5">
+            <header class="flex items-end justify-between border-b rule pb-3">
+              <h3 class="serif text-xl font-semibold tracking-tight">À vérifier</h3>
+              <span class="pill" style="background: rgba(180,83,9,0.06); color: var(--warn); border-color: rgba(180,83,9,0.25)">2 alertes</span>
+            </header>
+            <ol class="mt-4 space-y-5">
+              <li>
+                <p class="text-sm font-medium flex items-center gap-2">
+                  <span class="dot" style="background: var(--warn)"></span>
+                  Capping AC appliqué
+                </p>
+                <p class="mt-1 text-xs text-stone-600">
+                  Le pic a été ramené de <span class="mono">22 kW</span> à
+                  <span class="mono">10.8 kW</span>. Cohérent avec la prise observée.
+                </p>
+                <div class="mt-2 flex gap-2">
+                  <button class="rounded-full bg-stone-900 px-3 py-1.5 text-xs text-white hover:bg-stone-800">Accepter</button>
+                  <button class="rounded-full border border-stone-300 px-3 py-1.5 text-xs hover:bg-stone-50">Voir la règle</button>
+                </div>
+              </li>
+              <li>
+                <p class="text-sm font-medium flex items-center gap-2">
+                  <span class="dot" style="background: var(--critical)"></span>
+                  Premier sample aberrant
+                </p>
+                <p class="mt-1 text-xs text-stone-600">
+                  <span class="mono">V = 2 V</span>, <span class="mono">A = 0 A</span>.
+                  Exclu du calcul du pic.
+                </p>
+                <div class="mt-2 flex gap-2">
+                  <button class="rounded-full bg-stone-900 px-3 py-1.5 text-xs text-white hover:bg-stone-800">Supprimer</button>
+                  <button class="rounded-full border border-stone-300 px-3 py-1.5 text-xs hover:bg-stone-50">Conserver</button>
+                </div>
+              </li>
+            </ol>
+          </section>
+
+          <section class="frame p-5">
+            <h3 class="serif text-lg font-semibold tracking-tight">Journal</h3>
+            <ol class="mt-3 space-y-3 text-xs">
+              <li class="flex gap-3">
+                <span class="mono text-stone-500 shrink-0 w-12">19:23</span>
+                <span class="text-stone-700">Capping <span class="mono">22 → 10.8 kW</span></span>
+              </li>
+              <li class="flex gap-3">
+                <span class="mono text-stone-500 shrink-0 w-12">19:20</span>
+                <span class="text-stone-700">Sample[0] flagué (V=2)</span>
+              </li>
+              <li class="flex gap-3">
+                <span class="mono text-stone-500 shrink-0 w-12">19:20</span>
+                <span class="text-stone-700">Création — source TeslaMate</span>
+              </li>
+            </ol>
+          </section>
+        </aside>
+      </section>
+    </main>
+
+    <!-- Bottom save bar -->
+    <div class="fixed bottom-4 left-1/2 z-40 -translate-x-1/2">
+      <div class="frame flex items-center gap-3 rounded-full px-5 py-3 shadow-[0_8px_24px_-12px_rgba(28,25,23,0.25)]">
+        <p class="text-sm text-stone-600">
+          <span class="inline-flex items-center gap-1.5">
+            <span class="dot" style="background: var(--warn)"></span>
+            3 modifications en attente
+          </span>
+        </p>
+        <span class="h-5 w-px bg-stone-200"></span>
+        <button class="text-sm text-stone-600 hover:text-stone-900">Annuler</button>
+        <button class="rounded-full bg-stone-900 px-5 py-2 text-sm font-medium text-white hover:bg-stone-800">
+          Enregistrer
+        </button>
+      </div>
+    </div>
+  </body>
+</html>

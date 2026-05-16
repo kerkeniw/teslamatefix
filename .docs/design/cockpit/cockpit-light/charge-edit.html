@@ -1,0 +1,430 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Cockpit Light — Édition d'une charge</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fira+Code:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --bg: #f5f7fa;
+        --surface: #ffffff;
+        --surface-2: #f0f3f7;
+        --border: #e3e8ef;
+        --border-strong: #cbd5e1;
+        --text: #0f172a;
+        --text-dim: #64748b;
+        --accent: #1e40af;
+        --warn: #b45309;
+        --critical: #c20a26;
+        --ok: #047857;
+      }
+      body {
+        font-family: "Inter", system-ui, sans-serif;
+        background: var(--bg);
+        color: var(--text);
+      }
+      .mono {
+        font-family: "Fira Code", ui-monospace, monospace;
+        font-variant-numeric: tabular-nums;
+        letter-spacing: -0.01em;
+      }
+      .card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+      }
+      .chip {
+        font-family: "Fira Code", ui-monospace, monospace;
+        font-size: 10px;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        padding: 3px 8px;
+        border-radius: 999px;
+        border: 1px solid var(--border);
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        line-height: 1;
+        background: var(--surface);
+        color: var(--text-dim);
+      }
+      .chip .dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 999px;
+      }
+      .field {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+      .field label {
+        font-size: 11px;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        font-family: "Fira Code", ui-monospace, monospace;
+        color: var(--text-dim);
+      }
+      .field .input {
+        background: var(--surface-2);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 10px 12px;
+        font-family: "Fira Code", ui-monospace, monospace;
+        font-size: 14px;
+        color: var(--text);
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+      }
+      .field .input .unit {
+        color: var(--text-dim);
+        font-size: 11px;
+      }
+      .field .input:focus-within {
+        border-color: var(--accent);
+        background: var(--surface);
+        box-shadow: 0 0 0 3px rgba(30, 64, 175, 0.12);
+      }
+      .field input {
+        background: transparent;
+        outline: none;
+        border: 0;
+        color: inherit;
+        font-family: inherit;
+        width: 100%;
+      }
+      .auto {
+        position: relative;
+      }
+      .auto::after {
+        content: "AUTO";
+        position: absolute;
+        top: -8px;
+        right: 10px;
+        background: var(--bg);
+        font-family: "Fira Code", ui-monospace, monospace;
+        font-size: 9px;
+        letter-spacing: 0.1em;
+        color: var(--accent);
+        padding: 0 6px;
+      }
+      .auto .input {
+        border-style: dashed;
+        color: var(--text-dim);
+      }
+      .ring-warn { box-shadow: 0 0 0 1px rgba(180,83,9,0.35), 0 4px 12px rgba(180,83,9,0.08); }
+      .ring-critical { box-shadow: 0 0 0 1px rgba(194,10,38,0.4), 0 4px 12px rgba(194,10,38,0.1); }
+    </style>
+  </head>
+  <body class="min-h-screen pb-28">
+    <!-- Header -->
+    <header
+      class="sticky top-0 z-40 border-b border-[var(--border)] bg-[var(--bg)]/85 backdrop-blur"
+    >
+      <div class="mx-auto flex max-w-5xl items-center gap-3 px-4 py-3">
+        <a href="dashboard.html" class="flex items-center gap-2 text-sm text-[var(--text-dim)] hover:text-[var(--text)]">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+          <span class="mono">charges</span>
+        </a>
+        <span class="text-[var(--text-dim)]">/</span>
+        <h1 class="text-sm font-medium truncate">
+          Charge <span class="mono text-[var(--text-dim)]">#2 184</span> — Carrefour Mérignac
+        </h1>
+        <div class="ml-auto flex items-center gap-2">
+          <a href="../cockpit-dark/charge-edit.html" class="chip hover:text-[var(--text)]" title="Basculer en mode sombre">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1111.21 3a7 7 0 009.79 9.79z"/></svg>
+            dark
+          </a>
+          <span class="chip ring-warn" style="color: var(--warn); background: rgba(180,83,9,0.06); border-color: rgba(180,83,9,0.3)">
+            <span class="dot" style="background: var(--warn)"></span>2 alertes
+          </span>
+          <span class="chip">brouillon · auto-save</span>
+        </div>
+      </div>
+    </header>
+
+    <main class="mx-auto max-w-5xl px-4 py-6 grid gap-6 lg:grid-cols-3">
+      <!-- LEFT — Form sections -->
+      <div class="lg:col-span-2 space-y-6">
+        <!-- Meta card -->
+        <section class="card p-5">
+          <header class="flex items-center justify-between">
+            <div>
+              <p class="mono text-[11px] uppercase tracking-wider text-[var(--text-dim)]">Session</p>
+              <h2 class="text-lg font-semibold">15 mai 2026 · 19:20 → 21:02</h2>
+            </div>
+            <span class="chip" style="background: rgba(30,64,175,0.08); color: var(--accent); border-color: rgba(30,64,175,0.25)">AC · 240V/2ph/16A</span>
+          </header>
+          <dl class="mt-5 grid grid-cols-2 gap-4 md:grid-cols-4">
+            <div>
+              <dt class="mono text-[11px] uppercase tracking-wider text-[var(--text-dim)]">Énergie</dt>
+              <dd class="mono mt-1 text-2xl font-semibold">18.4 <span class="text-sm text-[var(--text-dim)]">kWh</span></dd>
+            </div>
+            <div>
+              <dt class="mono text-[11px] uppercase tracking-wider text-[var(--text-dim)]">Pic</dt>
+              <dd class="mono mt-1 text-2xl font-semibold" style="color: var(--warn)">10.8 <span class="text-sm text-[var(--text-dim)]">kW</span></dd>
+            </div>
+            <div>
+              <dt class="mono text-[11px] uppercase tracking-wider text-[var(--text-dim)]">Durée</dt>
+              <dd class="mono mt-1 text-2xl font-semibold">1h42</dd>
+            </div>
+            <div>
+              <dt class="mono text-[11px] uppercase tracking-wider text-[var(--text-dim)]">SoC</dt>
+              <dd class="mono mt-1 text-2xl font-semibold">42 → 78<span class="text-sm text-[var(--text-dim)]">%</span></dd>
+            </div>
+          </dl>
+        </section>
+
+        <!-- Power curve -->
+        <section class="card p-5">
+          <header class="flex items-center justify-between">
+            <h3 class="text-sm font-semibold tracking-wide">Courbe de puissance</h3>
+            <div class="flex items-center gap-2">
+              <span class="chip">samples · 612</span>
+              <span class="chip" style="color: var(--warn); background: rgba(180,83,9,0.06); border-color: rgba(180,83,9,0.3)">capping détecté</span>
+            </div>
+          </header>
+          <div class="mt-4 rounded-lg border border-[var(--border)] bg-[var(--surface-2)] p-3">
+            <svg viewBox="0 0 600 160" class="w-full h-40">
+              <defs>
+                <linearGradient id="grad" x1="0" x2="0" y1="0" y2="1">
+                  <stop offset="0%" stop-color="#1e40af" stop-opacity="0.22"/>
+                  <stop offset="100%" stop-color="#1e40af" stop-opacity="0"/>
+                </linearGradient>
+              </defs>
+              <g stroke="#e3e8ef" stroke-width="1">
+                <line x1="0" y1="40" x2="600" y2="40"/>
+                <line x1="0" y1="80" x2="600" y2="80"/>
+                <line x1="0" y1="120" x2="600" y2="120"/>
+              </g>
+              <line x1="0" y1="55" x2="600" y2="55" stroke="#c20a26" stroke-width="1" stroke-dasharray="3 4" opacity="0.55"/>
+              <text x="600" y="50" text-anchor="end" font-family="Fira Code" font-size="10" fill="#c20a26">11 kW · plafond constaté</text>
+              <path d="M0,140 L20,90 L40,72 L80,62 L130,58 L200,57 L280,57 L350,58 L420,60 L480,68 L540,90 L600,130 L600,160 L0,160 Z" fill="url(#grad)"/>
+              <polyline points="0,140 20,90 40,72 80,62 130,58 200,57 280,57 350,58 420,60 480,68 540,90 600,130" fill="none" stroke="#1e40af" stroke-width="1.8"/>
+              <rect x="130" y="40" width="280" height="20" fill="#b45309" opacity="0.12"/>
+              <text x="270" y="34" font-family="Fira Code" font-size="10" fill="#b45309">zone plafonnée 22 kW → 10.8 kW</text>
+            </svg>
+          </div>
+          <p class="mt-3 mono text-[11px] text-[var(--text-dim)]">
+            Source : TeslaMate reporte 22 kW · valeur physiquement impossible sur 240 V monophasé 16 A.
+            <button class="hover:underline" style="color: var(--accent)">corriger sur tous les samples →</button>
+          </p>
+        </section>
+
+        <!-- Editable fields -->
+        <section class="card p-5">
+          <h3 class="text-sm font-semibold tracking-wide">Données éditables</h3>
+          <div class="mt-4 grid gap-4 sm:grid-cols-2">
+            <div class="field">
+              <label>Début</label>
+              <div class="input">
+                <input value="2026-05-15T19:20:14"/>
+                <span class="unit">UTC+2</span>
+              </div>
+            </div>
+            <div class="field auto">
+              <label>Fin (auto-dérivée)</label>
+              <div class="input">
+                <input value="2026-05-15T21:02:48"/>
+                <span class="unit">UTC+2</span>
+              </div>
+            </div>
+            <div class="field">
+              <label>Énergie ajoutée</label>
+              <div class="input">
+                <input value="18.4"/>
+                <span class="unit">kWh</span>
+              </div>
+            </div>
+            <div class="field">
+              <label>Coût</label>
+              <div class="input">
+                <input value="0.00"/>
+                <span class="unit">EUR</span>
+              </div>
+            </div>
+            <div class="field">
+              <label>Tension nominale</label>
+              <div class="input">
+                <input value="240"/>
+                <span class="unit">V</span>
+              </div>
+            </div>
+            <div class="field">
+              <label>Courant max</label>
+              <div class="input">
+                <input value="16"/>
+                <span class="unit">A · 2ph</span>
+              </div>
+            </div>
+            <div class="field auto">
+              <label>Puissance max théorique</label>
+              <div class="input">
+                <input value="11.0" disabled />
+                <span class="unit">kW</span>
+              </div>
+            </div>
+            <div class="field">
+              <label>SoC départ → arrivée</label>
+              <div class="input">
+                <input value="42 → 78"/>
+                <span class="unit">%</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Location -->
+        <section class="card p-5">
+          <header class="flex items-center justify-between">
+            <h3 class="text-sm font-semibold tracking-wide">Lieu</h3>
+            <button class="mono text-[11px] text-[var(--text-dim)] hover:text-[var(--text)]">corriger l'adresse →</button>
+          </header>
+          <div class="mt-4 grid gap-4 md:grid-cols-3">
+            <div class="md:col-span-2 grid gap-3">
+              <div class="field">
+                <label>Adresse</label>
+                <div class="input"><input value="Carrefour Mérignac, av. des Pyrénées, 33700"/></div>
+              </div>
+              <div class="grid gap-3 grid-cols-2">
+                <div class="field">
+                  <label>Latitude</label>
+                  <div class="input"><input value="44.84033"/><span class="unit">°N</span></div>
+                </div>
+                <div class="field">
+                  <label>Longitude</label>
+                  <div class="input"><input value="-0.69142"/><span class="unit">°E</span></div>
+                </div>
+              </div>
+              <div class="field">
+                <label>Géofence rattaché</label>
+                <div class="input"><input value="Carrefour Mérignac (12 m)"/></div>
+              </div>
+            </div>
+            <div class="rounded-lg border border-[var(--border)] bg-[var(--surface-2)] overflow-hidden relative h-44 md:h-auto">
+              <svg viewBox="0 0 200 200" class="absolute inset-0 h-full w-full">
+                <rect width="200" height="200" fill="#eef2f7"/>
+                <g stroke="#dbe3ec">
+                  <path d="M0 40 L200 60" />
+                  <path d="M0 120 L200 90" />
+                  <path d="M40 0 L80 200" />
+                  <path d="M140 0 L120 200" />
+                </g>
+                <circle cx="100" cy="100" r="36" fill="rgba(30,64,175,0.08)" stroke="#1e40af" stroke-dasharray="2 3"/>
+                <circle cx="100" cy="100" r="4" fill="#1e40af"/>
+                <text x="100" y="150" text-anchor="middle" font-family="Fira Code" font-size="9" fill="#64748b">12 m · ok</text>
+              </svg>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <!-- RIGHT — Integrity sidebar -->
+      <aside class="space-y-6">
+        <section class="card overflow-hidden">
+          <header class="flex items-center justify-between border-b border-[var(--border)] px-5 py-3">
+            <h3 class="text-sm font-semibold tracking-wide">Intégrité</h3>
+            <span class="chip">2 / 7</span>
+          </header>
+          <ul class="divide-y divide-[var(--border)]">
+            <li class="px-5 py-4">
+              <div class="flex items-start gap-2">
+                <span class="mt-0.5 h-2 w-2 shrink-0 rounded-full" style="background: var(--warn)"></span>
+                <div class="flex-1">
+                  <p class="text-sm font-medium">Capping AC appliqué</p>
+                  <p class="mt-1 text-xs text-[var(--text-dim)]">
+                    Source ré-écrite : <span class="mono">22 kW → 10.8 kW</span>.
+                    Tension 240 V · 2 phases · 16 A.
+                  </p>
+                  <div class="mt-2 flex gap-2">
+                    <button class="rounded-md border border-[var(--border)] bg-[var(--surface-2)] px-2.5 py-1 text-[11px] hover:bg-[var(--border)]">
+                      voir la règle
+                    </button>
+                    <button class="rounded-md px-2.5 py-1 text-[11px] font-medium" style="color: var(--warn)">accepter</button>
+                  </div>
+                </div>
+              </div>
+            </li>
+            <li class="px-5 py-4">
+              <div class="flex items-start gap-2">
+                <span class="mt-0.5 h-2 w-2 shrink-0 rounded-full" style="background: var(--critical)"></span>
+                <div class="flex-1">
+                  <p class="text-sm font-medium">Artefact 1<sup>er</sup> sample</p>
+                  <p class="mt-1 text-xs text-[var(--text-dim)]">
+                    <span class="mono">V = 2 V</span>, <span class="mono">A = 0 A</span>.
+                    Sample exclu du calcul du pic.
+                  </p>
+                  <div class="mt-2 flex gap-2">
+                    <button class="rounded-md border border-[var(--border)] bg-[var(--surface-2)] px-2.5 py-1 text-[11px] hover:bg-[var(--border)]">
+                      conserver
+                    </button>
+                    <button class="rounded-md px-2.5 py-1 text-[11px] font-medium" style="color: var(--critical)">supprimer le sample</button>
+                  </div>
+                </div>
+              </div>
+            </li>
+            <li class="px-5 py-4">
+              <div class="flex items-start gap-2">
+                <span class="mt-0.5 h-2 w-2 shrink-0 rounded-full" style="background: var(--ok)"></span>
+                <div>
+                  <p class="text-sm font-medium">Coût manquant</p>
+                  <p class="mt-1 text-xs text-[var(--text-dim)]">
+                    Auto-rempli : <span class="mono">0.00 €</span> (gratuit Carrefour).
+                    <button style="color: var(--accent)">éditer</button>
+                  </p>
+                </div>
+              </div>
+            </li>
+          </ul>
+        </section>
+
+        <section class="card p-5">
+          <h3 class="text-sm font-semibold tracking-wide">Journal</h3>
+          <ul class="mt-3 space-y-2 mono text-[11px]">
+            <li class="flex gap-3 text-[var(--text-dim)]">
+              <span>19:23</span><span class="text-[var(--text)]">capping 22 → 10.8 kW</span>
+            </li>
+            <li class="flex gap-3 text-[var(--text-dim)]">
+              <span>19:20</span><span class="text-[var(--text)]">sample[0] flagué (V=2)</span>
+            </li>
+            <li class="flex gap-3 text-[var(--text-dim)]">
+              <span>19:20</span><span class="text-[var(--text)]">création — source TeslaMate</span>
+            </li>
+          </ul>
+        </section>
+      </aside>
+    </main>
+
+    <!-- Sticky save bar -->
+    <div class="fixed bottom-0 left-0 right-0 z-40 border-t border-[var(--border)] bg-[var(--bg)]/90 backdrop-blur">
+      <div class="mx-auto flex max-w-5xl items-center justify-between gap-3 px-4 py-3">
+        <p class="text-xs text-[var(--text-dim)] mono">
+          <span class="inline-flex items-center gap-1.5">
+            <span class="h-1.5 w-1.5 rounded-full" style="background: var(--warn)"></span>
+            3 modifications non publiées
+          </span>
+        </p>
+        <div class="flex items-center gap-2">
+          <button class="rounded-lg border border-[var(--border)] bg-[var(--surface)] px-4 py-2.5 text-sm hover:bg-[var(--surface-2)]">
+            Annuler
+          </button>
+          <button class="rounded-lg border border-[var(--border)] bg-[var(--surface-2)] px-4 py-2.5 text-sm hover:bg-[var(--border)]">
+            Prévisualiser
+          </button>
+          <button class="rounded-lg bg-[var(--text)] px-4 py-2.5 text-sm font-medium text-white hover:bg-slate-800">
+            Enregistrer
+          </button>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
