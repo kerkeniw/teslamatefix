@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { logoutAction } from "@/lib/auth-actions";
 import { listCars, getSelectedCarOrDefault } from "@/lib/vehicle";
 import { VehiclePicker } from "@/components/app-shell/vehicle-picker";
+import { ThemeSwitcher } from "@/components/app-shell/theme-switcher";
 
 /**
  * Header global : logo + sélecteur de véhicule global + slot droit (sélecteur
@@ -23,6 +24,7 @@ export async function AppHeader({ rightSlot }: { rightSlot?: React.ReactNode }) 
         </Link>
         <div className="flex items-center gap-2">
           {selected ? <VehiclePicker cars={cars} selectedId={selected.id} /> : null}
+          <ThemeSwitcher />
           {rightSlot}
           <form action={logoutAction}>
             <Button
