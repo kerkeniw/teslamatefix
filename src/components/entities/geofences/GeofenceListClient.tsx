@@ -39,7 +39,7 @@ export function GeofenceListClient({
 
       <div className="grid gap-3 md:hidden">
         {data.length === 0 ? (
-          <p className="rounded-md border bg-muted/30 p-4 text-center text-sm text-muted-foreground">
+          <p className="rounded-xl border bg-card p-6 text-center text-sm text-muted-foreground">
             {t("empty")}
           </p>
         ) : null}
