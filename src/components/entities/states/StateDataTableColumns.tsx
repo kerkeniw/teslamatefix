@@ -5,8 +5,10 @@ import { useTranslations, useFormatter } from "next-intl";
 import { Pencil } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { ButtonLink } from "@/components/ui/button-link";
+import { cn } from "@/lib/utils";
+import { STATE_TONES, type StateStatus } from "./state-tones";
 
-export type StateStatus = "online" | "offline" | "asleep";
+export type { StateStatus };
 
 export type StateRow = {
   id: number;
@@ -38,20 +40,20 @@ export function formatDuration(
 
 export function StateBadge({ state }: { state: StateStatus }) {
   const t = useTranslations("states");
-  // Couleurs sémantiques : online = primary (rouge Tesla), asleep = secondary
-  // (gris), offline = destructive (rouge plus saturé). Comme le projet utilise
-  // base-nova, on s'appuie sur les variants Badge existants + une teinte explicite.
-  if (state === "online") {
-    return (
-      <Badge className="bg-emerald-600 text-white hover:bg-emerald-600/90 dark:bg-emerald-500">
-        {t("values.online")}
-      </Badge>
-    );
-  }
-  if (state === "asleep") {
-    return <Badge variant="secondary">{t("values.asleep")}</Badge>;
-  }
-  return <Badge variant="destructive">{t("values.offline")}</Badge>;
+  const tone = STATE_TONES[state];
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 font-mono text-[10px] uppercase tracking-[0.08em]",
+        tone.bg,
+        tone.text,
+        tone.border,
+      )}
+    >
+      <span className={cn("size-1.5 rounded-full", tone.dot)} aria-hidden />
+      {t(`values.${state}`)}
+    </span>
+  );
 }
 
 export function useStateColumns(): ColumnDef<StateRow>[] {
@@ -62,7 +64,9 @@ export function useStateColumns(): ColumnDef<StateRow>[] {
     {
       accessorKey: "id",
       header: tCommon("id"),
-      cell: ({ row }) => <span className="font-mono text-xs">{row.original.id}</span>,
+      cell: ({ row }) => (
+        <span className="font-mono text-xs tabular-nums">{row.original.id}</span>
+      ),
     },
     {
       accessorKey: "state",
@@ -72,14 +76,20 @@ export function useStateColumns(): ColumnDef<StateRow>[] {
     {
       accessorKey: "start_date",
       header: t("fields.startDate"),
-      cell: ({ row }) => format.dateTime(new Date(row.original.start_date), "short"),
+      cell: ({ row }) => (
+        <span className="font-mono text-xs tabular-nums">
+          {format.dateTime(new Date(row.original.start_date), "short")}
+        </span>
+      ),
     },
     {
       accessorKey: "end_date",
       header: t("fields.endDate"),
       cell: ({ row }) =>
         row.original.end_date ? (
-          format.dateTime(new Date(row.original.end_date), "short")
+          <span className="font-mono text-xs tabular-nums">
+            {format.dateTime(new Date(row.original.end_date), "short")}
+          </span>
         ) : (
           <Badge variant="secondary">{t("ongoing")}</Badge>
         ),
@@ -88,7 +98,7 @@ export function useStateColumns(): ColumnDef<StateRow>[] {
       id: "duration",
       header: t("fields.duration"),
       cell: ({ row }) => (
-        <span className="text-xs text-muted-foreground">
+        <span className="font-mono text-xs tabular-nums text-muted-foreground">
           {formatDuration(row.original.start_date, row.original.end_date, t)}
         </span>
       ),

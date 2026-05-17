@@ -10,28 +10,8 @@ import type { DashboardData } from "@/lib/dashboard";
 import { Link } from "@/i18n/navigation";
 import { ButtonLink } from "@/components/ui/button-link";
 import { FirmwareLink } from "@/components/tesla/firmware-link";
+import { STATE_TONES } from "@/components/entities/states/state-tones";
 import { cn } from "@/lib/utils";
-
-const STATE_TONES = {
-  online: {
-    dot: "bg-ok",
-    text: "text-ok",
-    bg: "bg-ok/10",
-    border: "border-ok/30",
-  },
-  asleep: {
-    dot: "bg-muted-foreground",
-    text: "text-muted-foreground",
-    bg: "bg-muted",
-    border: "border-border",
-  },
-  offline: {
-    dot: "bg-critical",
-    text: "text-critical",
-    bg: "bg-critical/10",
-    border: "border-critical/30",
-  },
-} as const;
 
 function StateBadge({
   state,
