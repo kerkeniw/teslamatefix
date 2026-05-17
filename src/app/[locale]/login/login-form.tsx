@@ -13,7 +13,10 @@ export function LoginForm({ from }: { from?: string }) {
     <form action={formAction} className="space-y-4">
       {from ? <input type="hidden" name="from" value={from} /> : null}
       <div className="space-y-1.5">
-        <label htmlFor="username" className="text-sm font-medium">
+        <label
+          htmlFor="username"
+          className="font-mono text-[11px] font-medium uppercase tracking-[0.06em] text-muted-foreground"
+        >
           Identifiant
         </label>
         <input
@@ -22,11 +25,14 @@ export function LoginForm({ from }: { from?: string }) {
           autoComplete="username"
           required
           autoFocus
-          className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-[#E31937] focus:outline-none focus:ring-2 focus:ring-[#E31937]/20"
+          className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring/30"
         />
       </div>
       <div className="space-y-1.5">
-        <label htmlFor="password" className="text-sm font-medium">
+        <label
+          htmlFor="password"
+          className="font-mono text-[11px] font-medium uppercase tracking-[0.06em] text-muted-foreground"
+        >
           Mot de passe
         </label>
         <input
@@ -35,13 +41,13 @@ export function LoginForm({ from }: { from?: string }) {
           type="password"
           autoComplete="current-password"
           required
-          className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-[#E31937] focus:outline-none focus:ring-2 focus:ring-[#E31937]/20"
+          className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring/30"
         />
       </div>
       {state?.error ? (
         <p
           role="alert"
-          className="rounded-md bg-red-50 p-3 text-sm text-red-700"
+          className="rounded-xl border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive"
         >
           {state.error}
         </p>
@@ -49,7 +55,7 @@ export function LoginForm({ from }: { from?: string }) {
       <button
         type="submit"
         disabled={pending}
-        className="w-full rounded-md bg-[#E31937] px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-[#c5152f] disabled:opacity-60"
+        className="w-full rounded-md bg-primary px-4 py-2 text-sm font-medium uppercase tracking-[0.06em] text-primary-foreground shadow-sm transition-colors hover:bg-tesla-red-hover disabled:opacity-60"
       >
         {pending ? "Connexion…" : "Se connecter"}
       </button>
