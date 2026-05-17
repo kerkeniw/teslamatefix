@@ -47,7 +47,7 @@ export function PositionFilters({
   }
 
   return (
-    <div className="rounded-md border bg-card p-4">
+    <div className="rounded-xl border bg-card p-4 shadow-sm">
       <div className="grid gap-3 sm:grid-cols-3">
         <FormField id="filter_from" label={t("filters.from")}>
           <DateTimeInput
