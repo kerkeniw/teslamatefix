@@ -43,19 +43,27 @@ export function useUpdateColumns(): ColumnDef<UpdateRow>[] {
     {
       accessorKey: "id",
       header: tCommon("id"),
-      cell: ({ row }) => <span className="font-mono text-xs">{row.original.id}</span>,
+      cell: ({ row }) => (
+        <span className="font-mono text-xs tabular-nums">{row.original.id}</span>
+      ),
     },
     {
       accessorKey: "start_date",
       header: t("fields.startDate"),
-      cell: ({ row }) => format.dateTime(new Date(row.original.start_date), "short"),
+      cell: ({ row }) => (
+        <span className="font-mono text-xs tabular-nums">
+          {format.dateTime(new Date(row.original.start_date), "short")}
+        </span>
+      ),
     },
     {
       accessorKey: "end_date",
       header: t("fields.endDate"),
       cell: ({ row }) =>
         row.original.end_date ? (
-          format.dateTime(new Date(row.original.end_date), "short")
+          <span className="font-mono text-xs tabular-nums">
+            {format.dateTime(new Date(row.original.end_date), "short")}
+          </span>
         ) : (
           <Badge variant="secondary">{t("ongoing")}</Badge>
         ),
@@ -69,7 +77,7 @@ export function useUpdateColumns(): ColumnDef<UpdateRow>[] {
       id: "duration",
       header: t("fields.duration"),
       cell: ({ row }) => (
-        <span className="text-xs text-muted-foreground">
+        <span className="font-mono text-xs tabular-nums text-muted-foreground">
           {formatDuration(row.original.start_date, row.original.end_date, t)}
         </span>
       ),
