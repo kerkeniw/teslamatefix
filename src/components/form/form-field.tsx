@@ -26,7 +26,10 @@ export function FormField({
   const describedBy = error ? `${id}-error` : hint ? `${id}-hint` : undefined;
   return (
     <div className={cn("space-y-1.5", className)}>
-      <Label htmlFor={id} className="text-sm">
+      <Label
+        htmlFor={id}
+        className="font-mono text-[11px] font-medium uppercase tracking-[0.06em] text-muted-foreground"
+      >
         {label}
         {required ? <span className="ml-0.5 text-tesla-red" aria-hidden>*</span> : null}
       </Label>
