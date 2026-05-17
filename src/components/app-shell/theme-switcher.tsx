@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useSyncExternalStore } from "react";
 import { useTheme } from "next-themes";
 import { MonitorCog, Moon, SunMedium } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -14,16 +14,25 @@ const MODES: { key: Mode; label: string; icon: typeof SunMedium }[] = [
   { key: "dark", label: "Dark", icon: Moon },
 ];
 
+// `theme` n'est connu qu'après hydratation (lu depuis localStorage).
+// useSyncExternalStore renvoie false côté serveur, true au montage — pas de
+// setState-in-effect (interdit par notre lint), pas de mismatch d'hydratation.
+const subscribe = () => () => {};
+const useMounted = () =>
+  useSyncExternalStore(
+    subscribe,
+    () => true,
+    () => false,
+  );
+
 /**
  * Sélecteur dark / light / system (mêmes idiomes que LocaleSwitcher : button
- * group avec `aria-pressed`). Guarde de montage pour éviter le flash
- * d'hydratation : `useTheme` lit le DOM côté client uniquement.
+ * group avec `aria-pressed`). Avant hydratation, on affiche "system" actif
+ * pour éviter les bascules visuelles.
  */
 export function ThemeSwitcher() {
   const { theme, setTheme } = useTheme();
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
-
+  const mounted = useMounted();
   const current = (mounted ? theme : "system") as Mode;
 
   return (
