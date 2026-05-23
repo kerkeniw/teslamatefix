@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { Inter, Montserrat } from "next/font/google";
+import { Fira_Code, Inter, Montserrat } from "next/font/google";
 import { hasLocale, NextIntlClientProvider } from "next-intl";
 import { setRequestLocale } from "next-intl/server";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Toaster } from "@/components/ui/sonner";
+import { ThemeProvider } from "@/components/app-shell/theme-provider";
 import { routing } from "@/i18n/routing";
 import "../globals.css";
 
@@ -19,6 +20,14 @@ const inter = Inter({
 
 const montserrat = Montserrat({
   variable: "--font-montserrat",
+  subsets: ["latin"],
+  display: "swap",
+});
+
+// Fira Code pour les valeurs numériques du design Cockpit (telemetry HUD).
+// Branché sur --font-mono via @theme inline dans globals.css.
+const firaCode = Fira_Code({
+  variable: "--font-fira-code",
   subsets: ["latin"],
   display: "swap",
 });
@@ -49,14 +58,17 @@ export default async function LocaleLayout({
   return (
     <html
       lang={locale}
-      className={`${inter.variable} ${montserrat.variable} h-full antialiased`}
+      className={`${inter.variable} ${montserrat.variable} ${firaCode.variable} h-full antialiased`}
+      suppressHydrationWarning
     >
       <body className="flex min-h-full flex-col bg-background text-foreground">
         <NextIntlClientProvider>
-          <TooltipProvider>
-            {children}
-            <Toaster richColors closeButton position="top-right" />
-          </TooltipProvider>
+          <ThemeProvider>
+            <TooltipProvider>
+              {children}
+              <Toaster richColors closeButton position="top-right" />
+            </TooltipProvider>
+          </ThemeProvider>
         </NextIntlClientProvider>
       </body>
     </html>

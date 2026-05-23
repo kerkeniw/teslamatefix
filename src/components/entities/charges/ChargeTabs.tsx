@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useRef, type ReactNode } from "react";
+import { useActionState, useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { Trash2 } from "lucide-react";
@@ -12,6 +12,7 @@ import {
   ChargeProcessForm,
   type ChargeProcessFormValues,
   type ChargeProcessFormInitialOptions,
+  type ChargeProcessTickContext,
 } from "./ChargeProcessForm";
 import { useRouter } from "@/i18n/navigation";
 
@@ -25,6 +26,7 @@ export function ChargeTabs({
   id,
   initial,
   initialOptions,
+  tickContext,
   ticksCount,
   readOnly,
   saveAction,
@@ -35,6 +37,7 @@ export function ChargeTabs({
   id: number;
   initial: ChargeProcessFormValues;
   initialOptions: ChargeProcessFormInitialOptions;
+  tickContext?: ChargeProcessTickContext;
   ticksCount: number;
   readOnly: boolean;
   saveAction: (
@@ -62,6 +65,9 @@ export function ChargeTabs({
     }
   }, [state, tCommon]);
 
+  const [clientValid, setClientValid] = useState(true);
+  const handleValidityChange = useCallback((v: boolean) => setClientValid(v), []);
+
   const rawFe = (state?.fieldErrors ?? {}) as Record<string, string>;
   const knownErrors = new Set([
     "endBeforeStart",
@@ -72,6 +78,9 @@ export function ChargeTabs({
     "negativeValue",
     "startDateInFuture",
     "overlapsSession",
+    "startAfterSecondTick",
+    "endBeforeOrEqualPenultimateTick",
+    "invalidChargerType",
   ]);
   const fe: Record<string, string> = Object.fromEntries(
     Object.entries(rawFe).map(([k, v]) => [
@@ -93,13 +102,13 @@ export function ChargeTabs({
   return (
     <div className="space-y-6">
       {readOnly ? (
-        <div className="rounded-md border border-amber-300/40 bg-amber-50 p-3 text-sm text-amber-900 dark:bg-amber-950/30 dark:text-amber-200">
+        <div className="rounded-xl border border-warn/30 bg-warn/10 p-3 text-sm text-warn">
           {tCommon("readOnlyMode")}
         </div>
       ) : null}
 
       {state?.error ? (
-        <div role="alert" className="rounded-md border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
+        <div role="alert" className="rounded-xl border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
           {state.error}
         </div>
       ) : null}
@@ -116,14 +125,16 @@ export function ChargeTabs({
             <ChargeProcessForm
               initial={initial}
               initialOptions={initialOptions}
+              tickContext={tickContext}
               fieldErrors={fe}
               readOnly={readOnly}
               mode="edit"
+              onClientValidityChange={handleValidityChange}
             />
             <Separator />
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div className="flex gap-2">
-                <Button type="submit" disabled={pending || readOnly}>
+                <Button type="submit" disabled={pending || readOnly || !clientValid}>
                   {pending ? tCommon("saving") : t("actions.save")}
                 </Button>
                 <Button

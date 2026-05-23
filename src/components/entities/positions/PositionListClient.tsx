@@ -90,7 +90,7 @@ export function PositionListClient({
 
   if (!filtersActive) {
     return (
-      <div className="rounded-md border bg-muted/30 p-6 text-center text-sm text-muted-foreground">
+      <div className="rounded-xl border bg-card p-6 text-center text-sm text-muted-foreground shadow-sm">
         {t("filtersRequired")}
       </div>
     );
@@ -128,7 +128,7 @@ export function PositionListClient({
         </div>
       </div>
 
-      <div className="hidden overflow-x-auto rounded-md border md:block">
+      <div className="hidden overflow-hidden rounded-xl border bg-card shadow-sm md:block">
         <Table>
           <TableHeader>
             <TableRow>
@@ -170,15 +170,17 @@ export function PositionListClient({
                       aria-label={`select ${row.id}`}
                     />
                   </TableCell>
-                  <TableCell className="font-mono text-xs">{row.id}</TableCell>
-                  <TableCell>{format.dateTime(new Date(row.date), "short")}</TableCell>
-                  <TableCell className="font-mono text-xs">
+                  <TableCell className="font-mono text-xs tabular-nums">{row.id}</TableCell>
+                  <TableCell className="font-mono text-xs tabular-nums">
+                    {format.dateTime(new Date(row.date), "short")}
+                  </TableCell>
+                  <TableCell className="font-mono text-xs tabular-nums">
                     <span className="mr-2">{row.latitude}</span>
                     <OsmLink latitude={row.latitude} longitude={row.longitude} />
                   </TableCell>
-                  <TableCell className="font-mono text-xs">{row.longitude}</TableCell>
-                  <TableCell>{row.speed ?? "—"}</TableCell>
-                  <TableCell>
+                  <TableCell className="font-mono text-xs tabular-nums">{row.longitude}</TableCell>
+                  <TableCell className="font-mono tabular-nums">{row.speed ?? "—"}</TableCell>
+                  <TableCell className="font-mono tabular-nums">
                     {row.battery_level != null ? `${row.battery_level}%` : "—"}
                   </TableCell>
                   <TableCell>
@@ -212,7 +214,7 @@ export function PositionListClient({
 
       <div className="grid gap-3 md:hidden">
         {data.length === 0 ? (
-          <p className="rounded-md border bg-muted/30 p-4 text-center text-sm text-muted-foreground">
+          <p className="rounded-xl border bg-card p-6 text-center text-sm text-muted-foreground">
             {t("empty")}
           </p>
         ) : null}

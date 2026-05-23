@@ -122,19 +122,19 @@ export function StateForm({
   return (
     <form action={formAction} className="space-y-6">
       {readOnly ? (
-        <div className="rounded-md border border-amber-300/40 bg-amber-50 p-3 text-sm text-amber-900 dark:bg-amber-950/30 dark:text-amber-200">
+        <div className="rounded-xl border border-warn/30 bg-warn/10 p-3 text-sm text-warn">
           {tCommon("readOnlyMode")}
         </div>
       ) : null}
 
       {noCars && mode === "create" ? (
-        <div role="alert" className="rounded-md border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
+        <div role="alert" className="rounded-xl border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
           {t("errors.noCar")}
         </div>
       ) : null}
 
       {actionState?.error ? (
-        <div role="alert" className="rounded-md border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
+        <div role="alert" className="rounded-xl border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
           {actionState.error}
         </div>
       ) : null}
@@ -205,7 +205,7 @@ export function StateForm({
       </div>
 
       {showClosePreviousOption ? (
-        <div className="rounded-md border border-amber-300/40 bg-amber-50 p-3 text-sm dark:bg-amber-950/30">
+        <div className="rounded-xl border border-warn/30 bg-warn/10 p-3 text-sm">
           <label className="flex cursor-pointer items-start gap-2">
             <input
               type="checkbox"
@@ -217,10 +217,10 @@ export function StateForm({
               disabled={readOnly}
             />
             <span>
-              <span className="block font-medium text-amber-900 dark:text-amber-200">
+              <span className="block font-medium text-warn">
                 {t("closePrevious.label")}
               </span>
-              <span className="mt-0.5 block text-xs text-amber-900/80 dark:text-amber-200/80">
+              <span className="mt-0.5 block text-xs text-warn/80">
                 {t("closePrevious.description")}
               </span>
             </span>

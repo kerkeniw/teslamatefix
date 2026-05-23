@@ -2,6 +2,7 @@
 
 import { forwardRef } from "react";
 import { Input } from "@/components/ui/input";
+import { cn } from "@/lib/utils";
 
 /**
  * Input numérique avec bornes (min/max), step optionnel et formatage lazy.
@@ -23,7 +24,14 @@ export type NumberInputProps = Omit<
 
 export const NumberInput = forwardRef<HTMLInputElement, NumberInputProps>(
   function NumberInput(
-    { value, defaultValue, inputMode = "decimal", step = "any", ...rest },
+    {
+      value,
+      defaultValue,
+      inputMode = "decimal",
+      step = "any",
+      className,
+      ...rest
+    },
     ref,
   ) {
     const inputProps: React.InputHTMLAttributes<HTMLInputElement> = { ...rest };
@@ -38,6 +46,7 @@ export const NumberInput = forwardRef<HTMLInputElement, NumberInputProps>(
         type="number"
         inputMode={inputMode}
         step={step}
+        className={cn("font-mono tabular-nums", className)}
         {...inputProps}
       />
     );

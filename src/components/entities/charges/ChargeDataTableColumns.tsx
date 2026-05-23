@@ -45,7 +45,11 @@ export function useChargeColumns(): ColumnDef<ChargeRow>[] {
     {
       accessorKey: "start_date",
       header: t("fields.startDate"),
-      cell: ({ row }) => format.dateTime(new Date(row.original.start_date), "short"),
+      cell: ({ row }) => (
+        <span className="font-mono text-xs tabular-nums">
+          {format.dateTime(new Date(row.original.start_date), "short")}
+        </span>
+      ),
     },
     {
       accessorKey: "place",
@@ -55,16 +59,19 @@ export function useChargeColumns(): ColumnDef<ChargeRow>[] {
     {
       accessorKey: "charge_energy_added",
       header: t("fields.chargeEnergyAdded"),
-      cell: ({ row }) =>
-        row.original.charge_energy_added != null
-          ? `${row.original.charge_energy_added.toFixed(2)} kWh`
-          : "—",
+      cell: ({ row }) => (
+        <span className="font-mono tabular-nums">
+          {row.original.charge_energy_added != null
+            ? `${row.original.charge_energy_added.toFixed(2)} kWh`
+            : "—"}
+        </span>
+      ),
     },
     {
       accessorKey: "duration_min",
       header: t("fields.durationMin"),
       cell: ({ row }) => (
-        <span className="text-xs text-muted-foreground">
+        <span className="font-mono text-xs tabular-nums text-muted-foreground">
           {formatDuration(row.original.duration_min, t)}
         </span>
       ),
@@ -72,8 +79,11 @@ export function useChargeColumns(): ColumnDef<ChargeRow>[] {
     {
       accessorKey: "cost",
       header: t("fields.cost"),
-      cell: ({ row }) =>
-        row.original.cost != null ? row.original.cost.toFixed(2) : "—",
+      cell: ({ row }) => (
+        <span className="font-mono tabular-nums">
+          {row.original.cost != null ? row.original.cost.toFixed(2) : "—"}
+        </span>
+      ),
     },
     {
       accessorKey: "fast_charger",

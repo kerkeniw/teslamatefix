@@ -1,0 +1,59 @@
+# Build et publication de l'image Docker `wkerkeni/teslamatefix` sur Docker Hub.
+# Déclenché à chaque push d'un tag `v*` (ex. v0.1.0, v0.2.0-rc1, …).
+#
+# Secrets requis sur le repo GitHub (Settings → Secrets and variables → Actions) :
+#   - DOCKERHUB_USERNAME : `wkerkeni` (namespace Docker Hub, ≠ GitHub).
+#   - DOCKERHUB_TOKEN    : access token Docker Hub (https://hub.docker.com/settings/security).
+#
+# Image publiée multi-archi : linux/amd64 + linux/arm64.
+# Tags publiés : la version (sans "v") + `latest`.
+name: docker-publish
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up QEMU (multi-arch)
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          registry: docker.io
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: wkerkeni/teslamatefix
+          tags: |
+            type=semver,pattern={{version}}
+            type=raw,value=latest
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: docker/Dockerfile
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

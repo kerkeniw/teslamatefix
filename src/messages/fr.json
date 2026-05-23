@@ -528,6 +528,7 @@
       "efficiencyPct": "Efficacité (%)",
       "costPerKwh": "Coût unitaire (€/kWh)",
       "chargerType": "Type de borne",
+      "chargerPower": "Puissance instantanée (kW)",
       "chargerPowerKw": "Puissance de la borne (kW)",
       "chargerTypePower": "Borne",
       "chargerVoltage": "Tension (V)",
@@ -552,7 +553,15 @@
     },
     "hints": {
       "chargeEnergyAdded": "Visible dans l'application Tesla (arrondi au kWh).",
-      "chargeEnergyUsed": "Énergie facturée par la borne. Peut être absente si la voiture n'avait pas de réseau."
+      "chargeEnergyUsed": "Énergie facturée par la borne. Peut être absente si la voiture n'avait pas de réseau.",
+      "tickValue": "tick : {value}",
+      "chargerTypeChangeWillUpdateTicks": "Modifier mettra à jour {n} ticks et nettoiera marque / câble / type.",
+      "applyToAllTicks": "Appliquer à tous les ticks",
+      "statsRange": "min : {min} — max : {max}",
+      "statsDistinct": "valeurs : {values}"
+    },
+    "warnings": {
+      "chargerTypeMixed": "Type incohérent : les ticks mélangent AC et DC. Affichage basé sur le dernier tick."
     },
     "filters": {
       "carId": "Véhicule",
@@ -565,7 +574,8 @@
     "type": {
       "ac": "AC",
       "dc": "DC",
-      "unknown": "—"
+      "unknown": "—",
+      "mixed": "incohérent"
     },
     "duration": {
       "minutes": "{m} min",
@@ -592,7 +602,10 @@
       "requiredField": "Champ obligatoire.",
       "invalidChargerPower": "Puissance non supportée pour ce type de borne.",
       "invalidContext": "Impossible de préparer le contexte de la session.",
-      "noPositionBefore": "Aucune position trouvée avant la date de début pour ce véhicule. Importer une position GPS avant de créer cette session."
+      "noPositionBefore": "Aucune position trouvée avant la date de début pour ce véhicule. Importer une position GPS avant de créer cette session.",
+      "startAfterSecondTick": "Le début doit être antérieur au second tick ({tick}).",
+      "endBeforeOrEqualPenultimateTick": "La fin doit être postérieure à l'avant-dernier tick ({tick}).",
+      "invalidChargerType": "Type de borne invalide."
     },
     "ticksTab": {
       "totalCount": "{n} mesure(s)",
@@ -646,7 +659,9 @@
       "create": "Créer la session",
       "save": "Enregistrer",
       "delete": "Supprimer",
-      "estimateEndValues": "Estimer les valeurs de fin"
+      "estimateEndValues": "Estimer les valeurs de fin",
+      "applyChargerDefaults": "Appliquer les valeurs par défaut",
+      "cancelChargerChanges": "Annuler"
     },
     "create": {
       "title": "Créer une session de charge",

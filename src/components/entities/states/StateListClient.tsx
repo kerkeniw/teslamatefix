@@ -46,7 +46,7 @@ export function StateListClient({
       {/* Timeline mobile : chaque état affiche un indicateur coloré, vehicle, dates et durée. */}
       <div className="grid gap-3 md:hidden">
         {data.length === 0 ? (
-          <p className="rounded-md border bg-muted/30 p-4 text-center text-sm text-muted-foreground">
+          <p className="rounded-xl border bg-card p-6 text-center text-sm text-muted-foreground">
             {t("empty")}
           </p>
         ) : null}
@@ -58,10 +58,10 @@ export function StateListClient({
                   aria-hidden
                   className={
                     row.state === "online"
-                      ? "size-3 rounded-full bg-emerald-500"
+                      ? "size-3 rounded-full bg-ok"
                       : row.state === "asleep"
                         ? "size-3 rounded-full bg-muted-foreground"
-                        : "size-3 rounded-full bg-destructive"
+                        : "size-3 rounded-full bg-critical"
                   }
                 />
                 <span className="mt-1 w-px flex-1 bg-border" aria-hidden />

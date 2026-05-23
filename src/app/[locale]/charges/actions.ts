@@ -12,6 +12,10 @@ import {
   recalcFromTicks,
   applyRecalc as applyChargeRecalc,
   findOverlappingSession,
+  validateDateBoundsAgainstTicks,
+  propagateBoundDatesToTicks,
+  CHARGER_TICK_FIELDS,
+  type ChargerTickField,
   type ProcessRecalc,
 } from "@/lib/integrity/charges";
 import {
@@ -25,106 +29,14 @@ export type ChargeActionState = {
   fieldErrors?: Record<string, string>;
 };
 
-const dateString = z
-  .string()
-  .transform((v) => v.trim())
-  .refine((v) => v !== "", { message: "Date requise." })
-  .refine((v) => !Number.isNaN(new Date(v).getTime()), { message: "Date invalide." });
-
-const optionalDate = z
-  .string()
-  .transform((v) => v.trim())
-  .transform((v) => (v === "" ? null : v))
-  .nullable()
-  .refine((v) => v == null || !Number.isNaN(new Date(v).getTime()), {
-    message: "Date invalide.",
-  });
-
-const optionalNumber = z
-  .string()
-  .transform((v) => v.trim())
-  .transform((v) => (v === "" ? null : v))
-  .nullable()
-  .refine((v) => v == null || Number.isFinite(Number(v)), {
-    message: "invalidNumber",
-  });
-
-const optionalNonNegative = z
-  .string()
-  .transform((v) => v.trim())
-  .transform((v) => (v === "" ? null : v))
-  .nullable()
-  .refine((v) => v == null || Number.isFinite(Number(v)), {
-    message: "invalidNumber",
-  })
-  .refine((v) => v == null || Number(v) >= 0, {
-    message: "negativeValue",
-  });
-
-const optionalIntId = z
-  .string()
-  .transform((v) => v.trim())
-  .transform((v) => (v === "" ? null : v))
-  .nullable()
-  .refine(
-    (v) => {
-      if (v == null) return true;
-      const n = Number(v);
-      return Number.isInteger(n) && n > 0;
-    },
-    { message: "invalidNumber" },
-  );
-
-const carIdSchema = z
-  .string()
-  .transform((v) => v.trim())
-  .refine((v) => v !== "", { message: "carRequired" });
-
-const positionIdSchema = z
-  .string()
-  .transform((v) => v.trim())
-  .refine((v) => v !== "", { message: "positionRequired" })
-  .refine(
-    (v) => {
-      const n = Number(v);
-      return Number.isInteger(n) && n > 0;
-    },
-    { message: "positionRequired" },
-  );
-
-const ChargeSchema = z
-  .object({
-    car_id: carIdSchema,
-    position_id: positionIdSchema,
-    start_date: dateString,
-    end_date: optionalDate,
-    charge_energy_added: optionalNonNegative,
-    charge_energy_used: optionalNonNegative,
-    cost: optionalNonNegative,
-    start_battery_level: optionalNumber,
-    end_battery_level: optionalNumber,
-    start_ideal_range_km: optionalNumber,
-    end_ideal_range_km: optionalNumber,
-    start_rated_range_km: optionalNumber,
-    end_rated_range_km: optionalNumber,
-    address_id: optionalIntId,
-    geofence_id: optionalIntId,
-    outside_temp_avg: optionalNumber,
-  })
-  .refine(
-    (d) => {
-      if (!d.end_date) return true;
-      return new Date(d.end_date).getTime() >= new Date(d.start_date).getTime();
-    },
-    { path: ["end_date"], message: "endBeforeStart" },
-  )
-  .refine(
-    (d) => {
-      if (d.start_battery_level == null || d.end_battery_level == null) return true;
-      return Number(d.end_battery_level) >= Number(d.start_battery_level);
-    },
-    { path: ["end_battery_level"], message: "endBatteryLowerThanStart" },
-  );
+import {
+  ChargeSchema,
+  carIdSchema,
+  dateString,
+  optionalIntId,
+  optionalNonNegative,
+  positionIdSchema,
+} from "./schema";
 
 function readOnly(): ChargeActionState {
   return { ok: false, error: "Application en lecture seule." };
@@ -275,10 +187,100 @@ export async function updateChargeAction(
     };
   }
 
+  // Garde-fou métier : les ticks intermédiaires (second .. avant-dernier)
+  // doivent rester dans l'intervalle [start_date, end_date]. Si la session a
+  // moins de 2 ticks, no-op (premier et dernier tick suffisent à les autoriser).
+  const boundErrors = await validateDateBoundsAgainstTicks(id, data.start_date, data.end_date);
+  if (Object.keys(boundErrors).length > 0) {
+    return { ok: false, error: "Données invalides.", fieldErrors: boundErrors };
+  }
+
+  const chargerType = parsed.data.charger_type;
+  const chargerTypeInitial = parsed.data.charger_type_initial;
+  const chargerTypeChanged =
+    chargerType != null && chargerType !== chargerTypeInitial;
+
+  // Calcule la liste des updates borne à appliquer : pour chaque champ, on
+  // compare la valeur soumise à `_initial` (valeur du dernier tick au
+  // chargement). Si différent, on emporte aussi le scope (tous les ticks ou
+  // dernier seulement). Champs inchangés → no-op.
+  type ChargerTickUpdate = {
+    field: ChargerTickField;
+    value: number | string | boolean | null;
+    applyAll: boolean;
+  };
+  const tickUpdates: ChargerTickUpdate[] = [];
+  for (const field of CHARGER_TICK_FIELDS) {
+    const value = (parsed.data as Record<string, unknown>)[field] as
+      | number
+      | string
+      | boolean
+      | null;
+    const initial = (parsed.data as Record<string, unknown>)[`${field}_initial`] as
+      | number
+      | string
+      | boolean
+      | null;
+    if (value === initial) continue;
+    tickUpdates.push({
+      field,
+      value,
+      applyAll: (parsed.data as Record<string, unknown>)[
+        `${field}_apply_all`
+      ] === true,
+    });
+  }
+
   try {
-    await prisma.charging_processes.update({
-      where: { id },
-      data,
+    await prisma.$transaction(async (tx) => {
+      await tx.charging_processes.update({ where: { id }, data });
+
+      if (chargerTypeChanged) {
+        const isDC = chargerType === "DC";
+        await tx.charges.updateMany({
+          where: { charging_process_id: id },
+          data: {
+            fast_charger_present: isDC,
+            // Cohérent avec deriveChargerSpecs : DC = Tesla/Combo, AC = "<invalid>".
+            fast_charger_brand: isDC ? "Tesla" : "<invalid>",
+            fast_charger_type: isDC ? "Combo" : "<invalid>",
+            conn_charge_cable: "IEC",
+          },
+        });
+      }
+
+      if (tickUpdates.length > 0) {
+        // Récupère le dernier tick par date pour les updates scope "tick courant".
+        const lastTick = await tx.charges.findFirst({
+          where: { charging_process_id: id },
+          orderBy: { date: "desc" },
+          select: { id: true },
+        });
+        for (const u of tickUpdates) {
+          const updateData = { [u.field]: u.value } as Prisma.chargesUpdateManyMutationInput;
+          if (u.applyAll) {
+            await tx.charges.updateMany({
+              where: { charging_process_id: id },
+              data: updateData,
+            });
+          } else if (lastTick) {
+            await tx.charges.update({
+              where: { id: lastTick.id },
+              data: updateData,
+            });
+          }
+        }
+      }
+
+      // Propagation des bornes start_date / end_date aux ticks. En cas de
+      // mono-tick, le helper crée un second tick pour maintenir l'invariant
+      // ≥ 2 ticks.
+      await propagateBoundDatesToTicks(tx, id, data.start_date, data.end_date, {
+        end_battery_level: data.end_battery_level ?? undefined,
+        end_charge_energy_added: data.charge_energy_added ?? undefined,
+        end_ideal_battery_range_km: data.end_ideal_range_km ?? undefined,
+        end_rated_battery_range_km: data.end_rated_range_km ?? undefined,
+      });
     });
   } catch (e) {
     if (e instanceof Prisma.PrismaClientKnownRequestError) {
@@ -290,7 +292,13 @@ export async function updateChargeAction(
   }
 
   logger.info(
-    { event: "charges.update", user: session.userId, id, diff_keys: Object.keys(parsed.data) },
+    {
+      event: "charges.update",
+      user: session.userId,
+      id,
+      diff_keys: Object.keys(parsed.data),
+      charger_type_changed: chargerTypeChanged ? { from: chargerTypeInitial, to: chargerType } : null,
+    },
     "charges.update",
   );
 

@@ -24,7 +24,7 @@ Two options.
 ### 2.a. Via the Docker image (recommended)
 
 ```bash
-docker run --rm -i ghcr.io/<owner>/teslamatefix:latest \
+docker run --rm -i wkerkeni/teslamatefix:latest \
   node scripts/hash-password.mjs <<< 'YourPassword'
 ```
 
@@ -118,7 +118,7 @@ The full block lives in [`docker/docker-compose.example.yml`](../docker/docker-c
 Key points:
 
 - `depends_on: [database]` — TeslaMateFix starts after the database.
-- `image: ghcr.io/<owner>/teslamatefix:latest` — adjust to the actual registry.
+- `image: wkerkeni/teslamatefix:latest` — official image published on Docker Hub.
 - `ports: ["3001:3001"]` — expose on the host or comment out and route via the reverse-proxy only.
 - `healthcheck` — Compose marks the service `unhealthy` if `/api/health` does not respond.
 
@@ -166,7 +166,7 @@ Compose recreates the container with the new image. The service is stateless (no
 ```bash
 docker compose stop teslamatefix
 docker compose rm -f teslamatefix
-docker image rm ghcr.io/<owner>/teslamatefix:latest
+docker image rm wkerkeni/teslamatefix:latest
 ```
 
 To drop the PG role:
@@ -175,3 +175,39 @@ To drop the PG role:
 docker compose exec database \
   psql -U postgres -d teslamate -c "DROP OWNED BY teslamatefix; DROP ROLE teslamatefix;"
 ```
+
+---
+
+## 10. Image publishing (maintainer only)
+
+This section is only for the repo maintainer — end users: ignore.
+
+### 10.a. GitHub Actions workflow (official release)
+
+The workflow [`.github/workflows/docker-publish.yml`](../.github/workflows/docker-publish.yml) is triggered on every push of a `v*` tag and publishes a multi-arch image (`linux/amd64` + `linux/arm64`) to Docker Hub:
+
+```bash
+git tag -a v0.2.0 -m "v0.2.0 — …"
+git push origin v0.2.0
+```
+
+Published tags on Docker Hub: `wkerkeni/teslamatefix:0.2.0` + `wkerkeni/teslamatefix:latest`.
+
+**Required secrets** on the GitHub repo (Settings → Secrets and variables → Actions):
+
+- `DOCKERHUB_USERNAME`: `wkerkeni` (Docker Hub namespace, ≠ GitHub namespace).
+- `DOCKERHUB_TOKEN`: access token created at https://hub.docker.com/settings/security (scope `read,write,delete` on the repo).
+
+### 10.b. Manual local build
+
+To test before a tag or for off-release builds: [`scripts/docker-publish.sh`](../scripts/docker-publish.sh).
+
+```bash
+# Local single-arch build (linux/amd64) loaded into the daemon:
+./scripts/docker-publish.sh v0.1.0
+
+# Multi-arch build + push to Docker Hub (requires `docker login` first):
+./scripts/docker-publish.sh v0.1.0 --push
+```
+
+Requirements: Docker Engine ≥ 24, `buildx` plugin. For local multi-arch, QEMU is installed automatically by the builder.

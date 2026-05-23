@@ -2,6 +2,7 @@
 
 import { forwardRef } from "react";
 import { Input } from "@/components/ui/input";
+import { cn } from "@/lib/utils";
 
 /**
  * Input datetime-local avec sérialisation ISO. La valeur attendue/restituée
@@ -30,12 +31,16 @@ function toLocalIsoSlice(value: string | Date | null | undefined): string {
 }
 
 export const DateTimeInput = forwardRef<HTMLInputElement, Props>(
-  function DateTimeInput({ value, defaultValue, step = 1, ...rest }, ref) {
+  function DateTimeInput(
+    { value, defaultValue, step = 1, className, ...rest },
+    ref,
+  ) {
     return (
       <Input
         ref={ref}
         type="datetime-local"
         step={step}
+        className={cn("font-mono tabular-nums", className)}
         value={value !== undefined ? toLocalIsoSlice(value) : undefined}
         defaultValue={
           defaultValue !== undefined ? toLocalIsoSlice(defaultValue) : undefined

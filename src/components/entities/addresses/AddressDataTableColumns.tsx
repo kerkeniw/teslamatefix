@@ -23,7 +23,9 @@ export function useAddressColumns(): ColumnDef<AddressRow>[] {
     {
       accessorKey: "id",
       header: tCommon("id"),
-      cell: ({ row }) => <span className="font-mono text-xs">{row.original.id}</span>,
+      cell: ({ row }) => (
+        <span className="font-mono text-xs tabular-nums">{row.original.id}</span>
+      ),
     },
     {
       accessorKey: "display_name",
@@ -52,7 +54,7 @@ export function useAddressColumns(): ColumnDef<AddressRow>[] {
         const lon = row.original.longitude;
         if (!lat || !lon) return <span className="text-muted-foreground">—</span>;
         return (
-          <span className="font-mono text-xs">
+          <span className="font-mono text-xs tabular-nums">
             {Number(lat).toFixed(4)}, {Number(lon).toFixed(4)}
           </span>
         );

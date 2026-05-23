@@ -14,7 +14,13 @@ import { ChargeRecalcPanel } from "@/components/entities/charges/RecalcPanel";
 import type {
   ChargeProcessFormValues,
   ChargeProcessFormInitialOptions,
+  ChargeProcessTickContext,
 } from "@/components/entities/charges/ChargeProcessForm";
+import {
+  deriveChargerTypeFromTicks,
+  deriveChargerTicksContext,
+  deriveTickFieldSuggestions,
+} from "@/lib/integrity/charges";
 import { ButtonLink } from "@/components/ui/button-link";
 import { ArrowLeft } from "lucide-react";
 import type { FKOption } from "@/components/form/fk-combobox";
@@ -83,7 +89,29 @@ export default async function ChargeEditPage({
     else ticksWhere.id = { gt: cursor };
   }
 
-  const [ticksRaw, ticksTotal, refPosition, refAddress, refGeofence] = await Promise.all([
+  const tickSelect = {
+    date: true,
+    battery_level: true,
+    charge_energy_added: true,
+    ideal_battery_range_km: true,
+    rated_battery_range_km: true,
+    fast_charger_present: true,
+  } as const;
+
+  const [
+    ticksRaw,
+    ticksTotal,
+    refPosition,
+    refAddress,
+    refGeofence,
+    firstTick,
+    lastTick,
+    secondTick,
+    penultimateTick,
+    chargerTypeInfo,
+    chargerTicksContext,
+    tickFieldSuggestions,
+  ] = await Promise.all([
     prisma.charges.findMany({
       where: ticksWhere,
       orderBy: { id: direction === "prev" ? "asc" : "desc" },
@@ -123,6 +151,31 @@ export default async function ChargeEditPage({
           select: { id: true, name: true },
         })
       : Promise.resolve(null),
+    prisma.charges.findFirst({
+      where: { charging_process_id: id },
+      orderBy: { date: "asc" },
+      select: tickSelect,
+    }),
+    prisma.charges.findFirst({
+      where: { charging_process_id: id },
+      orderBy: { date: "desc" },
+      select: tickSelect,
+    }),
+    prisma.charges.findFirst({
+      where: { charging_process_id: id },
+      orderBy: { date: "asc" },
+      skip: 1,
+      select: { date: true },
+    }),
+    prisma.charges.findFirst({
+      where: { charging_process_id: id },
+      orderBy: { date: "desc" },
+      skip: 1,
+      select: { date: true },
+    }),
+    deriveChargerTypeFromTicks(id),
+    deriveChargerTicksContext(id),
+    deriveTickFieldSuggestions(),
   ]);
 
   const positionOption: FKOption | null = refPosition
@@ -162,6 +215,48 @@ export default async function ChargeEditPage({
     position: positionOption,
     address: addressOption,
     geofence: geofenceOption,
+  };
+
+  function serializeTick(
+    tk: {
+      date: Date;
+      battery_level: number | null;
+      charge_energy_added: { toString(): string };
+      ideal_battery_range_km: { toString(): string } | null;
+      rated_battery_range_km: { toString(): string } | null;
+    } | null,
+  ) {
+    if (!tk) return null;
+    return {
+      date: tk.date.toISOString(),
+      battery_level: tk.battery_level,
+      charge_energy_added: tk.charge_energy_added.toString(),
+      ideal_battery_range_km: tk.ideal_battery_range_km?.toString() ?? null,
+      rated_battery_range_km: tk.rated_battery_range_km?.toString() ?? null,
+    };
+  }
+
+  // Pour l'affichage dans le Select AC/DC : si "mixed" on retombe sur le
+  // dernier tick. Si "unknown" on laisse vide (l'utilisateur peut décider).
+  const initialChargerType: "AC" | "DC" | "" =
+    chargerTypeInfo.chargerType === "AC" || chargerTypeInfo.chargerType === "DC"
+      ? chargerTypeInfo.chargerType
+      : chargerTypeInfo.chargerType === "mixed" &&
+          (chargerTypeInfo.fallbackFromLastTick === "AC" ||
+            chargerTypeInfo.fallbackFromLastTick === "DC")
+        ? chargerTypeInfo.fallbackFromLastTick
+        : "";
+
+  const tickContext: ChargeProcessTickContext = {
+    firstTick: serializeTick(firstTick),
+    lastTick: serializeTick(lastTick),
+    chargerType: chargerTypeInfo.chargerType,
+    initialChargerType,
+    ticksCount: ticksTotal,
+    secondTickDate: secondTick?.date.toISOString() ?? null,
+    penultimateTickDate: penultimateTick?.date.toISOString() ?? null,
+    chargerTicks: chargerTicksContext,
+    tickFieldSuggestions,
   };
 
   // Pagination cursor : trim à pageSize, calcule hasMore et hasPrev.
@@ -208,6 +303,7 @@ export default async function ChargeEditPage({
           id={proc.id}
           initial={initial}
           initialOptions={initialOptions}
+          tickContext={tickContext}
           ticksCount={ticksTotal}
           readOnly={env.READ_ONLY}
           saveAction={boundUpdate}

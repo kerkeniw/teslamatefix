@@ -24,7 +24,9 @@ export function useGeofenceColumns(): ColumnDef<GeofenceRow>[] {
     {
       accessorKey: "id",
       header: tCommon("id"),
-      cell: ({ row }) => <span className="font-mono text-xs">{row.original.id}</span>,
+      cell: ({ row }) => (
+        <span className="font-mono text-xs tabular-nums">{row.original.id}</span>
+      ),
     },
     {
       accessorKey: "name",
@@ -35,7 +37,7 @@ export function useGeofenceColumns(): ColumnDef<GeofenceRow>[] {
       id: "coords",
       header: `${t("fields.latitude")} / ${t("fields.longitude")}`,
       cell: ({ row }) => (
-        <span className="font-mono text-xs">
+        <span className="font-mono text-xs tabular-nums">
           {Number(row.original.latitude).toFixed(4)}, {Number(row.original.longitude).toFixed(4)}
         </span>
       ),
@@ -43,7 +45,9 @@ export function useGeofenceColumns(): ColumnDef<GeofenceRow>[] {
     {
       accessorKey: "radius",
       header: t("fields.radius"),
-      cell: ({ row }) => `${row.original.radius} m`,
+      cell: ({ row }) => (
+        <span className="font-mono tabular-nums">{row.original.radius} m</span>
+      ),
     },
     {
       accessorKey: "billing_type",

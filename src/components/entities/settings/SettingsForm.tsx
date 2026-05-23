@@ -69,13 +69,13 @@ export function SettingsForm({ initial, readOnly = false, saveAction }: Settings
   return (
     <form action={formAction} className="space-y-8">
       {readOnly ? (
-        <div className="rounded-md border border-amber-300/40 bg-amber-50 p-3 text-sm text-amber-900 dark:bg-amber-950/30 dark:text-amber-200">
+        <div className="rounded-xl border border-warn/30 bg-warn/10 p-3 text-sm text-warn">
           {tCommon("readOnlyMode")}
         </div>
       ) : null}
 
       {state?.error ? (
-        <div role="alert" className="rounded-md border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
+        <div role="alert" className="rounded-xl border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
           {state.error}
         </div>
       ) : null}

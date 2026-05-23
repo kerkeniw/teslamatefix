@@ -52,8 +52,8 @@ export function CursorPagination({
   }
 
   return (
-    <div className="flex items-center justify-between gap-4 py-3">
-      <div className="text-xs text-muted-foreground">
+    <div className="flex flex-wrap items-center justify-between gap-3 py-3">
+      <div className="font-mono text-[11px] uppercase tracking-[0.08em] text-muted-foreground tabular-nums">
         <button
           type="button"
           onClick={reset}
@@ -68,7 +68,7 @@ export function CursorPagination({
         <select
           value={pageSize}
           onChange={(e) => setPageSize(Number(e.target.value))}
-          className="rounded-md border border-input bg-transparent px-2 py-1 text-xs"
+          className="rounded-full border border-input bg-card px-3 py-1 font-mono text-[10px] uppercase tracking-[0.08em] text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/30"
         >
           {pageSizeOptions.map((size) => (
             <option key={size} value={size}>

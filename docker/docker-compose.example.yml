@@ -21,8 +21,10 @@
 
 services:
   teslamatefix:
-    # Remplacer <owner> par le namespace GitHub publiant l'image.
-    image: ghcr.io/<owner>/teslamatefix:latest
+    # Image officielle publiée sur Docker Hub par le workflow GHA
+    # `.github/workflows/docker-publish.yml` (déclenché sur tag `v*`).
+    # Tags disponibles : `latest`, `0.1.0`, etc. (cf. release GitHub).
+    image: wkerkeni/teslamatefix:latest
     restart: always
     depends_on:
       - database

@@ -44,7 +44,11 @@ export function useDriveColumns(): ColumnDef<DriveRow>[] {
     {
       accessorKey: "start_date",
       header: t("fields.startDate"),
-      cell: ({ row }) => format.dateTime(new Date(row.original.start_date), "short"),
+      cell: ({ row }) => (
+        <span className="font-mono text-xs tabular-nums">
+          {format.dateTime(new Date(row.original.start_date), "short")}
+        </span>
+      ),
     },
     {
       id: "route",
@@ -60,16 +64,19 @@ export function useDriveColumns(): ColumnDef<DriveRow>[] {
     {
       accessorKey: "distance",
       header: t("fields.distance"),
-      cell: ({ row }) =>
-        row.original.distance != null
-          ? `${row.original.distance.toFixed(1)} km`
-          : "—",
+      cell: ({ row }) => (
+        <span className="font-mono tabular-nums">
+          {row.original.distance != null
+            ? `${row.original.distance.toFixed(1)} km`
+            : "—"}
+        </span>
+      ),
     },
     {
       accessorKey: "duration_min",
       header: t("fields.durationMin"),
       cell: ({ row }) => (
-        <span className="text-xs text-muted-foreground">
+        <span className="font-mono text-xs tabular-nums text-muted-foreground">
           {formatDuration(row.original.duration_min, t)}
         </span>
       ),
