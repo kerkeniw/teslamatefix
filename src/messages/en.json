@@ -528,6 +528,7 @@
       "efficiencyPct": "Efficiency (%)",
       "costPerKwh": "Unit cost (€/kWh)",
       "chargerType": "Charger type",
+      "chargerPower": "Instant power (kW)",
       "chargerPowerKw": "Charger power (kW)",
       "chargerTypePower": "Charger",
       "chargerVoltage": "Voltage (V)",
@@ -552,7 +553,15 @@
     },
     "hints": {
       "chargeEnergyAdded": "Visible in the Tesla app (rounded to kWh).",
-      "chargeEnergyUsed": "Energy billed by the station. May be missing if the car had no network."
+      "chargeEnergyUsed": "Energy billed by the station. May be missing if the car had no network.",
+      "tickValue": "tick: {value}",
+      "chargerTypeChangeWillUpdateTicks": "Changing this will update {n} ticks and reset brand / cable / type.",
+      "applyToAllTicks": "Apply to all ticks",
+      "statsRange": "min: {min} — max: {max}",
+      "statsDistinct": "values: {values}"
+    },
+    "warnings": {
+      "chargerTypeMixed": "Inconsistent type: ticks mix AC and DC. Display falls back to the last tick."
     },
     "filters": {
       "carId": "Vehicle",
@@ -565,7 +574,8 @@
     "type": {
       "ac": "AC",
       "dc": "DC",
-      "unknown": "—"
+      "unknown": "—",
+      "mixed": "inconsistent"
     },
     "duration": {
       "minutes": "{m} min",
@@ -592,7 +602,10 @@
       "requiredField": "Required field.",
       "invalidChargerPower": "Power not supported for this charger type.",
       "invalidContext": "Could not prepare the session context.",
-      "noPositionBefore": "No position recorded before the start date for this vehicle. Import a GPS position before creating this session."
+      "noPositionBefore": "No position recorded before the start date for this vehicle. Import a GPS position before creating this session.",
+      "startAfterSecondTick": "Start must be before the second tick ({tick}).",
+      "endBeforeOrEqualPenultimateTick": "End must be after the second-to-last tick ({tick}).",
+      "invalidChargerType": "Invalid charger type."
     },
     "ticksTab": {
       "totalCount": "{n} measurement(s)",
@@ -646,7 +659,9 @@
       "create": "Create session",
       "save": "Save",
       "delete": "Delete",
-      "estimateEndValues": "Estimate end values"
+      "estimateEndValues": "Estimate end values",
+      "applyChargerDefaults": "Apply default values",
+      "cancelChargerChanges": "Reset"
     },
     "create": {
       "title": "Create charging session",

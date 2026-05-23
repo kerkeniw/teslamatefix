@@ -16,6 +16,7 @@ import { NumberInput } from "@/components/form/number-input";
 import { Input } from "@/components/ui/input";
 import { DateTimeInput } from "@/components/form/datetime-input";
 import { FKCombobox, type FKOption } from "@/components/form/fk-combobox";
+import { DEFAULT_POWER_KW } from "@/lib/integrity/charger-specs";
 import { searchAddressesAction } from "@/app/actions/search-addresses";
 import { searchGeofencesAction } from "@/app/actions/search-geofences";
 import {
@@ -98,7 +99,7 @@ function defaultStep1(): Step1Values {
     charge_energy_used: "",
     cost: "",
     charger_type: "AC",
-    charger_power_kw: "11",
+    charger_power_kw: String(DEFAULT_POWER_KW.AC),
   };
 }
 
@@ -212,11 +213,10 @@ function Step1({
 
   function onChargerTypeChange(t: string | null) {
     const next = t === "DC" ? "DC" : "AC";
-    const defaultPower = next === "AC" ? "11" : "50";
     setValues((v) => ({
       ...v,
       charger_type: next,
-      charger_power_kw: defaultPower,
+      charger_power_kw: String(DEFAULT_POWER_KW[next]),
     }));
   }
 

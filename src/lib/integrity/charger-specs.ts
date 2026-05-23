@@ -3,6 +3,16 @@ export type ChargerType = "AC" | "DC";
 export const AC_POWERS_KW = [7, 11, 22] as const;
 export const DC_POWERS_KW = [50, 150, 250, 350] as const;
 
+/**
+ * Puissances par défaut proposées dans les formulaires (création + édition).
+ * - AC 7 kW : cas dominant de saisie utilisateur (recharges à domicile).
+ * - DC 250 kW : palier Supercharger V3, le plus courant aujourd'hui.
+ */
+export const DEFAULT_POWER_KW = { AC: 7, DC: 250 } as const satisfies Record<
+  ChargerType,
+  number
+>;
+
 export type ChargerSpecs = {
   voltage: number | null;
   phases: number | null;
