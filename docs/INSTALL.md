@@ -24,7 +24,7 @@ Deux méthodes au choix.
 ### 2.a. Via l'image Docker (recommandé après pull)
 
 ```bash
-docker run --rm -i ghcr.io/<owner>/teslamatefix:latest \
+docker run --rm -i wkerkeni/teslamatefix:latest \
   node scripts/hash-password.mjs <<< 'VotreMotDePasse'
 ```
 
@@ -118,7 +118,7 @@ Le bloc complet est dans [`docker/docker-compose.example.yml`](../docker/docker-
 Points clés :
 
 - `depends_on: [database]` — TeslaMateFix démarre après la base.
-- `image: ghcr.io/<owner>/teslamatefix:latest` — adapter au registry effectif.
+- `image: wkerkeni/teslamatefix:latest` — image officielle publiée sur Docker Hub.
 - `ports: ["3001:3001"]` — exposez sur l'hôte ou commentez et passez par le reverse-proxy uniquement.
 - `healthcheck` — Compose marquera le service `unhealthy` si `/api/health` ne répond pas.
 
@@ -166,7 +166,7 @@ Compose recrée le conteneur avec la nouvelle image. Le service est sans état (
 ```bash
 docker compose stop teslamatefix
 docker compose rm -f teslamatefix
-docker image rm ghcr.io/<owner>/teslamatefix:latest
+docker image rm wkerkeni/teslamatefix:latest
 ```
 
 Pour supprimer le rôle PG :
@@ -175,3 +175,39 @@ Pour supprimer le rôle PG :
 docker compose exec database \
   psql -U postgres -d teslamate -c "DROP OWNED BY teslamatefix; DROP ROLE teslamatefix;"
 ```
+
+---
+
+## 10. Publication d'image (mainteneur)
+
+Cette section concerne uniquement le mainteneur du repo — utilisateurs finaux : ignorer.
+
+### 10.a. Workflow GitHub Actions (release officielle)
+
+Le workflow [`.github/workflows/docker-publish.yml`](../.github/workflows/docker-publish.yml) se déclenche sur chaque push de tag `v*` et publie une image multi-architectures (`linux/amd64` + `linux/arm64`) sur Docker Hub :
+
+```bash
+git tag -a v0.2.0 -m "v0.2.0 — …"
+git push origin v0.2.0
+```
+
+Tags publiés sur Docker Hub : `wkerkeni/teslamatefix:0.2.0` + `wkerkeni/teslamatefix:latest`.
+
+**Secrets requis** sur le repo GitHub (Settings → Secrets and variables → Actions) :
+
+- `DOCKERHUB_USERNAME` : `wkerkeni` (namespace Docker Hub, ≠ namespace GitHub).
+- `DOCKERHUB_TOKEN` : access token créé sur https://hub.docker.com/settings/security (scope `read,write,delete` sur le repo).
+
+### 10.b. Build manuel local
+
+Pour tester avant un tag ou pour des builds hors release : [`scripts/docker-publish.sh`](../scripts/docker-publish.sh).
+
+```bash
+# Build local single-archi (linux/amd64) chargé dans le daemon :
+./scripts/docker-publish.sh v0.1.0
+
+# Build multi-archi + push sur Docker Hub (nécessite `docker login` au préalable) :
+./scripts/docker-publish.sh v0.1.0 --push
+```
+
+Pré-requis : Docker Engine ≥ 24, plugin `buildx`. Pour le multi-archi local, QEMU est installé automatiquement par le builder.

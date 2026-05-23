@@ -19,6 +19,9 @@
 # Playwright MCP debug artifacts (snapshots, console logs)
 .playwright-mcp/
 
+# Claude Code local state (skills, settings, memory shortcuts)
+.claude/
+
 # next.js
 /.next/
 /out/
