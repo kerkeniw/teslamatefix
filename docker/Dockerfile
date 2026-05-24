@@ -52,6 +52,14 @@ WORKDIR /app
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_ENV=production
 
+# Placeholders pour permettre à `next build` de collecter les pages
+# dynamiques. `src/lib/env.ts` exige AUTH_SECRET (≥32 chars) et DATABASE_URL
+# au chargement du module. Au runtime (stage runner), l'entrypoint Docker
+# fournit les vraies valeurs (lues depuis /data ou les vars d'env).
+# Le stage runner n'hérite PAS de ces ENV — ils restent confinés ici.
+ENV AUTH_SECRET=build-time-placeholder-min-32-chars-aaaaaaaa
+ENV DATABASE_URL=postgresql://placeholder:placeholder@placeholder:5432/placeholder?schema=public
+
 # OpenSSL requis pour le runtime Prisma au moment de `prisma generate`.
 RUN apt-get update \
  && apt-get install -y --no-install-recommends ca-certificates openssl \
