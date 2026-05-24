@@ -1,7 +1,7 @@
 # Build et publication de l'image Docker `wkerkeni/teslamatefix` sur Docker Hub.
 # Déclenché à chaque push d'un tag `v*` (ex. v0.1.0, v0.2.0-rc1, …).
 #
-# Secrets requis sur le repo GitHub (Settings → Secrets and variables → Actions) :
+# Secrets requis (dans l'environment GitHub "DockerHub", cf. job ci-dessous) :
 #   - DOCKERHUB_USERNAME : `wkerkeni` (namespace Docker Hub, ≠ GitHub).
 #   - DOCKERHUB_TOKEN    : access token Docker Hub (https://hub.docker.com/settings/security).
 #
@@ -20,6 +20,13 @@ permissions:
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
+    # Les secrets DOCKERHUB_USERNAME / DOCKERHUB_TOKEN sont stockés dans
+    # l'environment GitHub `DockerHub` (Settings → Environments). Pour que
+    # les secrets d'environment soient injectés, le job DOIT déclarer
+    # l'environment ici — sans ça, `${{ secrets.* }}` lit les repository
+    # secrets (vides), et docker/login-action@v3 échoue avec "Username and
+    # password required".
+    environment: DockerHub
     steps:
       - name: Checkout
         uses: actions/checkout@v4

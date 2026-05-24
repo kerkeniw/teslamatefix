@@ -1,0 +1,46 @@
+# ----------------------------------------------------------------------------
+# Compose de TEST local pour TeslaMateFix.
+# À utiliser pour valider l'image fraîchement build avant de tagger une release.
+#
+# Pré-requis :
+#   - L'image `wkerkeni/teslamatefix:0.2.0` chargée localement
+#     (via `./scripts/docker-publish.sh v0.2.0` sans `--push`).
+#   - Un Postgres TeslaMate accessible sur l'hôte, port 5432.
+#   - Un fichier `.env.test` à la racine du repo avec :
+#       DATABASE_USER=teslamate
+#       DATABASE_PASS=<le mot de passe Postgres>
+#       DATABASE_NAME=teslamate
+#
+# Lancement :
+#   docker compose -f docker/docker-compose.test.yml --env-file .env.test up
+#
+# Arrêt + purge du volume (reset complet du bootstrap) :
+#   docker compose -f docker/docker-compose.test.yml down -v
+# ----------------------------------------------------------------------------
+
+services:
+  teslamatefix:
+    image: wkerkeni/teslamatefix:0.2.0
+    container_name: teslamatefix-test
+    restart: "no"
+    ports:
+      - "3001:3001"
+    environment:
+      # L'entrypoint reconstruit DATABASE_URL depuis ces 3 vars + DATABASE_HOST.
+      DATABASE_USER: "${DATABASE_USER}"
+      DATABASE_PASS: "${DATABASE_PASS}"
+      DATABASE_NAME: "${DATABASE_NAME}"
+      # Pointe vers le Postgres exposé sur l'hôte.
+      DATABASE_HOST: "host.docker.internal"
+      # Logs verbeux pour le debug initial.
+      LOG_LEVEL: "debug"
+    volumes:
+      # Volume séparé du déploiement prod pour pouvoir le purger sans risque.
+      - teslamatefix-data-test:/data
+    # Indispensable pour que `host.docker.internal` résolve sur Linux pur
+    # (Docker Desktop le fournit nativement, mais pas Docker Engine seul).
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+volumes:
+  teslamatefix-data-test:

@@ -22,6 +22,14 @@
       (fix `0fcf34f`) : placeholders `AUTH_SECRET` + `DATABASE_URL`
       ajoutés au stage builder du Dockerfile (multi-stage isolation,
       le runner n'hérite pas).
+- [x] **Boucle redirect `/change-password`** : la server action
+      `changePasswordAction` était interceptée par `requireSession()`
+      avant d'écrire le nouveau hash. Fix : opt-in
+      `{ skipPasswordChangeRedirect: true }` (commit `eb2e321`).
+- [x] **Workflow GHA échoue au login Docker Hub** : les secrets étaient
+      stockés dans un environment GitHub `DockerHub` mais le job ne
+      le déclarait pas, donc `${{ secrets.* }}` lisait les repo secrets
+      (vides). Fix : ajout de `environment: DockerHub` au job.
 
 ## Avant le tag
 

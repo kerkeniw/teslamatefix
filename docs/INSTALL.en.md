@@ -122,7 +122,7 @@ git push origin v0.2.0
 
 Published tags: `wkerkeni/teslamatefix:0.2.0` + `wkerkeni/teslamatefix:latest`.
 
-**Required secrets** on the GitHub repo (Settings → Secrets and variables → Actions):
+**Required secrets** on the GitHub repo — stored in the `DockerHub` environment (Settings → Environments → New environment → add the secrets). The workflow job declares `environment: DockerHub` to access them; plain repository secrets are not enough.
 
 - `DOCKERHUB_USERNAME`: `wkerkeni` (Docker Hub namespace, ≠ GitHub namespace `kerkeniw`).
 - `DOCKERHUB_TOKEN`: access token from https://hub.docker.com/settings/security (scope `read,write,delete` on the repo).
