@@ -4,81 +4,63 @@ Outil web mobile-first pour **corriger et compléter** les données collectées 
 [TeslaMate](https://github.com/teslamate-org/teslamate). Quand la voiture perd sa
 connexion (parking souterrain, zone blanche, panne API), des trajets et sessions
 de charge sont enregistrés incomplets — fin manquante, kilométrage faux, énergie
-absente, état bloqué sur `online`. Aujourd'hui, la seule façon de corriger ces
-données est `psql` à la main, ce qui est risqué et pénible.
+absente, état bloqué sur `online`. TeslaMateFix s'ajoute au `docker-compose` de
+TeslaMate, se connecte à sa base PostgreSQL et expose une UI sécurisée pour
+réparer chaque entité (`drives`, `charges`, `positions`, `addresses`,
+`geofences`, `states`, `updates`, `cars`, `settings`).
 
-TeslaMateFix s'ajoute au `docker-compose.yml` de TeslaMate, se connecte à la base
-PostgreSQL existante et expose une UI sécurisée pour gérer chaque entité métier
-(`drives`, `charges`, `positions`, `addresses`, `geofences`, `states`, `updates`,
-`cars`, `settings`).
+## Installation
 
-## Stack
+Ajouter ce bloc à votre `docker-compose.yml` TeslaMate, à côté des services
+`teslamate` / `database` / `grafana` / `mosquitto` :
 
-- **Next.js 16** (App Router, src-dir, Turbopack, output `standalone`)
-- **React 19** + **TypeScript 5**
-- **Tailwind CSS 4** + **shadcn/ui** (preset `base-nova`, bâti sur `@base-ui/react`)
-- **Prisma 6** (introspection read-only du schéma TeslaMate, **jamais** de
-  `prisma migrate` sur la base partagée)
-- **iron-session** (cookie chiffré) pour l'auth single-user
-- **next-intl 4** pour i18n FR/EN
-- **TanStack Table** pour les listes paginées
-- **pino** pour les logs structurés
-- **Vitest** + **Playwright** pour les tests
+```yaml
+services:
+  teslamatefix:
+    image: wkerkeni/teslamatefix:latest
+    restart: always
+    depends_on:
+      - database
+    ports:
+      - "3001:3001"
+    environment:
+      DATABASE_USER: "${DATABASE_USER:-teslamate}"
+      DATABASE_PASS: "${DATABASE_PASS}"
+      DATABASE_NAME: "${DATABASE_NAME:-teslamate}"
+    volumes:
+      - teslamatefix-data:/data
 
-## Démarrage rapide (dev)
-
-```bash
-# 1) Pointer DATABASE_URL vers une base TeslaMate accessible
-cp .env.example .env
-# 2) Générer un AUTH_SECRET et un AUTH_PASSWORD_HASH
-openssl rand -base64 32          # → AUTH_SECRET
-echo -n "MotDePasse" | npm run auth:hash --silent  # → AUTH_PASSWORD_HASH
-# 3) Compléter .env, puis :
-npm install
-npm run dev
-# Accès : http://localhost:3000 (login : la valeur de AUTH_USERNAME)
+volumes:
+  teslamatefix-data:
 ```
 
-## Production (Docker)
-
-Voir [`docs/INSTALL.md`](docs/INSTALL.md) (FR) / [`docs/INSTALL.en.md`](docs/INSTALL.en.md) (EN)
-pour le guide d'intégration au compose TeslaMate, et
-[`docs/INTEGRATION_TESLAMATE.md`](docs/INTEGRATION_TESLAMATE.md) pour les détails
-de mise en place du reverse-proxy et du backup préalable.
-
-Le `docker-compose.example.yml` à coller dans la stack TeslaMate est dans
-[`docker/`](docker/).
-
-## Tests
+Puis :
 
 ```bash
-npm run test       # Vitest unit (lib/integrity)
-npm run test:e2e   # Playwright e2e (login → dashboard → logout)
-npm run typecheck  # tsc --noEmit
-npm run build      # next build (Turbopack)
+docker compose up -d teslamatefix
 ```
 
-## Sécurité
+Ouvrir `http://<host>:3001`, se connecter avec **`admin`** / **`admin`** et
+choisir un nouveau mot de passe lors de la redirection (premier login obligatoire,
+pattern Grafana).
 
-- Une seule paire identifiant/mot-de-passe via env (`AUTH_USERNAME`,
-  `AUTH_PASSWORD_HASH` bcrypt, `AUTH_SECRET` 32+ chars).
-- Cookie session `httpOnly` + `sameSite=lax` + `secure` en production.
-- Rate limit 5 tentatives / 5 min / IP sur `/login`.
-- Mode `READ_ONLY=true` pour bloquer toute mutation (utile en phase pilote ou
-  en backup).
-- **Recommandé** : créer un utilisateur PostgreSQL dédié avec privilèges
-  minimaux via [`docker/init-teslamatefix-user.sql`](docker/init-teslamatefix-user.sql).
-  Pas de privilège sur les tokens OAuth chiffrés Cloak ni sur `schema_migrations`.
+C'est tout. Le secret de session et le hash bcrypt sont générés
+automatiquement au premier démarrage et persistés dans le volume
+`teslamatefix-data`.
 
-## Plan & journal
+## Aller plus loin
 
-- **Plan d'exécution** : `~/.claude/plans/nous-allons-cr-er-une-woolly-donut.md`
-- **Journal d'implémentation** : [`docs/IMPLEMENTATION.md`](docs/IMPLEMENTATION.md)
-
-## Statut
-
-En développement actif. Pas encore publié.
+- **Sécuriser la mise en prod** (HTTPS reverse-proxy, rôle PostgreSQL dédié,
+  hash fourni en env, mode lecture seule) — voir
+  [`docs/INSTALL.md`](docs/INSTALL.md) (FR) /
+  [`docs/INSTALL.en.md`](docs/INSTALL.en.md) (EN).
+- **Intégration TeslaMate détaillée** (sauvegarde Postgres, reverse-proxy
+  nginx/Caddy/Traefik) —
+  [`docs/INTEGRATION_TESLAMATE.md`](docs/INTEGRATION_TESLAMATE.md).
+- **Stack technique** — Next.js 16, React 19, Prisma 6 (introspection
+  read-only de TeslaMate), iron-session, next-intl FR/EN, Tailwind 4 +
+  shadcn/ui.
 
 ## Licence
 
-MIT
+MIT.

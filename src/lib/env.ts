@@ -1,8 +1,23 @@
 /**
  * Validation des variables d'environnement au démarrage.
- * Lance une erreur explicite si une variable critique manque, plutôt que d'échouer
- * cryptiquement plus tard. Importer ce module au plus tôt côté serveur.
+ *
+ * Auth — modèle "zero-config" (depuis v0.2.0) :
+ *   - L'entrypoint Docker (`docker/entrypoint.sh`) bootstrappe AUTH_SECRET,
+ *     AUTH_USERNAME et AUTH_PASSWORD_HASH dans `/data` au premier démarrage,
+ *     puis les exporte dans l'env avant de lancer node.
+ *   - `env.AUTH_SECRET` reste exposé ici (utilisé pour la config iron-session).
+ *   - AUTH_USERNAME et AUTH_PASSWORD_HASH ne sont **plus** dans cet objet :
+ *     ils sont lus à chaud via les helpers `getCurrentUsername()` et
+ *     `getCurrentPasswordHash()` (cf. `lib/auth.ts`) pour permettre la
+ *     rotation à chaud après changement de mot de passe.
+ *
+ * En dev local : si AUTH_SECRET n'est pas en env, on tente de le lire depuis
+ * `TMFIX_SECRETS_DIR/auth_secret` (par défaut `/data/auth_secret`).
  */
+
+import fs from "node:fs";
+
+const SECRETS_DIR = process.env.TMFIX_SECRETS_DIR ?? "/data";
 
 function required(name: string): string {
   const value = process.env[name];
@@ -20,7 +35,34 @@ function optional(name: string, fallback: string): string {
   return value && value.trim() !== "" ? value : fallback;
 }
 
-const AUTH_SECRET = required("AUTH_SECRET");
+/**
+ * Lit AUTH_SECRET dans l'env, sinon depuis le filesystem (entrypoint Docker
+ * l'aura déposé là au premier démarrage). En cas d'absence totale, lance une
+ * erreur explicite avec les options de récupération.
+ */
+function loadAuthSecret(): string {
+  const fromEnv = process.env.AUTH_SECRET;
+  if (fromEnv && fromEnv.trim() !== "") return fromEnv;
+
+  const file = `${SECRETS_DIR}/auth_secret`;
+  if (fs.existsSync(file)) {
+    const fromFile = fs.readFileSync(file, "utf8").trim();
+    if (fromFile) {
+      // Propager vers process.env pour que le proxy (qui ne passe pas par
+      // ce module) puisse le récupérer via process.env.AUTH_SECRET.
+      process.env.AUTH_SECRET = fromFile;
+      return fromFile;
+    }
+  }
+
+  throw new Error(
+    `[teslamatefix] AUTH_SECRET manquant — ni en env, ni dans ${file}. ` +
+      `Le container Docker bootstrappe ce secret automatiquement. En dev ` +
+      `local, générer : openssl rand -base64 32 > ${file}`,
+  );
+}
+
+const AUTH_SECRET = loadAuthSecret();
 if (AUTH_SECRET.length < 32) {
   throw new Error(
     `[teslamatefix] AUTH_SECRET doit faire au moins 32 caractères ` +
@@ -28,32 +70,20 @@ if (AUTH_SECRET.length < 32) {
   );
 }
 
-// Format bcrypt attendu : $2[aby]$<cost>$<salt+hash>, exactement 60 caractères.
-// Si on tombe sur un hash plus court, c'est presque toujours dotenv-expand qui a
-// interprété les `$` comme variables shell. La seule façon d'échapper dans
-// `.env` chargé par `@next/env` est de préfixer chaque `$` par `\` :
-//   AUTH_PASSWORD_HASH=\$2b\$12\$abcdef...
-// Les single-quotes NE protègent PAS (dotenv-expand opère après le parsing).
-const AUTH_PASSWORD_HASH = required("AUTH_PASSWORD_HASH");
-if (!/^\$2[aby]\$\d{2}\$.{53}$/.test(AUTH_PASSWORD_HASH)) {
-  throw new Error(
-    `[teslamatefix] AUTH_PASSWORD_HASH n'est pas un hash bcrypt valide ` +
-      `(longueur ${AUTH_PASSWORD_HASH.length}, attendu 60 et préfixe \\$2x\\$). ` +
-      `Cause fréquente : les '$' du hash ne sont pas échappés dans .env. ` +
-      `Préfixer chaque '$' par '\\' : AUTH_PASSWORD_HASH=\\$2b\\$12\\$....`,
-  );
-}
-
 export const env = {
   DATABASE_URL: required("DATABASE_URL"),
-  AUTH_USERNAME: required("AUTH_USERNAME"),
-  AUTH_PASSWORD_HASH,
   AUTH_SECRET,
   DEFAULT_LOCALE: optional("DEFAULT_LOCALE", "fr") as "fr" | "en",
   LOG_LEVEL: optional("LOG_LEVEL", "info"),
   READ_ONLY: optional("READ_ONLY", "false") === "true",
   PORT: parseInt(optional("PORT", "3001"), 10),
   NODE_ENV: process.env.NODE_ENV ?? "development",
+  /**
+   * Chemin du volume persistant utilisé pour les secrets bootstrap-able
+   * (username, hash bcrypt, flag force-change). L'entrypoint Docker garantit
+   * que ce dossier existe et appartient au user `node`.
+   */
+  SECRETS_DIR,
 } as const;
 
 export type Env = typeof env;

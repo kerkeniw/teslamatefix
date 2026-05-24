@@ -4,185 +4,115 @@
 > existante via Docker Compose.
 > Version anglaise : [`INSTALL.en.md`](./INSTALL.en.md).
 
-## 1. Prérequis
+## 1. Installation rapide (zero-config)
 
-- Une stack [TeslaMate](https://github.com/teslamate-org/teslamate) opérationnelle, déployée via `docker compose` (services `teslamate`, `database`, `grafana`, `mosquitto`).
-- Docker Engine ≥ 24 et `docker compose` v2 sur l'hôte.
-- Accès à un terminal sur l'hôte qui héberge le compose TeslaMate.
-- (Optionnel mais recommandé) Un reverse-proxy HTTPS (nginx, Caddy, Traefik) — voir [`INTEGRATION_TESLAMATE.md`](./INTEGRATION_TESLAMATE.md).
+Pré-requis : une stack [TeslaMate](https://github.com/teslamate-org/teslamate) opérationnelle, déployée via `docker compose` (services `teslamate`, `database`, `grafana`, `mosquitto`), Docker Engine ≥ 24 et `docker compose` v2.
 
-> **Sauvegarde — IMPORTANT.** Avant la première utilisation, faites un `pg_dump` complet de la base TeslaMate. Voir [`INTEGRATION_TESLAMATE.md`](./INTEGRATION_TESLAMATE.md#sauvegarde-postgres-recommandée).
+> **Sauvegarde recommandée.** Avant la première utilisation, faire un `pg_dump` complet de la base TeslaMate — voir [`INTEGRATION_TESLAMATE.md`](./INTEGRATION_TESLAMATE.md#sauvegarde-postgres-recommandée).
 
----
-
-## 2. Génération du hash bcrypt (mot de passe admin)
-
-TeslaMateFix utilise un seul compte (login + mot de passe). Le mot de passe est stocké côté env sous forme de hash **bcrypt** (jamais en clair).
-
-Deux méthodes au choix.
-
-### 2.a. Via l'image Docker (recommandé après pull)
+Coller le bloc [`docker/docker-compose.example.yml`](../docker/docker-compose.example.yml) dans votre `docker-compose.yml`, puis :
 
 ```bash
-docker run --rm -i wkerkeni/teslamatefix:latest \
-  node scripts/hash-password.mjs <<< 'VotreMotDePasse'
+docker compose up -d teslamatefix
 ```
 
-Le hash s'affiche sur stdout. Copiez-le dans `TMFIX_AUTH_PASSWORD_HASH`.
+Aucune variable d'env spécifique à TeslaMateFix n'est requise : l'image réutilise `DATABASE_USER` / `DATABASE_PASS` / `DATABASE_NAME` du compose TeslaMate pour assembler le DSN, et bootstrappe ses secrets internes (clé de session, hash bcrypt par défaut) dans un volume nommé `teslamatefix-data`.
 
-### 2.b. Via Node local (si vous avez cloné le repo)
+## 2. Premier login
+
+1. Ouvrir `http://<host>:3001` (ou l'URL HTTPS du reverse-proxy).
+2. Login : **`admin`** / **`admin`**.
+3. L'application redirige automatiquement vers `/change-password` (pattern Grafana) : choisir un nouveau mot de passe (≥ 12 caractères, lettres + chiffres).
+4. Une fois validé, le dashboard est accessible.
+
+Le nouveau hash est persisté dans le volume `teslamatefix-data` (fichier `password_hash`). Survit aux `docker compose restart` et aux mises à jour d'image.
+
+## 3. Mise à jour
 
 ```bash
-echo -n 'VotreMotDePasse' | npm run -s auth:hash
+docker compose pull teslamatefix
+docker compose up -d teslamatefix
 ```
 
-> **Astuce.** Préfixez la commande par un espace si votre shell historise les commandes (zsh `setopt HIST_IGNORE_SPACE`, bash `HISTCONTROL=ignorespace`) pour éviter de laisser le mot de passe en clair dans l'historique.
+Compose recrée le conteneur avec la nouvelle image. Le volume `teslamatefix-data` est préservé, donc le mot de passe et la clé de session restent inchangés. Lire les release notes : si une nouvelle migration TeslaMate apparaît (côté schéma TeslaMate), TeslaMateFix peut nécessiter une version compatible.
 
----
-
-## 3. Génération de `AUTH_SECRET`
-
-Clé symétrique utilisée pour chiffrer le cookie de session (iron-session). Elle doit faire **au moins 32 caractères** ; 32 octets aléatoires en base64 fonctionnent très bien :
+## 4. Désinstallation
 
 ```bash
-openssl rand -base64 32
+docker compose stop teslamatefix
+docker compose rm -f teslamatefix
+docker volume rm <stack>_teslamatefix-data
+docker image rm wkerkeni/teslamatefix:latest
 ```
 
-Copiez la sortie dans `TMFIX_AUTH_SECRET`. Ne réutilisez pas un secret qui sert ailleurs ; en cas de fuite, déconnectez tout le monde en regénérant la clé.
+## 5. Hardening avancé (optionnel)
 
----
+Cette section concerne les déploiements production / multi-utilisateurs / publics. Le mode rapide §1 est suffisant pour un usage personnel sur réseau local.
 
-## 4. Création de l'utilisateur PostgreSQL dédié
+### 5.a. Reverse-proxy HTTPS
 
-L'application n'utilise **pas** le compte `teslamate` (qui a tous les droits). Elle se connecte avec un rôle restreint `teslamatefix` qui :
+**Obligatoire en production.** Le cookie de session est marqué `Secure` quand `NODE_ENV=production` (déjà le cas dans l'image), ce qui suppose une terminaison TLS. Exemples nginx / Caddy / Traefik dans [`INTEGRATION_TESLAMATE.md`](./INTEGRATION_TESLAMATE.md#exemples-reverse-proxy).
+
+### 5.b. Rôle PostgreSQL dédié
+
+Par défaut, TeslaMateFix se connecte avec l'utilisateur `teslamate` (super-user du DB côté compose). Pour un setup plus sécurisé, créer un rôle restreint qui :
 
 - peut lire/écrire les tables métier (drives, charges, positions, addresses, geofences, states, updates, settings, cars, car_settings, charging_processes) ;
 - **n'a aucun accès** à `public.tokens` (jetons API Tesla chiffrés) ni à `public.schema_migrations` ;
 - **n'a aucun accès** au schéma `private`.
 
-### 4.a. Choisir un mot de passe DB
-
 ```bash
 TMFIX_DB_PASSWORD="$(openssl rand -base64 24 | tr -d '/+=')"
-echo "$TMFIX_DB_PASSWORD"   # à reporter dans le .env
-```
-
-### 4.b. Exécuter le script
-
-Depuis le répertoire qui contient le compose TeslaMate (et le repo TeslaMateFix accessible localement) :
-
-```bash
 docker compose exec -T database \
   psql -U postgres -d teslamate \
   -v tmfix_password="'$TMFIX_DB_PASSWORD'" \
   < docker/init-teslamatefix-user.sql
 ```
 
-> Le quoting `"'$TMFIX_DB_PASSWORD'"` est intentionnel — `psql -v` n'ajoute pas de quotes, il faut donc les fournir pour produire un littéral SQL valide.
+Puis dans le service `teslamatefix` du compose, remplacer `DATABASE_USER/PASS/NAME` par :
 
-Vérification rapide :
+```yaml
+environment:
+  DATABASE_URL: "postgresql://teslamatefix:${TMFIX_DB_PASSWORD}@database:5432/teslamate?schema=public"
+```
+
+(Le DSN explicite a priorité sur la reconstruction automatique.)
+
+### 5.c. Hash bcrypt fourni en env (mode legacy)
+
+Si vous préférez gérer le hash bcrypt hors container (CI, secret manager externe, etc.), fournir les variables d'env :
+
+```yaml
+environment:
+  AUTH_USERNAME: "admin"
+  AUTH_PASSWORD_HASH: '$2b$12$abcdef...'  # 60 caractères, échapper les $ dans .env (\$)
+  AUTH_SECRET: "<32 octets base64 — openssl rand -base64 32>"
+```
+
+Quand `AUTH_PASSWORD_HASH` est défini en env, l'app **ne lit pas** le volume pour le hash et **désactive** la page `/change-password` (l'env serait re-imposée au prochain redémarrage). Pour rebasculer en mode volume : retirer la var d'env et redémarrer.
+
+Générer un hash :
 
 ```bash
-docker compose exec database \
-  psql "postgresql://teslamatefix:$TMFIX_DB_PASSWORD@127.0.0.1:5432/teslamate" \
-  -c "SELECT count(*) FROM cars;"
+docker run --rm -i wkerkeni/teslamatefix:latest \
+  node scripts/hash-password.mjs <<< 'MotDePasse'
 ```
 
-Si la commande renvoie un nombre, le rôle est opérationnel.
+### 5.d. Mode lecture seule (READ_ONLY)
 
----
+Pour une phase pilote ou une consultation multi-utilisateurs sans risque, ajouter à l'env :
 
-## 5. Variables d'environnement
-
-Ajoutez à votre fichier `.env` (celui que `docker compose` lit) :
-
-```dotenv
-# --- TeslaMateFix ---
-TMFIX_DB_PASSWORD=<le mot de passe choisi à l'étape 4.a>
-TMFIX_AUTH_USERNAME=admin
-TMFIX_AUTH_PASSWORD_HASH=<hash bcrypt issu de l'étape 2>
-TMFIX_AUTH_SECRET=<clé issue de l'étape 3>
-TMFIX_DEFAULT_LOCALE=fr        # fr | en
-TMFIX_LOG_LEVEL=info           # trace | debug | info | warn | error
-TMFIX_READ_ONLY=false          # true pour désactiver toutes les mutations
+```yaml
+READ_ONLY: "true"
 ```
 
-> N'engagez **jamais** ce `.env` dans git. Vérifiez `.gitignore`.
+L'UI continue d'afficher toutes les entités et tous les détails, mais les boutons de mutation (Save, Delete, Recalc) sont masqués. Aucune mutation possible.
 
----
+## 6. Publication d'image (mainteneur)
 
-## 6. Ajout du service au compose TeslaMate
+Cette section concerne uniquement le mainteneur du repo.
 
-Le bloc complet est dans [`docker/docker-compose.example.yml`](../docker/docker-compose.example.yml). Copiez-le dans la section `services:` de votre `docker-compose.yml`, à côté de `teslamate` / `database` / `grafana` / `mosquitto`.
-
-Points clés :
-
-- `depends_on: [database]` — TeslaMateFix démarre après la base.
-- `image: wkerkeni/teslamatefix:latest` — image officielle publiée sur Docker Hub.
-- `ports: ["3001:3001"]` — exposez sur l'hôte ou commentez et passez par le reverse-proxy uniquement.
-- `healthcheck` — Compose marquera le service `unhealthy` si `/api/health` ne répond pas.
-
-Démarrage :
-
-```bash
-docker compose pull teslamatefix
-docker compose up -d teslamatefix
-docker compose logs -f teslamatefix
-```
-
----
-
-## 7. Premier login & sécurité
-
-1. Ouvrez `http://<host>:3001` (ou l'URL HTTPS du reverse-proxy).
-2. Connectez-vous avec `TMFIX_AUTH_USERNAME` + le mot de passe choisi à l'étape 2.
-3. Vérifiez que la page d'accueil affiche le compteur d'entités attendu.
-
-### Bonnes pratiques minimales
-
-- **HTTPS obligatoire en production.** Le cookie de session est marqué `Secure` quand `NODE_ENV=production` (déjà le cas dans l'image), ce qui suppose une terminaison TLS. Voir [`INTEGRATION_TESLAMATE.md`](./INTEGRATION_TESLAMATE.md#exemples-reverse-proxy).
-- **Phase pilote : `READ_ONLY=true`.** Pendant les premiers jours, gardez `TMFIX_READ_ONLY=true`. Tous les écrans restent consultables, mais aucun bouton de mutation n'est rendu — risque zéro pour la base.
-- **Mot de passe fort.** Au moins 16 caractères, généré aléatoirement.
-- **Changer le mot de passe** : régénérer un hash (étape 2) et redéployer. Voir [`INTEGRATION_TESLAMATE.md`](./INTEGRATION_TESLAMATE.md#faq).
-- **Limiter l'exposition réseau** : si la machine est sur Internet, n'ouvrez pas le port 3001 directement, branchez-le derrière le reverse-proxy.
-
----
-
-## 8. Mise à jour de l'image
-
-```bash
-docker compose pull teslamatefix
-docker compose up -d teslamatefix
-```
-
-Compose recrée le conteneur avec la nouvelle image. Le service est sans état (aucun volume), aucune migration n'est nécessaire côté TeslaMateFix.
-
-> Lisez les notes de release entre deux versions : si une nouvelle migration TeslaMate apparaît (vous la voyez quand vous mettez à jour TeslaMate), TeslaMateFix peut nécessiter une nouvelle version pour rester compatible.
-
----
-
-## 9. Désinstallation
-
-```bash
-docker compose stop teslamatefix
-docker compose rm -f teslamatefix
-docker image rm wkerkeni/teslamatefix:latest
-```
-
-Pour supprimer le rôle PG :
-
-```bash
-docker compose exec database \
-  psql -U postgres -d teslamate -c "DROP OWNED BY teslamatefix; DROP ROLE teslamatefix;"
-```
-
----
-
-## 10. Publication d'image (mainteneur)
-
-Cette section concerne uniquement le mainteneur du repo — utilisateurs finaux : ignorer.
-
-### 10.a. Workflow GitHub Actions (release officielle)
+### 6.a. Workflow GitHub Actions
 
 Le workflow [`.github/workflows/docker-publish.yml`](../.github/workflows/docker-publish.yml) se déclenche sur chaque push de tag `v*` et publie une image multi-architectures (`linux/amd64` + `linux/arm64`) sur Docker Hub :
 
@@ -191,23 +121,23 @@ git tag -a v0.2.0 -m "v0.2.0 — …"
 git push origin v0.2.0
 ```
 
-Tags publiés sur Docker Hub : `wkerkeni/teslamatefix:0.2.0` + `wkerkeni/teslamatefix:latest`.
+Tags publiés : `wkerkeni/teslamatefix:0.2.0` + `wkerkeni/teslamatefix:latest`.
 
 **Secrets requis** sur le repo GitHub (Settings → Secrets and variables → Actions) :
 
-- `DOCKERHUB_USERNAME` : `wkerkeni` (namespace Docker Hub, ≠ namespace GitHub).
+- `DOCKERHUB_USERNAME` : `wkerkeni` (namespace Docker Hub, ≠ namespace GitHub `kerkeniw`).
 - `DOCKERHUB_TOKEN` : access token créé sur https://hub.docker.com/settings/security (scope `read,write,delete` sur le repo).
 
-### 10.b. Build manuel local
+### 6.b. Build manuel local
 
 Pour tester avant un tag ou pour des builds hors release : [`scripts/docker-publish.sh`](../scripts/docker-publish.sh).
 
 ```bash
 # Build local single-archi (linux/amd64) chargé dans le daemon :
-./scripts/docker-publish.sh v0.1.0
+./scripts/docker-publish.sh v0.2.0
 
 # Build multi-archi + push sur Docker Hub (nécessite `docker login` au préalable) :
-./scripts/docker-publish.sh v0.1.0 --push
+./scripts/docker-publish.sh v0.2.0 --push
 ```
 
 Pré-requis : Docker Engine ≥ 24, plugin `buildx`. Pour le multi-archi local, QEMU est installé automatiquement par le builder.

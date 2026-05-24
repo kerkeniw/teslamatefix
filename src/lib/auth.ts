@@ -1,4 +1,7 @@
-import { cookies } from "next/headers";
+import fs from "node:fs";
+import path from "node:path";
+import { cookies, headers } from "next/headers";
+import { redirect } from "next/navigation";
 import { getIronSession, type SessionOptions } from "iron-session";
 import bcrypt from "bcryptjs";
 import { timingSafeEqual } from "node:crypto";
@@ -34,13 +37,139 @@ export async function isAuthenticated(): Promise<boolean> {
 /**
  * Garde-fou pour les server actions / route handlers : lance si pas authentifié.
  * Dans les pages, préférer un redirect explicite via le proxy.
+ *
+ * Détection du force-password-change : si le flag est présent, on redirige
+ * la requête vers `/change-password` (next-intl middleware ajoutera la
+ * locale). La page `/change-password` elle-même n'appelle PAS cette fonction
+ * (elle utilise `isAuthenticated()`) pour éviter la boucle de redirection.
  */
 export async function requireSession(): Promise<Required<Session>> {
   const session = await getSession();
   if (!session.userId || !session.loggedInAt) {
     throw new Error("Unauthorized");
   }
+  if (isPasswordChangeRequired()) {
+    // Si la requête vient déjà de /change-password (cas paranoid : un sub-RSC
+    // appelle requireSession), on ne redirige pas pour éviter une boucle.
+    const pathname = await currentPathname();
+    if (!/\/change-password(?:\/|$)/.test(pathname)) {
+      redirect("/change-password");
+    }
+  }
   return session as Required<Session>;
+}
+
+/**
+ * Pathname courant accessible depuis un RSC. Next.js expose `next-url` dans
+ * les headers entrants pour les server components — c'est documenté comme
+ * stable depuis Next 14. Si l'header n'existe pas, on retourne "" (la
+ * redirection sera tentée, c'est le défaut sûr).
+ */
+async function currentPathname(): Promise<string> {
+  try {
+    const h = await headers();
+    const next = h.get("next-url") ?? h.get("x-invoke-path") ?? "";
+    // next-url contient parfois la URL complète ; on isole le pathname.
+    if (next.startsWith("http")) {
+      try {
+        return new URL(next).pathname;
+      } catch {
+        return next;
+      }
+    }
+    return next;
+  } catch {
+    return "";
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Lecture à chaud des credentials. La source de vérité bascule entre :
+//   1. variables d'env (AUTH_USERNAME, AUTH_PASSWORD_HASH) — utile en CI,
+//      dev local avec .env, ou setups headless rétrocompat v0.1.0 ;
+//   2. fichiers dans env.SECRETS_DIR (`username`, `password_hash`) — mode
+//      par défaut depuis v0.2.0, bootstrappé par l'entrypoint Docker au
+//      premier démarrage et mis à jour par la page /change-password.
+//
+// On relit à chaque appel pour que la rotation du hash après changement
+// de mot de passe soit prise en compte sans redémarrer le container.
+// Le coût est négligeable : un read sync de ~60 octets, opération rare
+// (uniquement lors d'un login).
+// ---------------------------------------------------------------------------
+
+const USERNAME_FILE = path.join(env.SECRETS_DIR, "username");
+const PASSWORD_HASH_FILE = path.join(env.SECRETS_DIR, "password_hash");
+const FORCE_CHANGE_FLAG = path.join(env.SECRETS_DIR, "force_password_change");
+
+function readFileTrimmed(file: string): string | null {
+  try {
+    const content = fs.readFileSync(file, "utf8").trim();
+    return content || null;
+  } catch {
+    return null;
+  }
+}
+
+export function getCurrentUsername(): string {
+  const fromEnv = process.env.AUTH_USERNAME;
+  if (fromEnv && fromEnv.trim() !== "") return fromEnv.trim();
+  const fromFile = readFileTrimmed(USERNAME_FILE);
+  if (fromFile) return fromFile;
+  // Fallback ultime : "admin" (le cas où l'entrypoint n'a pas tourné).
+  return "admin";
+}
+
+export function getCurrentPasswordHash(): string {
+  const fromEnv = process.env.AUTH_PASSWORD_HASH;
+  if (fromEnv && fromEnv.trim() !== "") return fromEnv.trim();
+  const fromFile = readFileTrimmed(PASSWORD_HASH_FILE);
+  if (fromFile) return fromFile;
+  throw new Error(
+    `[teslamatefix] Mot de passe non configuré — ni AUTH_PASSWORD_HASH en env, ` +
+      `ni fichier ${PASSWORD_HASH_FILE}. L'entrypoint Docker devrait bootstrapper ` +
+      `un hash par défaut au premier démarrage.`,
+  );
+}
+
+/**
+ * `true` si l'utilisateur doit être redirigé vers /change-password après
+ * login. C'est le cas tant que l'entrypoint a laissé en place le flag
+ * `force_password_change` (créé lors du bootstrap initial avec le hash
+ * de "admin").
+ *
+ * Si `AUTH_PASSWORD_HASH` est défini en env (mode legacy v0.1.0), on
+ * considère que l'utilisateur a maîtrisé son hash : pas de force-change.
+ */
+export function isPasswordChangeRequired(): boolean {
+  if (process.env.AUTH_PASSWORD_HASH && process.env.AUTH_PASSWORD_HASH.trim() !== "") {
+    return false;
+  }
+  return fs.existsSync(FORCE_CHANGE_FLAG);
+}
+
+/**
+ * Écrit le nouveau hash dans `env.SECRETS_DIR/password_hash` et supprime
+ * le flag `force_password_change`. Mode 600 (lecture/écriture user seulement).
+ *
+ * Si `AUTH_PASSWORD_HASH` est défini en env (legacy), on **n'écrit pas**
+ * le fichier — l'env vars resterait prioritaire au prochain redémarrage et
+ * supprimerait silencieusement le changement. À la place, on lance une
+ * erreur explicite pour pousser l'utilisateur à retirer la var d'env.
+ */
+export function persistPasswordHash(hash: string): void {
+  if (process.env.AUTH_PASSWORD_HASH && process.env.AUTH_PASSWORD_HASH.trim() !== "") {
+    throw new Error(
+      `[teslamatefix] AUTH_PASSWORD_HASH est défini en env (mode legacy). ` +
+        `Pour changer le mot de passe via l'UI, retirer la var d'env du container ` +
+        `et redémarrer — l'entrypoint utilisera alors le hash persistant.`,
+    );
+  }
+  fs.writeFileSync(PASSWORD_HASH_FILE, hash + "\n", { mode: 0o600 });
+  try {
+    fs.rmSync(FORCE_CHANGE_FLAG, { force: true });
+  } catch {
+    // best-effort : si le flag n'existe pas, rien à supprimer.
+  }
 }
 
 function constantTimeEqual(a: string, b: string): boolean {
@@ -56,19 +185,21 @@ function constantTimeEqual(a: string, b: string): boolean {
 }
 
 /**
- * Vérifie le couple (username, password) contre AUTH_USERNAME/AUTH_PASSWORD_HASH.
- * Retourne true en cas de succès. Toujours appeler bcrypt.compare même quand
- * le username est faux pour limiter le timing-leak. Le username est comparé
- * en temps constant via crypto.timingSafeEqual.
+ * Vérifie le couple (username, password) contre les credentials courants
+ * (env > fichier). Retourne true en cas de succès. Toujours appeler
+ * bcrypt.compare même quand le username est faux pour limiter le
+ * timing-leak. Le username est comparé en temps constant via
+ * crypto.timingSafeEqual.
  */
 export async function verifyCredentials(
   username: string,
   password: string,
 ): Promise<boolean> {
-  const userMatch = constantTimeEqual(username, env.AUTH_USERNAME);
+  const expectedUsername = getCurrentUsername();
+  const userMatch = constantTimeEqual(username, expectedUsername);
   // Si le user ne match pas, on hash un dummy pour garder un timing constant.
   const hash = userMatch
-    ? env.AUTH_PASSWORD_HASH
+    ? getCurrentPasswordHash()
     : "$2b$12$0000000000000000000000.0000000000000000000000000000000";
   const passOk = await bcrypt.compare(password, hash);
   return userMatch && passOk;
@@ -76,13 +207,11 @@ export async function verifyCredentials(
 
 export async function login(): Promise<void> {
   // Defense-in-depth contre la session fixation : on détruit toute session
-  // pré-existante avant d'écrire les nouveaux champs. Sans ce reset, un cookie
-  // forgé à l'avance survivrait à la connexion (peu probable vu httpOnly +
-  // chiffrement authentifié, mais c'est une couche standard à conserver).
+  // pré-existante avant d'écrire les nouveaux champs.
   const existing = await getSession();
   existing.destroy();
   const session = await getSession();
-  session.userId = env.AUTH_USERNAME;
+  session.userId = getCurrentUsername();
   session.loggedInAt = Date.now();
   await session.save();
 }

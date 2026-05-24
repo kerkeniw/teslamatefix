@@ -49,6 +49,8 @@ AGENTS.md
 CLAUDE.md
 .claude
 
-# Le Dockerfile lui-même n'a pas besoin d'être dans l'image
+# Le Dockerfile lui-même n'a pas besoin d'être dans l'image, mais l'entrypoint
+# est référencé par `COPY docker/entrypoint.sh` → on le ré-inclut explicitement.
 docker
+!docker/entrypoint.sh
 Dockerfile

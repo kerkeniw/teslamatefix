@@ -53,6 +53,28 @@
     "invalidCredentials": "Invalid credentials.",
     "rateLimited": "Too many attempts. Try again in {seconds} second(s)."
   },
+  "changePassword": {
+    "title": "Change password",
+    "subtitleForced": "First login: choose a password before using the app.",
+    "subtitleVoluntary": "Choose a new password.",
+    "currentPassword": "Current password",
+    "newPassword": "New password",
+    "confirmPassword": "Confirmation",
+    "submit": "Update",
+    "saving": "Saving…",
+    "rules": {
+      "minLength": "At least 12 characters.",
+      "complexity": "At least 1 letter and 1 digit."
+    },
+    "errors": {
+      "currentPasswordIncorrect": "Current password is incorrect.",
+      "passwordMismatch": "Confirmation does not match.",
+      "tooShort": "At least 12 characters required.",
+      "tooSimple": "At least 1 letter and 1 digit required.",
+      "envLocked": "Password is set via env var (legacy mode): remove AUTH_PASSWORD_HASH from the container and restart to change it here."
+    },
+    "success": "Password updated."
+  },
   "nav": {
     "drives": "Drives",
     "charges": "Charges",
