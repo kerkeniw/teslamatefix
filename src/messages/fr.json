@@ -53,6 +53,28 @@
     "invalidCredentials": "Identifiants invalides.",
     "rateLimited": "Trop de tentatives. Réessayez dans {seconds} seconde(s)."
   },
+  "changePassword": {
+    "title": "Changer le mot de passe",
+    "subtitleForced": "Premier login : choisissez un mot de passe avant d'utiliser l'application.",
+    "subtitleVoluntary": "Choisissez un nouveau mot de passe.",
+    "currentPassword": "Mot de passe actuel",
+    "newPassword": "Nouveau mot de passe",
+    "confirmPassword": "Confirmation",
+    "submit": "Mettre à jour",
+    "saving": "Enregistrement…",
+    "rules": {
+      "minLength": "Au moins 12 caractères.",
+      "complexity": "Au moins 1 lettre et 1 chiffre."
+    },
+    "errors": {
+      "currentPasswordIncorrect": "Mot de passe actuel incorrect.",
+      "passwordMismatch": "La confirmation ne correspond pas.",
+      "tooShort": "Au moins 12 caractères requis.",
+      "tooSimple": "Au moins 1 lettre et 1 chiffre requis.",
+      "envLocked": "Mot de passe défini par variable d'environnement (mode legacy) : retirer AUTH_PASSWORD_HASH du container et redémarrer pour pouvoir le changer ici."
+    },
+    "success": "Mot de passe mis à jour."
+  },
   "nav": {
     "drives": "Trajets",
     "charges": "Charges",

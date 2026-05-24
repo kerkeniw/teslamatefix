@@ -1,63 +1,50 @@
 # ----------------------------------------------------------------------------
-# TeslaMateFix — bloc de service à coller dans le `docker-compose.yml` de
-# TeslaMate (à côté des services `teslamate`, `database`, `grafana`,
-# `mosquitto`).
+# TeslaMateFix — bloc à coller dans le `docker-compose.yml` de TeslaMate
+# (à côté des services `teslamate`, `database`, `grafana`, `mosquitto`).
 #
-# Intégration :
-#   1. Copier le bloc `services.teslamatefix` ci-dessous dans votre compose.
-#   2. Renseigner les variables `TMFIX_*` dans votre fichier `.env` (à côté de
-#      celui que TeslaMate utilise déjà).
-#   3. `docker compose pull teslamatefix && docker compose up -d teslamatefix`.
+# Installation grand public (depuis v0.2.0) :
+#   1. Coller le bloc `services.teslamatefix` ci-dessous + le `volumes:`.
+#   2. `docker compose up -d teslamatefix`.
+#   3. Ouvrir http://<host>:3001, login `admin` / `admin`.
+#   4. Choisir un nouveau mot de passe lors de la redirection forcée.
 #
-# Le service réutilise le réseau Docker par défaut du compose, ce qui lui
-# permet de joindre `database` par son nom de service (DSN ci-dessous).
+# Aucune variable d'env spécifique à TeslaMateFix n'est requise : l'image
+# réutilise `DATABASE_USER` / `DATABASE_PASS` / `DATABASE_NAME` du compose
+# TeslaMate (déjà définies dans le `.env`) pour assembler le DSN, et
+# bootstrappe tous les secrets dans le volume `teslamatefix-data` au
+# premier démarrage.
 #
-# Pré-requis :
-#   - Avoir créé l'utilisateur PG dédié `teslamatefix` (voir
-#     `docker/init-teslamatefix-user.sql`).
-#   - Avoir généré `TMFIX_AUTH_PASSWORD_HASH` (bcrypt) et `TMFIX_AUTH_SECRET`
-#     (voir `docs/INSTALL.md`).
+# Pour les setups avancés (rôle PG dédié, HTTPS reverse-proxy, hash
+# bcrypt fourni en env, etc.), voir `docs/INSTALL.md` section « Hardening ».
 # ----------------------------------------------------------------------------
 
 services:
   teslamatefix:
-    # Image officielle publiée sur Docker Hub par le workflow GHA
-    # `.github/workflows/docker-publish.yml` (déclenché sur tag `v*`).
-    # Tags disponibles : `latest`, `0.1.0`, etc. (cf. release GitHub).
     image: wkerkeni/teslamatefix:latest
     restart: always
     depends_on:
       - database
     ports:
-      # Expose le port 3001 de l'hôte. Mettre derrière un reverse-proxy HTTPS
-      # (nginx/Caddy/Traefik) en production — voir docs/INTEGRATION_TESLAMATE.md.
+      # Expose le port 3001 sur l'hôte. Mettre derrière un reverse-proxy
+      # HTTPS en production — voir docs/INTEGRATION_TESLAMATE.md.
       - "3001:3001"
     environment:
-      # --- Base de données ---
-      # Utilisateur dédié `teslamatefix` (privilèges restreints, pas d'accès
-      # à `tokens` ni à `schema_migrations`). Voir init-teslamatefix-user.sql.
-      DATABASE_URL: "postgresql://teslamatefix:${TMFIX_DB_PASSWORD}@database:5432/teslamate?schema=public"
-
-      # --- Authentification ---
-      AUTH_USERNAME: "${TMFIX_AUTH_USERNAME:-admin}"
-      # Hash bcrypt généré par `npm run auth:hash` (cf. docs/INSTALL.md).
-      AUTH_PASSWORD_HASH: "${TMFIX_AUTH_PASSWORD_HASH}"
-      # Clé de session, 32 caractères minimum. `openssl rand -base64 32`.
-      AUTH_SECRET: "${TMFIX_AUTH_SECRET}"
-
-      # --- Optionnel ---
-      DEFAULT_LOCALE: "${TMFIX_DEFAULT_LOCALE:-fr}"
-      LOG_LEVEL: "${TMFIX_LOG_LEVEL:-info}"
-      # READ_ONLY=true masque tous les boutons de mutation : recommandé pour
-      # une phase pilote ou un déploiement multi-utilisateurs en consultation.
-      READ_ONLY: "${TMFIX_READ_ONLY:-false}"
-      PORT: "3001"
-      NODE_ENV: "production"
+      # Réutilise les variables conventionnelles du compose TeslaMate.
+      # Si vous préférez fournir un DSN complet, définir DATABASE_URL ici
+      # à la place — l'entrypoint l'utilisera prioritairement.
+      DATABASE_USER: "${DATABASE_USER:-teslamate}"
+      DATABASE_PASS: "${DATABASE_PASS}"
+      DATABASE_NAME: "${DATABASE_NAME:-teslamate}"
+    volumes:
+      # Persiste auth_secret + username + password_hash entre redémarrages.
+      # Le volume nommé est créé automatiquement par Docker au premier `up`.
+      - teslamatefix-data:/data
     healthcheck:
       test: ["CMD", "wget", "--quiet", "--spider", "http://127.0.0.1:3001/api/health"]
       interval: 30s
       timeout: 5s
       retries: 3
       start_period: 10s
-    # Pas de volume nécessaire : l'application est sans état.
-    # Les seuls écritures vont dans la base TeslaMate via le user PG dédié.
+
+volumes:
+  teslamatefix-data:

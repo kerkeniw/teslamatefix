@@ -52,6 +52,14 @@ WORKDIR /app
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_ENV=production
 
+# Placeholders pour permettre à `next build` de collecter les pages
+# dynamiques. `src/lib/env.ts` exige AUTH_SECRET (≥32 chars) et DATABASE_URL
+# au chargement du module. Au runtime (stage runner), l'entrypoint Docker
+# fournit les vraies valeurs (lues depuis /data ou les vars d'env).
+# Le stage runner n'hérite PAS de ces ENV — ils restent confinés ici.
+ENV AUTH_SECRET=build-time-placeholder-min-32-chars-aaaaaaaa
+ENV DATABASE_URL=postgresql://placeholder:placeholder@placeholder:5432/placeholder?schema=public
+
 # OpenSSL requis pour le runtime Prisma au moment de `prisma generate`.
 RUN apt-get update \
  && apt-get install -y --no-install-recommends ca-certificates openssl \
@@ -87,8 +95,8 @@ ENV HOSTNAME=0.0.0.0
 RUN apt-get update \
  && apt-get install -y --no-install-recommends ca-certificates openssl wget tini \
  && rm -rf /var/lib/apt/lists/* \
- && mkdir -p /app/.next \
- && chown -R node:node /app
+ && mkdir -p /app/.next /data \
+ && chown -R node:node /app /data
 
 # Sortie standalone Next.js : contient server.js + un node_modules minimal
 # avec le client Prisma déjà inclus par le tracing automatique de Next 16.
@@ -105,7 +113,24 @@ COPY --from=builder --chown=node:node /app/public ./public
 COPY --from=builder --chown=node:node /app/node_modules/.prisma/client ./node_modules/.prisma/client
 COPY --from=builder --chown=node:node /app/node_modules/@prisma/client ./node_modules/@prisma/client
 
+# bcryptjs n'est pas tracé par le standalone build de Next.js (il n'est
+# référencé que dans des fichiers `"use server"` que le tracer omet parfois).
+# On le copie explicitement pour qu'il soit disponible :
+#   - côté entrypoint (génère le hash bcrypt par défaut au premier démarrage),
+#   - côté runtime (verifyCredentials + changePassword).
+COPY --from=builder --chown=node:node /app/node_modules/bcryptjs ./node_modules/bcryptjs
+
+# Entrypoint custom : bootstrap secrets + reconstruction DSN. Voir le commentaire
+# en tête du fichier pour les détails.
+COPY --chown=node:node docker/entrypoint.sh /app/entrypoint.sh
+RUN chmod +x /app/entrypoint.sh
+
 USER node
+
+# Volume persistant : conserve auth_secret, username, password_hash et le flag
+# force_password_change entre deux démarrages. À monter en named volume
+# (`teslamatefix-data:/data`) côté compose.
+VOLUME /data
 
 EXPOSE 3001
 
@@ -115,5 +140,6 @@ EXPOSE 3001
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
   CMD wget --quiet --spider http://127.0.0.1:3001/api/health || exit 1
 
-ENTRYPOINT ["/usr/bin/tini", "--"]
+# tini → entrypoint shell (bootstrap) → node server.js (passé via "$@").
+ENTRYPOINT ["/usr/bin/tini", "--", "/app/entrypoint.sh"]
 CMD ["node", "server.js"]
