@@ -13,48 +13,28 @@
 - Tests : 72 verts.
 - Tag v0.2.0 : **non créé** (en attente de la validation container locale).
 
-## Bug ouvert — à fixer avant tag
+## Bugs résolus
 
-- [ ] **`npm ci` échoue dans le container** : conflit Next 16.2.4 entre
-      `dependencies.@swc/helpers = "0.5.15"` (épinglé) et
-      `peerDependencies.@swc/helpers = ">=0.5.17"` (optionnel).
-      Le `npm` du container veut résoudre le peer et installer 0.5.21
-      en plus, ce qui manque au lock.
-      Fix proposé (à valider) : ajouter une `overrides` dans `package.json` :
-      ```json
-      "overrides": { "@swc/helpers": "0.5.15" }
-      ```
-      Puis `npm install` pour régénérer le lock, commit, re-build.
-      *Alternative légère* : passer `--legacy-peer-deps` au `npm ci` du
-      Dockerfile (moins propre car ça désactive globalement la validation
-      des peers).
+- [x] **`npm ci` échoue dans le container** (fix `a55b095`) :
+      `overrides.@swc/helpers = "0.5.15"` ajouté à `package.json` +
+      lock régénéré. Build container local OK.
+- [x] **`next build` échoue sur AUTH_SECRET au stage builder**
+      (fix `0fcf34f`) : placeholders `AUTH_SECRET` + `DATABASE_URL`
+      ajoutés au stage builder du Dockerfile (multi-stage isolation,
+      le runner n'hérite pas).
 
 ## Avant le tag
 
-- [ ] Fixer le bug `@swc/helpers` ci-dessus.
-- [ ] Re-build local du container :
-      ```bash
-      ./scripts/docker-publish.sh v0.2.0          # build amd64, charge dans le daemon
-      docker images wkerkeni/teslamatefix         # vérifier la présence
-      ```
-- [ ] **Test container end-to-end** :
-      ```bash
-      docker run --rm -p 3001:3001 -v tmfix-data:/data \
-        -e DATABASE_URL="postgresql://teslamate:<pass>@host.docker.internal:5432/teslamate" \
-        wkerkeni/teslamatefix:0.2.0
-      ```
-      - [ ] Container démarre sans erreur (regarder les logs entrypoint).
-      - [ ] `docker exec <id> ls -la /data` → 4 fichiers présents
-            (`auth_secret`, `username`, `password_hash`, `force_password_change`),
-            mode 600, owner `node`.
-      - [ ] Ouvrir `http://localhost:3001/login`, login `admin` / `admin`.
-      - [ ] Redirigé vers `/fr/change-password` (ou `/en/change-password`).
-      - [ ] Saisir mauvais ancien mot de passe → message d'erreur.
-      - [ ] Saisir nouveau mot de passe valide (≥ 12 chars + lettre + chiffre) →
-            redirection vers `/`, dashboard accessible.
-      - [ ] `docker exec <id> ls /data` → `force_password_change` disparu,
-            `password_hash` modifié.
-      - [ ] `docker restart` → mot de passe persistant.
+- [x] Fixer le bug `@swc/helpers` (commit `a55b095`).
+- [x] Fixer le bug AUTH_SECRET au build (commit `0fcf34f`).
+- [x] Fixer la boucle redirect dans `changePasswordAction` (commit `eb2e321`).
+- [x] Re-build local du container OK.
+- [x] **Test container end-to-end OK** (validé manuellement) :
+      - Container démarre sans erreur, bootstrap des 4 fichiers dans /data.
+      - Login `admin`/`admin` → redirection vers `/change-password`.
+      - Saisie d'un nouveau mot de passe → flag supprimé, hash rotaté,
+        redirection vers le dashboard.
+      - Persistance après redémarrage validée.
 
 ## Merge + tag + push
 
