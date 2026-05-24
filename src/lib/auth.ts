@@ -40,17 +40,24 @@ export async function isAuthenticated(): Promise<boolean> {
  *
  * Détection du force-password-change : si le flag est présent, on redirige
  * la requête vers `/change-password` (next-intl middleware ajoutera la
- * locale). La page `/change-password` elle-même n'appelle PAS cette fonction
- * (elle utilise `isAuthenticated()`) pour éviter la boucle de redirection.
+ * locale). Deux cas où il NE FAUT PAS rediriger :
+ *  1. La page `/change-password` elle-même (elle utilise `isAuthenticated()`,
+ *     n'appelle pas cette fonction).
+ *  2. La server action `changePasswordAction` qui DOIT pouvoir tourner
+ *     pour effectuer le changement → passer `{ skipPasswordChangeRedirect: true }`.
+ *
+ * Tentative de détection du pathname pour le cas 1 via le header `next-url`,
+ * mais c'est best-effort : en server action POST le header peut être absent
+ * ou pointer vers un endpoint interne. D'où le param explicite pour le cas 2.
  */
-export async function requireSession(): Promise<Required<Session>> {
+export async function requireSession(
+  options: { skipPasswordChangeRedirect?: boolean } = {},
+): Promise<Required<Session>> {
   const session = await getSession();
   if (!session.userId || !session.loggedInAt) {
     throw new Error("Unauthorized");
   }
-  if (isPasswordChangeRequired()) {
-    // Si la requête vient déjà de /change-password (cas paranoid : un sub-RSC
-    // appelle requireSession), on ne redirige pas pour éviter une boucle.
+  if (!options.skipPasswordChangeRedirect && isPasswordChangeRequired()) {
     const pathname = await currentPathname();
     if (!/\/change-password(?:\/|$)/.test(pathname)) {
       redirect("/change-password");

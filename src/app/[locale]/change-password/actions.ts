@@ -58,7 +58,11 @@ export async function changePasswordAction(
   _prev: ChangePasswordState | null,
   formData: FormData,
 ): Promise<ChangePasswordState> {
-  const session = await requireSession();
+  // skipPasswordChangeRedirect : sans ça, requireSession() détecterait le
+  // flag force_password_change et redirigerait l'action vers /change-password
+  // AVANT d'écrire le nouveau hash. C'est exactement cette action qui doit
+  // pouvoir lever le flag, donc on doit court-circuiter la garde.
+  const session = await requireSession({ skipPasswordChangeRedirect: true });
   if (env.READ_ONLY) {
     return { ok: false, error: "Application en lecture seule." };
   }
