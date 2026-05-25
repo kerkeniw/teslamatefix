@@ -32,6 +32,14 @@ type Props = {
   max?: number;
   disabled?: boolean;
   error?: string | null;
+  /**
+   * Désactive la case "Appliquer à tous les ticks" (cas où la session a
+   * plus de 2 ticks intermédiaires fiables — seul le dernier tick doit
+   * pouvoir être corrigé).
+   */
+  applyAllDisabled?: boolean;
+  /** Tooltip affiché au survol de la case quand elle est désactivée. */
+  applyAllTooltip?: string;
 };
 
 /**
@@ -64,6 +72,8 @@ export function ChargerTickField({
   max,
   disabled,
   error,
+  applyAllDisabled = false,
+  applyAllTooltip,
 }: Props) {
   const t = useTranslations("charges.hints");
   const tCommon = useTranslations("common");
@@ -141,13 +151,19 @@ export function ChargerTickField({
               {statsLabel}
             </Badge>
           ) : null}
-          <label className="ml-auto flex items-center gap-1.5 text-[11px] text-muted-foreground">
+          <label
+            className={cn(
+              "ml-auto flex items-center gap-1.5 text-[11px] text-muted-foreground",
+              applyAllDisabled && "opacity-50",
+            )}
+            title={applyAllDisabled ? applyAllTooltip : undefined}
+          >
             <input
               type="checkbox"
               checked={applyAll}
               onChange={(e) => onApplyAllChange(e.target.checked)}
               className="size-3.5 rounded border-input"
-              disabled={disabled}
+              disabled={disabled || applyAllDisabled}
             />
             {t("applyToAllTicks")}
           </label>

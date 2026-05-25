@@ -200,10 +200,12 @@ export async function updateChargeAction(
   const chargerTypeChanged =
     chargerType != null && chargerType !== chargerTypeInitial;
 
-  // Calcule la liste des updates borne à appliquer : pour chaque champ, on
-  // compare la valeur soumise à `_initial` (valeur du dernier tick au
-  // chargement). Si différent, on emporte aussi le scope (tous les ticks ou
-  // dernier seulement). Champs inchangés → no-op.
+  // Calcule la liste des updates borne à appliquer. `_initial` est la valeur
+  // du dernier tick au chargement (cf. ChargerTickField.tsx). Skip uniquement
+  // si la valeur n'a pas changé ET que la case "Appliquer à tous les ticks"
+  // n'est pas cochée — sinon (case cochée + valeur inchangée), on veut
+  // propager la valeur courante aux autres ticks même si le formulaire ne
+  // l'a pas modifiée par rapport au dernier tick.
   type ChargerTickUpdate = {
     field: ChargerTickField;
     value: number | string | boolean | null;
@@ -221,14 +223,10 @@ export async function updateChargeAction(
       | string
       | boolean
       | null;
-    if (value === initial) continue;
-    tickUpdates.push({
-      field,
-      value,
-      applyAll: (parsed.data as Record<string, unknown>)[
-        `${field}_apply_all`
-      ] === true,
-    });
+    const applyAll =
+      (parsed.data as Record<string, unknown>)[`${field}_apply_all`] === true;
+    if (value === initial && !applyAll) continue;
+    tickUpdates.push({ field, value, applyAll });
   }
 
   try {
@@ -250,22 +248,37 @@ export async function updateChargeAction(
       }
 
       if (tickUpdates.length > 0) {
-        // Récupère le dernier tick par date pour les updates scope "tick courant".
-        const lastTick = await tx.charges.findFirst({
+        // Règle métier : si la session a > 2 ticks, la communication véhicule
+        // a fonctionné et les ticks intermédiaires sont fiables — seul le
+        // dernier tick est corrigible (apply_all forcé à false côté serveur,
+        // défense en profondeur même si l'UI verrouille déjà la case).
+        // Si la session a exactement 2 ticks (départ + fin), apply_all
+        // déclenche deux `update` explicites (firstTick + lastTick) — plus
+        // sûr qu'un `updateMany` global et facilite le diagnostic.
+        const tickIds = await tx.charges.findMany({
           where: { charging_process_id: id },
-          orderBy: { date: "desc" },
+          orderBy: { date: "asc" },
           select: { id: true },
         });
+        const firstTickId = tickIds[0]?.id;
+        const lastTickId = tickIds[tickIds.length - 1]?.id;
+        const tickCount = tickIds.length;
+
         for (const u of tickUpdates) {
           const updateData = { [u.field]: u.value } as Prisma.chargesUpdateManyMutationInput;
-          if (u.applyAll) {
-            await tx.charges.updateMany({
-              where: { charging_process_id: id },
+          const applyAll = u.applyAll && tickCount === 2;
+          if (applyAll && firstTickId != null && lastTickId != null) {
+            await tx.charges.update({
+              where: { id: firstTickId },
               data: updateData,
             });
-          } else if (lastTick) {
             await tx.charges.update({
-              where: { id: lastTick.id },
+              where: { id: lastTickId },
+              data: updateData,
+            });
+          } else if (lastTickId != null) {
+            await tx.charges.update({
+              where: { id: lastTickId },
               data: updateData,
             });
           }

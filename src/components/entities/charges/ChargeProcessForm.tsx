@@ -161,24 +161,37 @@ export function ChargeProcessForm({
     };
   }, [tickContext]);
 
-  const emptyApplyAll: ChargerApplyAllState = useMemo(
-    () => ({
-      charger_voltage: false,
-      charger_phases: false,
-      charger_actual_current: false,
-      charger_pilot_current: false,
-      charger_power: false,
-      conn_charge_cable: false,
-      fast_charger_brand: false,
-      fast_charger_type: false,
-      battery_heater_on: false,
-      battery_heater: false,
-    }),
-    [],
-  );
+  // Règle métier "Appliquer à tous les ticks" :
+  // - Si la session a > 2 ticks, la communication véhicule a fonctionné et
+  //   les ticks intermédiaires sont fiables → la case est verrouillée
+  //   (disabled) et seul le dernier tick peut être corrigé.
+  // - Si la session a exactement 2 ticks (départ + fin), seules les bornes
+  //   existent (communication coupée) → la case est cochée par défaut et
+  //   reste éditable, la correction s'applique aux deux ticks.
+  const tickCount = tickContext?.ticksCount ?? 0;
+  const applyAllLocked = tickCount > 2;
+  const applyAllTooltipMsg = applyAllLocked
+    ? t("hints.applyAllDisabled", { count: tickCount })
+    : undefined;
+
+  const initialApplyAll: ChargerApplyAllState = useMemo(() => {
+    const v = tickCount === 2;
+    return {
+      charger_voltage: v,
+      charger_phases: v,
+      charger_actual_current: v,
+      charger_pilot_current: v,
+      charger_power: v,
+      conn_charge_cable: v,
+      fast_charger_brand: v,
+      fast_charger_type: v,
+      battery_heater_on: v,
+      battery_heater: v,
+    };
+  }, [tickCount]);
 
   const [chargerFields, setChargerFields] = useState<ChargerFieldsState>(initialChargerFields);
-  const [chargerApplyAll, setChargerApplyAll] = useState<ChargerApplyAllState>(emptyApplyAll);
+  const [chargerApplyAll, setChargerApplyAll] = useState<ChargerApplyAllState>(initialApplyAll);
 
   // Select kW de la ligne de commandes. Initialisé sur la valeur courante du
   // dernier tick si présente, sinon sur DEFAULT_POWER_KW du type courant.
@@ -233,7 +246,7 @@ export function ChargeProcessForm({
 
   function handleResetChargerSection() {
     setChargerFields(initialChargerFieldsRef.current);
-    setChargerApplyAll(emptyApplyAll);
+    setChargerApplyAll(initialApplyAll);
     setChargerPowerKw(initialChargerPowerKwRef.current);
     setChargerType(initialChargerType);
   }
@@ -505,6 +518,8 @@ export function ChargeProcessForm({
                 initialValue={initialChargerFields.charger_voltage}
                 stats={tickContext.chargerTicks.stats.charger_voltage}
                 disabled={readOnly}
+                applyAllDisabled={applyAllLocked}
+                applyAllTooltip={applyAllTooltipMsg}
                 error={fe.charger_voltage ?? null}
               />
               <ChargerTickField
@@ -522,6 +537,8 @@ export function ChargeProcessForm({
                 initialValue={initialChargerFields.charger_phases}
                 stats={tickContext.chargerTicks.stats.charger_phases}
                 disabled={readOnly}
+                applyAllDisabled={applyAllLocked}
+                applyAllTooltip={applyAllTooltipMsg}
                 error={fe.charger_phases ?? null}
               />
               <ChargerTickField
@@ -539,6 +556,8 @@ export function ChargeProcessForm({
                 initialValue={initialChargerFields.charger_actual_current}
                 stats={tickContext.chargerTicks.stats.charger_actual_current}
                 disabled={readOnly}
+                applyAllDisabled={applyAllLocked}
+                applyAllTooltip={applyAllTooltipMsg}
                 error={fe.charger_actual_current ?? null}
               />
               <ChargerTickField
@@ -556,6 +575,8 @@ export function ChargeProcessForm({
                 initialValue={initialChargerFields.charger_pilot_current}
                 stats={tickContext.chargerTicks.stats.charger_pilot_current}
                 disabled={readOnly}
+                applyAllDisabled={applyAllLocked}
+                applyAllTooltip={applyAllTooltipMsg}
                 error={fe.charger_pilot_current ?? null}
               />
               <ChargerTickField
@@ -572,6 +593,8 @@ export function ChargeProcessForm({
                 initialValue={initialChargerFields.charger_power}
                 stats={tickContext.chargerTicks.stats.charger_power}
                 disabled={readOnly}
+                applyAllDisabled={applyAllLocked}
+                applyAllTooltip={applyAllTooltipMsg}
                 error={fe.charger_power ?? null}
               />
               <ChargerTickField
@@ -587,6 +610,8 @@ export function ChargeProcessForm({
                 stats={tickContext.chargerTicks.stats.conn_charge_cable}
                 suggestions={textSuggestions.conn_charge_cable}
                 disabled={readOnly}
+                applyAllDisabled={applyAllLocked}
+                applyAllTooltip={applyAllTooltipMsg}
                 error={fe.conn_charge_cable ?? null}
               />
               <ChargerTickField
@@ -602,6 +627,8 @@ export function ChargeProcessForm({
                 stats={tickContext.chargerTicks.stats.fast_charger_brand}
                 suggestions={textSuggestions.fast_charger_brand}
                 disabled={readOnly}
+                applyAllDisabled={applyAllLocked}
+                applyAllTooltip={applyAllTooltipMsg}
                 error={fe.fast_charger_brand ?? null}
               />
               <ChargerTickField
@@ -617,6 +644,8 @@ export function ChargeProcessForm({
                 stats={tickContext.chargerTicks.stats.fast_charger_type}
                 suggestions={textSuggestions.fast_charger_type}
                 disabled={readOnly}
+                applyAllDisabled={applyAllLocked}
+                applyAllTooltip={applyAllTooltipMsg}
                 error={fe.fast_charger_type ?? null}
               />
               <ChargerTickField
@@ -631,6 +660,8 @@ export function ChargeProcessForm({
                 initialValue={initialChargerFields.battery_heater_on}
                 stats={tickContext.chargerTicks.stats.battery_heater_on}
                 disabled={readOnly}
+                applyAllDisabled={applyAllLocked}
+                applyAllTooltip={applyAllTooltipMsg}
                 error={fe.battery_heater_on ?? null}
               />
               <ChargerTickField
@@ -645,6 +676,8 @@ export function ChargeProcessForm({
                 initialValue={initialChargerFields.battery_heater}
                 stats={tickContext.chargerTicks.stats.battery_heater}
                 disabled={readOnly}
+                applyAllDisabled={applyAllLocked}
+                applyAllTooltip={applyAllTooltipMsg}
                 error={fe.battery_heater ?? null}
               />
             </div>

@@ -583,6 +583,7 @@
       "tickValue": "tick : {value}",
       "chargerTypeChangeWillUpdateTicks": "Modifier mettra à jour {n} ticks et nettoiera marque / câble / type.",
       "applyToAllTicks": "Appliquer à tous les ticks",
+      "applyAllDisabled": "Désactivé : la session a {count} ticks intermédiaires fiables, seul le dernier tick est corrigé.",
       "statsRange": "min : {min} — max : {max}",
       "statsDistinct": "valeurs : {values}"
     },

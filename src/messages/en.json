@@ -583,6 +583,7 @@
       "tickValue": "tick: {value}",
       "chargerTypeChangeWillUpdateTicks": "Changing this will update {n} ticks and reset brand / cable / type.",
       "applyToAllTicks": "Apply to all ticks",
+      "applyAllDisabled": "Disabled: the session has {count} reliable intermediate ticks, only the last tick is corrected.",
       "statsRange": "min: {min} — max: {max}",
       "statsDistinct": "values: {values}"
     },
