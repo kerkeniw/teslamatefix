@@ -48,6 +48,18 @@ C'est tout. Le secret de session et le hash bcrypt sont générés
 automatiquement au premier démarrage et persistés dans le volume
 `teslamatefix-data`.
 
+## Mise à jour
+
+```bash
+docker compose pull teslamatefix
+docker compose up -d teslamatefix
+```
+
+Compose recrée le conteneur avec la nouvelle image. Le volume
+`teslamatefix-data` est préservé, donc mot de passe et clé de session
+survivent. Détails et compatibilité TeslaMate :
+[`docs/INSTALL.md`](docs/INSTALL.md#3-mise-à-jour).
+
 ## Aller plus loin
 
 - **Sécuriser la mise en prod** (HTTPS reverse-proxy, rôle PostgreSQL dédié,
