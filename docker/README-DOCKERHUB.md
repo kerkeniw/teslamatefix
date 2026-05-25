@@ -13,6 +13,13 @@ each entity.
 
 **Source code & full documentation:** https://github.com/kerkeniw/teslamatefix
 
+> **v0.3.0 status** — only the **charges create/edit** module has been
+> tested and validated in this release. Other entities (drives, positions,
+> addresses, geofences, states, firmware updates, cars, settings) are
+> available for **read-only browsing**; their edit flows have not been
+> validated yet. Use with care and **always on a backed-up database**
+> (`pg_dump` recommended before first use).
+
 ## Quick start
 
 Add this block to your TeslaMate `docker-compose.yml`, next to

@@ -9,6 +9,13 @@ TeslaMate, se connecte à sa base PostgreSQL et expose une UI sécurisée pour
 réparer chaque entité (`drives`, `charges`, `positions`, `addresses`,
 `geofences`, `states`, `updates`, `cars`, `settings`).
 
+> **Statut v0.3.0** — seuls les modules de **création et de modification
+> des charges** ont été testés et validés. Les autres entités (trajets,
+> positions, adresses, géofences, états, mises à jour de firmware, voitures,
+> paramètres) sont accessibles en **consultation** mais leurs flux d'édition
+> n'ont pas encore été validés. À utiliser avec précaution et **toujours sur
+> une base sauvegardée** (`pg_dump` recommandé avant la première utilisation).
+
 ## Installation
 
 Ajouter ce bloc à votre `docker-compose.yml` TeslaMate, à côté des services
