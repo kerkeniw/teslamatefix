@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, useTransition } from "react";
-import { useTranslations } from "next-intl";
+import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
+import { useFormatter, useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -89,15 +89,6 @@ export type ChargeProcessTickSnapshot = {
   rated_battery_range_km: string | null;
 };
 
-function formatLocalDateTime(iso: string): string {
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return iso;
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return (
-    `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ` +
-    `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`
-  );
-}
 
 export function ChargeProcessForm({
   initial,
@@ -116,6 +107,15 @@ export function ChargeProcessForm({
   onClientValidityChange?: (valid: boolean) => void;
 }) {
   const t = useTranslations("charges");
+  const format = useFormatter();
+  const formatLocalDateTime = useCallback(
+    (iso: string) => {
+      const d = new Date(iso);
+      if (Number.isNaN(d.getTime())) return iso;
+      return format.dateTime(d, "short");
+    },
+    [format],
+  );
   const fe = fieldErrors;
 
   const [startDate, setStartDate] = useState(initial.start_date);
@@ -261,7 +261,7 @@ export function ChargeProcessForm({
     return new Date(startDate).getTime() >= new Date(secondTickDate).getTime()
       ? t("errors.startAfterSecondTick", { tick: formatLocalDateTime(secondTickDate) })
       : null;
-  }, [startDate, secondTickDate, t]);
+  }, [startDate, secondTickDate, t, formatLocalDateTime]);
 
   const endBoundError = useMemo<string | null>(() => {
     if (!penultimateTickDate || !endDate) return null;
@@ -270,7 +270,7 @@ export function ChargeProcessForm({
           tick: formatLocalDateTime(penultimateTickDate),
         })
       : null;
-  }, [endDate, penultimateTickDate, t]);
+  }, [endDate, penultimateTickDate, t, formatLocalDateTime]);
 
   useEffect(() => {
     if (!onClientValidityChange) return;

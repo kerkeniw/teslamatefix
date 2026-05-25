@@ -38,6 +38,10 @@
     "label": "Vehicle",
     "placeholder": "Pick a vehicle"
   },
+  "timezone": {
+    "label": "Time zone",
+    "placeholder": "Pick a time zone"
+  },
   "combobox": {
     "placeholder": "Search…",
     "loading": "Searching…",

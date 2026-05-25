@@ -13,6 +13,8 @@ import {
 import { ButtonLink } from "@/components/ui/button-link";
 import { ArrowLeft } from "lucide-react";
 import { updatePositionAction, deletePositionAction } from "../actions";
+import { getSelectedTimezone } from "@/lib/timezone";
+import { formatDateTimeIsoShort } from "@/lib/format/datetime";
 
 const DRIVE_LIST_LIMIT = 200;
 
@@ -46,6 +48,8 @@ export default async function PositionEditPage({
   const pos = await prisma.positions.findUnique({ where: { id } });
   if (!pos) notFound();
 
+  const timeZone = await getSelectedTimezone();
+
   const [cars, drives, refByDrives, refByCharge] = await Promise.all([
     prisma.cars.findMany({
       select: { id: true, name: true, vin: true, model: true },
@@ -69,7 +73,7 @@ export default async function PositionEditPage({
   const carOptions = cars.map((c) => ({ id: c.id, label: carLabel(c) }));
   const driveOptions = drives.map((d) => ({
     id: d.id,
-    label: `#${d.id} — ${d.start_date.toISOString().slice(0, 16).replace("T", " ")}`,
+    label: `#${d.id} — ${formatDateTimeIsoShort(d.start_date, timeZone)}`,
   }));
   // Si la position référence un drive hors top, on l'ajoute en tête.
   if (pos.drive_id != null && !driveOptions.some((d) => d.id === pos.drive_id)) {
@@ -80,7 +84,7 @@ export default async function PositionEditPage({
     if (refDrive) {
       driveOptions.unshift({
         id: refDrive.id,
-        label: `#${refDrive.id} — ${refDrive.start_date.toISOString().slice(0, 16).replace("T", " ")}`,
+        label: `#${refDrive.id} — ${formatDateTimeIsoShort(refDrive.start_date, timeZone)}`,
       });
     }
   }

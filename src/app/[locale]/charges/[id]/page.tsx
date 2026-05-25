@@ -31,6 +31,8 @@ import {
   recalcChargeAction,
   applyRecalcChargeAction,
 } from "../actions";
+import { getSelectedTimezone } from "@/lib/timezone";
+import { formatDateTimeIsoShort } from "@/lib/format/datetime";
 
 function addressLabel(a: {
   id: number;
@@ -75,6 +77,8 @@ export default async function ChargeEditPage({
     getSelectedCarOrDefault(),
   ]);
   if (!proc || !selectedCar) notFound();
+
+  const timeZone = await getSelectedTimezone();
 
   const tickPageSize = parseTickPageSize(sp.tps);
   const cursor = sp.tcursor && /^\d+$/.test(sp.tcursor) ? parseInt(sp.tcursor, 10) : null;
@@ -181,7 +185,7 @@ export default async function ChargeEditPage({
   const positionOption: FKOption | null = refPosition
     ? {
         id: refPosition.id,
-        label: `#${refPosition.id} · ${refPosition.date.toISOString().slice(0, 16).replace("T", " ")} (${Number(refPosition.latitude).toFixed(4)}, ${Number(refPosition.longitude).toFixed(4)})`,
+        label: `#${refPosition.id} · ${formatDateTimeIsoShort(refPosition.date, timeZone)} (${Number(refPosition.latitude).toFixed(4)}, ${Number(refPosition.longitude).toFixed(4)})`,
       }
     : null;
   const addressOption: FKOption | null = refAddress

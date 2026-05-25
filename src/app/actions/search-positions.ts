@@ -4,18 +4,23 @@ import { Prisma } from "@prisma/client";
 import { requireSession } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { getSelectedCarId } from "@/lib/vehicle";
+import { getSelectedTimezone } from "@/lib/timezone";
+import { formatDateTimeIsoShort } from "@/lib/format/datetime";
 import type { FKOption } from "@/components/form/fk-combobox";
 
 const LIMIT = 20;
 
-function positionLabel(p: {
-  id: number;
-  date: Date;
-  latitude: Prisma.Decimal;
-  longitude: Prisma.Decimal;
-}): string {
+function positionLabel(
+  p: {
+    id: number;
+    date: Date;
+    latitude: Prisma.Decimal;
+    longitude: Prisma.Decimal;
+  },
+  timeZone: string,
+): string {
   // Format compact pour rentrer dans l'input du combobox.
-  const ts = p.date.toISOString().slice(0, 16).replace("T", " ");
+  const ts = formatDateTimeIsoShort(p.date, timeZone);
   return `#${p.id} · ${ts} (${Number(p.latitude).toFixed(4)}, ${Number(p.longitude).toFixed(4)})`;
 }
 
@@ -30,7 +35,10 @@ function positionLabel(p: {
  */
 export async function searchPositionsAction(query: string): Promise<FKOption[]> {
   await requireSession();
-  const carId = await getSelectedCarId();
+  const [carId, timeZone] = await Promise.all([
+    getSelectedCarId(),
+    getSelectedTimezone(),
+  ]);
   const q = query.trim();
 
   const where: Prisma.positionsWhereInput = {};
@@ -47,5 +55,5 @@ export async function searchPositionsAction(query: string): Promise<FKOption[]> 
     select: { id: true, date: true, latitude: true, longitude: true },
   });
 
-  return rows.map((p) => ({ id: p.id, label: positionLabel(p) }));
+  return rows.map((p) => ({ id: p.id, label: positionLabel(p, timeZone) }));
 }

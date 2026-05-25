@@ -38,6 +38,10 @@
     "label": "Véhicule",
     "placeholder": "Choisir un véhicule"
   },
+  "timezone": {
+    "label": "Fuseau horaire",
+    "placeholder": "Choisir un fuseau"
+  },
   "combobox": {
     "placeholder": "Rechercher…",
     "loading": "Recherche…",

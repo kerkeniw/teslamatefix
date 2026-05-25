@@ -12,6 +12,8 @@ import {
 import { ButtonLink } from "@/components/ui/button-link";
 import { ArrowLeft } from "lucide-react";
 import { createPositionAction } from "../actions";
+import { getSelectedTimezone } from "@/lib/timezone";
+import { formatDateTimeIsoShort } from "@/lib/format/datetime";
 
 const DRIVE_LIST_LIMIT = 200;
 
@@ -27,6 +29,7 @@ export default async function NewPositionPage({
   const { locale } = await params;
   setRequestLocale(locale);
   await requireSession();
+  const timeZone = await getSelectedTimezone();
   const t = await getTranslations("positions");
   const tCommon = await getTranslations("common");
 
@@ -45,7 +48,7 @@ export default async function NewPositionPage({
   const carOptions = cars.map((c) => ({ id: c.id, label: carLabel(c) }));
   const driveOptions = drives.map((d) => ({
     id: d.id,
-    label: `#${d.id} — ${d.start_date.toISOString().slice(0, 16).replace("T", " ")}`,
+    label: `#${d.id} — ${formatDateTimeIsoShort(d.start_date, timeZone)}`,
   }));
 
   const initial: PositionFormValues = {
