@@ -5,7 +5,9 @@ import { Logo } from "@/components/tesla/logo";
 import { Button } from "@/components/ui/button";
 import { logoutAction } from "@/lib/auth-actions";
 import { listCars, getSelectedCarOrDefault } from "@/lib/vehicle";
+import { getSelectedTimezone } from "@/lib/timezone";
 import { VehiclePicker } from "@/components/app-shell/vehicle-picker";
+import { TimezonePicker } from "@/components/app-shell/timezone-picker";
 import { ThemeSwitcher } from "@/components/app-shell/theme-switcher";
 
 /**
@@ -15,7 +17,11 @@ import { ThemeSwitcher } from "@/components/app-shell/theme-switcher";
  */
 export async function AppHeader({ rightSlot }: { rightSlot?: React.ReactNode }) {
   const t = await getTranslations("common");
-  const [cars, selected] = await Promise.all([listCars(), getSelectedCarOrDefault()]);
+  const [cars, selected, timeZone] = await Promise.all([
+    listCars(),
+    getSelectedCarOrDefault(),
+    getSelectedTimezone(),
+  ]);
   return (
     <header className="sticky top-0 z-30 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
       <div className="mx-auto flex h-14 max-w-6xl items-center justify-between gap-4 px-4">
@@ -24,6 +30,7 @@ export async function AppHeader({ rightSlot }: { rightSlot?: React.ReactNode }) 
         </Link>
         <div className="flex items-center gap-2">
           {selected ? <VehiclePicker cars={cars} selectedId={selected.id} /> : null}
+          <TimezonePicker selected={timeZone} />
           <ThemeSwitcher />
           {rightSlot}
           <form action={logoutAction}>

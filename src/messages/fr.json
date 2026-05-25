@@ -38,6 +38,10 @@
     "label": "Véhicule",
     "placeholder": "Choisir un véhicule"
   },
+  "timezone": {
+    "label": "Fuseau horaire",
+    "placeholder": "Choisir un fuseau"
+  },
   "combobox": {
     "placeholder": "Rechercher…",
     "loading": "Recherche…",
@@ -579,6 +583,7 @@
       "tickValue": "tick : {value}",
       "chargerTypeChangeWillUpdateTicks": "Modifier mettra à jour {n} ticks et nettoiera marque / câble / type.",
       "applyToAllTicks": "Appliquer à tous les ticks",
+      "applyAllDisabled": "Désactivé : la session a {count} ticks intermédiaires fiables, seul le dernier tick est corrigé.",
       "statsRange": "min : {min} — max : {max}",
       "statsDistinct": "valeurs : {values}"
     },
@@ -635,12 +640,24 @@
       "headers": {
         "date": "Date",
         "battery": "SOC",
+        "usableBattery": "SOC util.",
         "energy": "kWh",
         "power": "kW",
         "voltage": "V",
         "current": "A",
+        "pilotCurrent": "Pilot A",
         "phases": "Phases",
-        "fast": "DC"
+        "fast": "DC",
+        "chargerBrand": "Marque",
+        "chargerType": "Type",
+        "cable": "Câble",
+        "idealRange": "Idéal km",
+        "ratedRange": "Nominal km",
+        "outsideTemp": "Ext. °C",
+        "heaterOn": "Heater ON",
+        "heaterAvailable": "Heater dispo",
+        "heaterNoPower": "Heater no pwr",
+        "notEnoughPower": "Pas assez pwr"
       },
       "deleteOne": {
         "title": "Supprimer cette mesure ?",

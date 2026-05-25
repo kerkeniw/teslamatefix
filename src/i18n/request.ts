@@ -1,6 +1,7 @@
 import { getRequestConfig } from "next-intl/server";
 import { hasLocale } from "next-intl";
 import { routing } from "./routing";
+import { getSelectedTimezone } from "@/lib/timezone";
 
 /**
  * Resolver de configuration par requête (rendu serveur).
@@ -18,8 +19,11 @@ export default getRequestConfig(async ({ requestLocale }) => {
     ? requested
     : routing.defaultLocale;
 
+  const timeZone = await getSelectedTimezone();
+
   return {
     locale,
+    timeZone,
     messages: (await import(`../messages/${locale}.json`)).default,
     formats: {
       dateTime: {

@@ -6,7 +6,10 @@ import { setRequestLocale } from "next-intl/server";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Toaster } from "@/components/ui/sonner";
 import { ThemeProvider } from "@/components/app-shell/theme-provider";
+import { TimezoneProvider } from "@/components/app-shell/timezone-provider";
+import { TimezoneDetector } from "@/components/app-shell/timezone-detector";
 import { routing } from "@/i18n/routing";
+import { getSelectedTimezone, hasTimezoneCookie } from "@/lib/timezone";
 import "../globals.css";
 
 // Typographie inspirée de tesla.com (Gotham SSm est payant).
@@ -55,6 +58,11 @@ export default async function LocaleLayout({
   }
   setRequestLocale(locale);
 
+  const [timeZone, tzCookiePresent] = await Promise.all([
+    getSelectedTimezone(),
+    hasTimezoneCookie(),
+  ]);
+
   return (
     <html
       lang={locale}
@@ -62,13 +70,16 @@ export default async function LocaleLayout({
       suppressHydrationWarning
     >
       <body className="flex min-h-full flex-col bg-background text-foreground">
-        <NextIntlClientProvider>
-          <ThemeProvider>
-            <TooltipProvider>
-              {children}
-              <Toaster richColors closeButton position="top-right" />
-            </TooltipProvider>
-          </ThemeProvider>
+        <NextIntlClientProvider timeZone={timeZone}>
+          <TimezoneProvider timeZone={timeZone}>
+            <ThemeProvider>
+              <TooltipProvider>
+                {children}
+                <TimezoneDetector hasCookie={tzCookiePresent} />
+                <Toaster richColors closeButton position="top-right" />
+              </TooltipProvider>
+            </ThemeProvider>
+          </TimezoneProvider>
         </NextIntlClientProvider>
       </body>
     </html>

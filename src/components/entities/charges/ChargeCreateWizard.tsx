@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useEffect, useMemo, useState, useTransition } from "react";
-import { useTranslations } from "next-intl";
+import { useFormatter, useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import {
@@ -497,6 +497,7 @@ function Step2({
 }) {
   const t = useTranslations("charges");
   const tCommon = useTranslations("common");
+  const formatDate = useFormatDate();
 
   const [context, setContext] = useState<PrepareChargeContextResult | null>(null);
   const [loading, startLoading] = useTransition();
@@ -1026,11 +1027,14 @@ function normalizedNote(raw: string): string | null {
   return `(stocké : ${normalized})`;
 }
 
-function formatDate(iso: string): string {
-  if (!iso) return "—";
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return iso;
-  return d.toLocaleString();
+function useFormatDate(): (iso: string) => string {
+  const format = useFormatter();
+  return (iso: string) => {
+    if (!iso) return "—";
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return iso;
+    return format.dateTime(d, "short");
+  };
 }
 
 function PositionSection({
@@ -1049,6 +1053,7 @@ function PositionSection({
   onChange: (v: PositionFormState) => void;
 }) {
   const t = useTranslations("charges");
+  const formatDate = useFormatDate();
   if (!values || !initial) return null;
 
   function setField(f: PositionField, v: string) {

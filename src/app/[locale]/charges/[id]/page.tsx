@@ -31,6 +31,8 @@ import {
   recalcChargeAction,
   applyRecalcChargeAction,
 } from "../actions";
+import { getSelectedTimezone } from "@/lib/timezone";
+import { formatDateTimeIsoShort } from "@/lib/format/datetime";
 
 function addressLabel(a: {
   id: number;
@@ -76,6 +78,8 @@ export default async function ChargeEditPage({
   ]);
   if (!proc || !selectedCar) notFound();
 
+  const timeZone = await getSelectedTimezone();
+
   const tickPageSize = parseTickPageSize(sp.tps);
   const cursor = sp.tcursor && /^\d+$/.test(sp.tcursor) ? parseInt(sp.tcursor, 10) : null;
   const direction = sp.tdir === "prev" ? "prev" : "next";
@@ -120,12 +124,24 @@ export default async function ChargeEditPage({
         id: true,
         date: true,
         battery_level: true,
+        usable_battery_level: true,
         charge_energy_added: true,
         charger_power: true,
         charger_voltage: true,
         charger_actual_current: true,
+        charger_pilot_current: true,
         charger_phases: true,
         fast_charger_present: true,
+        fast_charger_brand: true,
+        fast_charger_type: true,
+        conn_charge_cable: true,
+        ideal_battery_range_km: true,
+        rated_battery_range_km: true,
+        outside_temp: true,
+        battery_heater_on: true,
+        battery_heater: true,
+        battery_heater_no_power: true,
+        not_enough_power_to_heat: true,
       },
     }),
     prisma.charges.count({ where: { charging_process_id: id } }),
@@ -181,7 +197,7 @@ export default async function ChargeEditPage({
   const positionOption: FKOption | null = refPosition
     ? {
         id: refPosition.id,
-        label: `#${refPosition.id} · ${refPosition.date.toISOString().slice(0, 16).replace("T", " ")} (${Number(refPosition.latitude).toFixed(4)}, ${Number(refPosition.longitude).toFixed(4)})`,
+        label: `#${refPosition.id} · ${formatDateTimeIsoShort(refPosition.date, timeZone)} (${Number(refPosition.latitude).toFixed(4)}, ${Number(refPosition.longitude).toFixed(4)})`,
       }
     : null;
   const addressOption: FKOption | null = refAddress
@@ -268,12 +284,24 @@ export default async function ChargeEditPage({
     id: t.id,
     date: t.date.toISOString(),
     battery_level: t.battery_level ?? null,
+    usable_battery_level: t.usable_battery_level ?? null,
     charge_energy_added: t.charge_energy_added.toString(),
     charger_power: t.charger_power,
     charger_voltage: t.charger_voltage ?? null,
     charger_actual_current: t.charger_actual_current ?? null,
+    charger_pilot_current: t.charger_pilot_current ?? null,
     charger_phases: t.charger_phases ?? null,
     fast_charger_present: t.fast_charger_present ?? null,
+    fast_charger_brand: t.fast_charger_brand ?? null,
+    fast_charger_type: t.fast_charger_type ?? null,
+    conn_charge_cable: t.conn_charge_cable ?? null,
+    ideal_battery_range_km: t.ideal_battery_range_km.toString(),
+    rated_battery_range_km: t.rated_battery_range_km?.toString() ?? null,
+    outside_temp: t.outside_temp?.toString() ?? null,
+    battery_heater_on: t.battery_heater_on ?? null,
+    battery_heater: t.battery_heater ?? null,
+    battery_heater_no_power: t.battery_heater_no_power ?? null,
+    not_enough_power_to_heat: t.not_enough_power_to_heat ?? null,
   }));
 
   const firstId = ticks.length > 0 ? ticks[0].id : null;

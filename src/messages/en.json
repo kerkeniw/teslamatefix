@@ -38,6 +38,10 @@
     "label": "Vehicle",
     "placeholder": "Pick a vehicle"
   },
+  "timezone": {
+    "label": "Time zone",
+    "placeholder": "Pick a time zone"
+  },
   "combobox": {
     "placeholder": "Search…",
     "loading": "Searching…",
@@ -579,6 +583,7 @@
       "tickValue": "tick: {value}",
       "chargerTypeChangeWillUpdateTicks": "Changing this will update {n} ticks and reset brand / cable / type.",
       "applyToAllTicks": "Apply to all ticks",
+      "applyAllDisabled": "Disabled: the session has {count} reliable intermediate ticks, only the last tick is corrected.",
       "statsRange": "min: {min} — max: {max}",
       "statsDistinct": "values: {values}"
     },
@@ -635,12 +640,24 @@
       "headers": {
         "date": "Date",
         "battery": "SOC",
+        "usableBattery": "Usable SOC",
         "energy": "kWh",
         "power": "kW",
         "voltage": "V",
         "current": "A",
+        "pilotCurrent": "Pilot A",
         "phases": "Phases",
-        "fast": "DC"
+        "fast": "DC",
+        "chargerBrand": "Brand",
+        "chargerType": "Type",
+        "cable": "Cable",
+        "idealRange": "Ideal km",
+        "ratedRange": "Rated km",
+        "outsideTemp": "Ext. °C",
+        "heaterOn": "Heater ON",
+        "heaterAvailable": "Heater avail.",
+        "heaterNoPower": "Heater no pwr",
+        "notEnoughPower": "Low power"
       },
       "deleteOne": {
         "title": "Delete this measurement?",
