@@ -639,12 +639,24 @@
       "headers": {
         "date": "Date",
         "battery": "SOC",
+        "usableBattery": "SOC util.",
         "energy": "kWh",
         "power": "kW",
         "voltage": "V",
         "current": "A",
+        "pilotCurrent": "Pilot A",
         "phases": "Phases",
-        "fast": "DC"
+        "fast": "DC",
+        "chargerBrand": "Marque",
+        "chargerType": "Type",
+        "cable": "Câble",
+        "idealRange": "Idéal km",
+        "ratedRange": "Nominal km",
+        "outsideTemp": "Ext. °C",
+        "heaterOn": "Heater ON",
+        "heaterAvailable": "Heater dispo",
+        "heaterNoPower": "Heater no pwr",
+        "notEnoughPower": "Pas assez pwr"
       },
       "deleteOne": {
         "title": "Supprimer cette mesure ?",
