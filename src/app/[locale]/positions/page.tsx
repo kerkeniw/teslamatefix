@@ -5,7 +5,6 @@ import { prisma } from "@/lib/db";
 import { getSelectedCarOrDefault } from "@/lib/vehicle";
 import { AppHeader } from "@/components/app-shell/header";
 import { MainNav } from "@/components/app-shell/main-nav";
-import { LocaleSwitcher } from "@/components/app-shell/locale-switcher";
 import { PositionFilters } from "@/components/entities/positions/PositionFilters";
 import { PositionListClient, type PositionRow } from "@/components/entities/positions/PositionListClient";
 import { bulkDeletePositionsAction } from "./actions";
@@ -120,7 +119,7 @@ export default async function PositionsPage({
 
   return (
     <>
-      <AppHeader rightSlot={<LocaleSwitcher />} />
+      <AppHeader />
       <MainNav />
       <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6">
         <header className="mb-6">

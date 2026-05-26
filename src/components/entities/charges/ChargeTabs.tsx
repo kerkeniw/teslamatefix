@@ -14,7 +14,15 @@ import {
   type ChargeProcessFormInitialOptions,
   type ChargeProcessTickContext,
 } from "./ChargeProcessForm";
+import { ChargeLocationPanel } from "./ChargeLocationPanel";
 import { useRouter } from "@/i18n/navigation";
+
+export type ChargeLocationMap = {
+  id: number;
+  lat: number;
+  lng: number;
+  odometer: number | null;
+};
 
 export type ChargeActionState = {
   ok: boolean;
@@ -28,6 +36,7 @@ export function ChargeTabs({
   initialOptions,
   tickContext,
   ticksCount,
+  positionMap,
   readOnly,
   saveAction,
   deleteAction,
@@ -39,6 +48,7 @@ export function ChargeTabs({
   initialOptions: ChargeProcessFormInitialOptions;
   tickContext?: ChargeProcessTickContext;
   ticksCount: number;
+  positionMap: ChargeLocationMap | null;
   readOnly: boolean;
   saveAction: (
     prev: ChargeActionState | null,
@@ -121,7 +131,12 @@ export function ChargeTabs({
         </TabsList>
 
         <TabsContent value="session" className="pt-4">
-          <form action={formAction} className="space-y-6" data-charge-id={id}>
+          <form
+            action={formAction}
+            id="charge-session-form"
+            className="space-y-6"
+            data-charge-id={id}
+          >
             <ChargeProcessForm
               initial={initial}
               initialOptions={initialOptions}
@@ -130,6 +145,17 @@ export function ChargeTabs({
               readOnly={readOnly}
               mode="edit"
               onClientValidityChange={handleValidityChange}
+              locationPanel={
+                <ChargeLocationPanel
+                  position={positionMap}
+                  outsideTempInitial={initial.outside_temp_avg}
+                  ticksCount={ticksCount}
+                  formId="charge-session-form"
+                  addressOption={initialOptions.address}
+                  geofenceOption={initialOptions.geofence}
+                  readOnly={readOnly}
+                />
+              }
             />
             <Separator />
             <div className="flex flex-wrap items-center justify-between gap-3">

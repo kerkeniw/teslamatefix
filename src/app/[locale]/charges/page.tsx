@@ -5,7 +5,6 @@ import { prisma } from "@/lib/db";
 import { getSelectedCarOrDefault } from "@/lib/vehicle";
 import { AppHeader } from "@/components/app-shell/header";
 import { MainNav } from "@/components/app-shell/main-nav";
-import { LocaleSwitcher } from "@/components/app-shell/locale-switcher";
 import { ChargeListClient } from "@/components/entities/charges/ChargeListClient";
 import type { ChargeRow } from "@/components/entities/charges/ChargeDataTableColumns";
 
@@ -104,7 +103,7 @@ export default async function ChargesPage({
 
   return (
     <>
-      <AppHeader rightSlot={<LocaleSwitcher />} />
+      <AppHeader />
       <MainNav />
       <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6">
         <header className="mb-6">

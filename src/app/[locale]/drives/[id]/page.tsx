@@ -6,7 +6,6 @@ import { prisma } from "@/lib/db";
 import { getSelectedCarOrDefault } from "@/lib/vehicle";
 import { AppHeader } from "@/components/app-shell/header";
 import { MainNav } from "@/components/app-shell/main-nav";
-import { LocaleSwitcher } from "@/components/app-shell/locale-switcher";
 import { DriveTabs } from "@/components/entities/drives/DriveTabs";
 import { ChildrenPositionsTable } from "@/components/entities/drives/ChildrenPositionsTable";
 import { DriveRecalcPanel } from "@/components/entities/drives/RecalcPanel";
@@ -165,7 +164,7 @@ export default async function DriveEditPage({
 
   return (
     <>
-      <AppHeader rightSlot={<LocaleSwitcher />} />
+      <AppHeader />
       <MainNav />
       <main className="mx-auto w-full max-w-4xl flex-1 px-4 py-6">
         <div className="mb-4">

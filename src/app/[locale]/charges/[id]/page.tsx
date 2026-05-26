@@ -7,8 +7,8 @@ import { prisma } from "@/lib/db";
 import { getSelectedCarOrDefault } from "@/lib/vehicle";
 import { AppHeader } from "@/components/app-shell/header";
 import { MainNav } from "@/components/app-shell/main-nav";
-import { LocaleSwitcher } from "@/components/app-shell/locale-switcher";
 import { ChargeTabs } from "@/components/entities/charges/ChargeTabs";
+import { ChargeBatteryDeltaToggle } from "@/components/entities/charges/ChargeBatteryDeltaToggle";
 import { TicksTable, type TickRow } from "@/components/entities/charges/TicksTable";
 import { ChargeRecalcPanel } from "@/components/entities/charges/RecalcPanel";
 import type {
@@ -147,7 +147,7 @@ export default async function ChargeEditPage({
     prisma.charges.count({ where: { charging_process_id: id } }),
     prisma.positions.findUnique({
       where: { id: proc.position_id },
-      select: { id: true, date: true, latitude: true, longitude: true },
+      select: { id: true, date: true, latitude: true, longitude: true, odometer: true },
     }),
     proc.address_id
       ? prisma.addresses.findUnique({
@@ -314,18 +314,30 @@ export default async function ChargeEditPage({
 
   return (
     <>
-      <AppHeader rightSlot={<LocaleSwitcher />} />
+      <AppHeader />
       <MainNav />
-      <main className="mx-auto w-full max-w-4xl flex-1 px-4 py-6">
-        <div className="mb-4">
+      <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6">
+        <header className="mb-3 flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+            <h1 className="text-2xl font-semibold tracking-tight">
+              {t("edit")}{" "}
+              <span className="font-mono text-base text-muted-foreground">#{proc.id}</span>
+            </h1>
+            <ChargeBatteryDeltaToggle
+              startSoc={proc.start_battery_level}
+              endSoc={proc.end_battery_level}
+              startRangeKm={
+                proc.start_ideal_range_km != null ? Number(proc.start_ideal_range_km) : null
+              }
+              endRangeKm={
+                proc.end_ideal_range_km != null ? Number(proc.end_ideal_range_km) : null
+              }
+            />
+          </div>
           <ButtonLink variant="ghost" size="sm" href="/charges">
             <ArrowLeft className="size-4" aria-hidden />
             {tCommon("back")}
           </ButtonLink>
-        </div>
-        <header className="mb-6">
-          <h1 className="text-2xl font-semibold tracking-tight">{t("edit")}</h1>
-          <p className="mt-1 font-mono text-xs text-muted-foreground">#{proc.id}</p>
         </header>
         <ChargeTabs
           id={proc.id}
@@ -333,6 +345,16 @@ export default async function ChargeEditPage({
           initialOptions={initialOptions}
           tickContext={tickContext}
           ticksCount={ticksTotal}
+          positionMap={
+            refPosition
+              ? {
+                  id: refPosition.id,
+                  lat: Number(refPosition.latitude),
+                  lng: Number(refPosition.longitude),
+                  odometer: refPosition.odometer ?? null,
+                }
+              : null
+          }
           readOnly={env.READ_ONLY}
           saveAction={boundUpdate}
           deleteAction={boundDelete}

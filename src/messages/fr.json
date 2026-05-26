@@ -32,7 +32,10 @@
     "invalidNumber": "Valeur numérique invalide.",
     "invalidDate": "Date invalide.",
     "previous": "Précédent",
-    "next": "Suivant"
+    "next": "Suivant",
+    "menu": "Menu",
+    "theme": "Thème",
+    "language": "Langue"
   },
   "vehiclePicker": {
     "label": "Véhicule",
@@ -585,7 +588,8 @@
       "applyToAllTicks": "Appliquer à tous les ticks",
       "applyAllDisabled": "Désactivé : la session a {count} ticks intermédiaires fiables, seul le dernier tick est corrigé.",
       "statsRange": "min : {min} — max : {max}",
-      "statsDistinct": "valeurs : {values}"
+      "statsDistinct": "valeurs : {values}",
+      "noPosition": "Position introuvable."
     },
     "warnings": {
       "chargerTypeMixed": "Type incohérent : les ticks mélangent AC et DC. Affichage basé sur le dernier tick."
@@ -700,7 +704,10 @@
       "delete": "Supprimer",
       "estimateEndValues": "Estimer les valeurs de fin",
       "applyChargerDefaults": "Appliquer les valeurs par défaut",
-      "cancelChargerChanges": "Annuler"
+      "cancelChargerChanges": "Annuler",
+      "showChargerDetails": "Détails",
+      "hideChargerDetails": "Masquer les détails",
+      "toggleBatteryUnit": "Basculer % / km"
     },
     "create": {
       "title": "Créer une session de charge",

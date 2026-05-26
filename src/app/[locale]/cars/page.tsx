@@ -3,7 +3,6 @@ import { requireSession } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { AppHeader } from "@/components/app-shell/header";
 import { MainNav } from "@/components/app-shell/main-nav";
-import { LocaleSwitcher } from "@/components/app-shell/locale-switcher";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ButtonLink } from "@/components/ui/button-link";
@@ -54,7 +53,7 @@ export default async function CarsPage({
 
   return (
     <>
-      <AppHeader rightSlot={<LocaleSwitcher />} />
+      <AppHeader />
       <MainNav />
       <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6">
         <header className="mb-6">

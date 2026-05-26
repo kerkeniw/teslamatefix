@@ -150,6 +150,8 @@ export const ChargeSchema = z
     address_id: optionalIntId,
     geofence_id: optionalIntId,
     outside_temp_avg: optionalNumber,
+    outside_temp_avg_initial: optionalNumber.optional().default(null),
+    outside_temp_avg_apply_all: applyAllField,
     charger_type: optionalChargerType.optional().default(null),
     charger_type_initial: optionalChargerType.optional().default(null),
     // Champs borne édités à granularité tick. Chaque champ est accompagné

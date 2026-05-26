@@ -32,7 +32,10 @@
     "invalidNumber": "Invalid number.",
     "invalidDate": "Invalid date.",
     "previous": "Previous",
-    "next": "Next"
+    "next": "Next",
+    "menu": "Menu",
+    "theme": "Theme",
+    "language": "Language"
   },
   "vehiclePicker": {
     "label": "Vehicle",
@@ -585,7 +588,8 @@
       "applyToAllTicks": "Apply to all ticks",
       "applyAllDisabled": "Disabled: the session has {count} reliable intermediate ticks, only the last tick is corrected.",
       "statsRange": "min: {min} — max: {max}",
-      "statsDistinct": "values: {values}"
+      "statsDistinct": "values: {values}",
+      "noPosition": "Position not found."
     },
     "warnings": {
       "chargerTypeMixed": "Inconsistent type: ticks mix AC and DC. Display falls back to the last tick."
@@ -700,7 +704,10 @@
       "delete": "Delete",
       "estimateEndValues": "Estimate end values",
       "applyChargerDefaults": "Apply default values",
-      "cancelChargerChanges": "Reset"
+      "cancelChargerChanges": "Reset",
+      "showChargerDetails": "Details",
+      "hideChargerDetails": "Hide details",
+      "toggleBatteryUnit": "Toggle % / km"
     },
     "create": {
       "title": "Create charging session",

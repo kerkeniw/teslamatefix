@@ -5,7 +5,6 @@ import { env } from "@/lib/env";
 import { prisma } from "@/lib/db";
 import { AppHeader } from "@/components/app-shell/header";
 import { MainNav } from "@/components/app-shell/main-nav";
-import { LocaleSwitcher } from "@/components/app-shell/locale-switcher";
 import { UpdateForm } from "@/components/entities/updates/UpdateForm";
 import { ButtonLink } from "@/components/ui/button-link";
 import { ArrowLeft } from "lucide-react";
@@ -45,7 +44,7 @@ export default async function UpdateEditPage({
 
   return (
     <>
-      <AppHeader rightSlot={<LocaleSwitcher />} />
+      <AppHeader />
       <MainNav />
       <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-6">
         <div className="mb-4">

@@ -37,6 +37,7 @@ export function FKCombobox({
   disabled = false,
   id,
   required = false,
+  form,
 }: {
   name: string;
   initial: FKOption | null;
@@ -47,6 +48,8 @@ export function FKCombobox({
   disabled?: boolean;
   id?: string;
   required?: boolean;
+  /** Rattache l'input hidden à un `<form id="...">` distant (HTML5 form attr). */
+  form?: string;
 }) {
   const t = useTranslations("combobox");
   const [selected, setSelected] = useState<FKOption | null>(initial);
@@ -113,6 +116,7 @@ export function FKCombobox({
         name={name}
         value={selected ? String(selected.id) : ""}
         required={required}
+        form={form}
       />
       <Combobox
         items={itemsAsValues}

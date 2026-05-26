@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useFormatter, useTranslations } from "next-intl";
 import { toast } from "sonner";
+import { ChevronDown, ChevronUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
@@ -15,7 +16,7 @@ import {
 } from "@/components/ui/select";
 import { FormField } from "@/components/form/form-field";
 import { NumberInput } from "@/components/form/number-input";
-import { FKCombobox, type FKOption } from "@/components/form/fk-combobox";
+import { type FKOption } from "@/components/form/fk-combobox";
 import { FieldWithTickHint } from "./FieldWithTickHint";
 import { ChargerTickField } from "./ChargerTickField";
 import type {
@@ -29,9 +30,6 @@ import {
   DEFAULT_POWER_KW,
   deriveChargerSpecs,
 } from "@/lib/integrity/charger-specs";
-import { searchAddressesAction } from "@/app/actions/search-addresses";
-import { searchGeofencesAction } from "@/app/actions/search-geofences";
-import { searchPositionsAction } from "@/app/actions/search-positions";
 import { deriveChargeEndsAction } from "@/app/actions/derive-charge-ends";
 import { computeDurationMin } from "@/lib/format/duration";
 
@@ -97,6 +95,7 @@ export function ChargeProcessForm({
   fieldErrors = {},
   readOnly = false,
   onClientValidityChange,
+  locationPanel,
 }: {
   initial: ChargeProcessFormValues;
   initialOptions: ChargeProcessFormInitialOptions;
@@ -105,6 +104,8 @@ export function ChargeProcessForm({
   readOnly?: boolean;
   mode: "create" | "edit";
   onClientValidityChange?: (valid: boolean) => void;
+  /** Cellule droite de la grille supérieure (carte + météo + localisation). */
+  locationPanel?: React.ReactNode;
 }) {
   const t = useTranslations("charges");
   const format = useFormatter();
@@ -192,6 +193,7 @@ export function ChargeProcessForm({
 
   const [chargerFields, setChargerFields] = useState<ChargerFieldsState>(initialChargerFields);
   const [chargerApplyAll, setChargerApplyAll] = useState<ChargerApplyAllState>(initialApplyAll);
+  const [chargerDetailsExpanded, setChargerDetailsExpanded] = useState(false);
 
   // Select kW de la ligne de commandes. Initialisé sur la valeur courante du
   // dernier tick si présente, sinon sur DEFAULT_POWER_KW du type courant.
@@ -229,6 +231,7 @@ export function ChargeProcessForm({
     const kw = Number(chargerPowerKw);
     if (!Number.isFinite(kw)) return;
     const specs = deriveChargerSpecs(chargerType, kw);
+    setChargerDetailsExpanded(true);
     setChargerFields({
       charger_voltage: specs.voltage != null ? String(specs.voltage) : "",
       charger_phases: specs.phases != null ? String(specs.phases) : "",
@@ -349,27 +352,13 @@ export function ChargeProcessForm({
       <input type="hidden" name="car_id" value={initial.car_id} />
       <input type="hidden" name="charger_type_initial" value={initialChargerType} />
 
+      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="space-y-8">
       <section className="space-y-4">
         <h2 className="text-base font-semibold">{t("sections.time")}</h2>
-        <p className="text-xs text-muted-foreground">
-          {t("fields.carId")} : <span className="font-medium text-foreground">{initialOptions.car.label}</span>
-        </p>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <FormField
-            id="position_id"
-            label={t("fields.positionId")}
-            required
-            error={fe.position_id}
-          >
-            <FKCombobox
-              id="position_id"
-              name="position_id"
-              initial={initialOptions.position}
-              searchAction={searchPositionsAction}
-              disabled={readOnly}
-              required
-            />
-          </FormField>
+        {/* position_id reste obligatoire en base ; conservé en hidden, l'utilisateur ne le modifie plus ici. */}
+        <input type="hidden" name="position_id" value={initial.position_id} />
+        <div className="space-y-4">
           <FieldWithTickHint
             kind="datetime"
             id="start_date"
@@ -412,96 +401,176 @@ export function ChargeProcessForm({
         </div>
       </section>
 
+      <section className="space-y-4">
+        <h2 className="text-base font-semibold">{t("sections.energy")}</h2>
+        <div className="grid gap-4 sm:grid-cols-3">
+          <FieldWithTickHint
+            kind="number"
+            id="charge_energy_added"
+            name="charge_energy_added"
+            label={t("fields.chargeEnergyAdded")}
+            value={chargeEnergyAdded}
+            onChange={setChargeEnergyAdded}
+            tickValue={null}
+            tolerance={0.01}
+            step="0.01"
+            min={0}
+            max={999999.99}
+            disabled={readOnly}
+            error={fe.charge_energy_added ?? null}
+          />
+          <FormField
+            id="charge_energy_used"
+            label={t("fields.chargeEnergyUsed")}
+            error={fe.charge_energy_used}
+          >
+            <NumberInput
+              id="charge_energy_used"
+              name="charge_energy_used"
+              defaultValue={initial.charge_energy_used}
+              step="0.01"
+              min={0}
+              max={999999.99}
+              disabled={readOnly}
+            />
+          </FormField>
+          <FormField id="cost" label={t("fields.cost")} error={fe.cost}>
+            <NumberInput
+              id="cost"
+              name="cost"
+              defaultValue={initial.cost}
+              step="0.01"
+              min={0}
+              max={9999.99}
+              disabled={readOnly}
+            />
+          </FormField>
+        </div>
+        <div>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={handleEstimate}
+            disabled={readOnly || deriving}
+          >
+            {deriving ? t("estimateToast.estimating") : t("actions.estimateEndValues")}
+          </Button>
+        </div>
+      </section>
+
       {tickContext ? (
+        <section className="space-y-4">
+          <div className="flex flex-wrap items-center gap-3">
+            <h2 className="text-base font-semibold">{t("sections.charger")}</h2>
+            {tickContext.chargerType === "mixed" ? (
+              <Badge variant="outline" className="border-warn/50 bg-warn/10 text-warn">
+                {t("type.mixed")}
+              </Badge>
+            ) : null}
+          </div>
+          {tickContext.chargerType === "mixed" ? (
+            <p className="text-xs text-warn">{t("warnings.chargerTypeMixed")}</p>
+          ) : null}
+          <div className="flex flex-wrap items-end gap-3">
+            <FormField
+              id="charger_type"
+              label={t("fields.chargerType")}
+              error={fe.charger_type}
+              hint={
+                chargerTypeChanged
+                  ? t("hints.chargerTypeChangeWillUpdateTicks", { n: tickContext.ticksCount })
+                  : undefined
+              }
+              className="min-w-[10rem] flex-1"
+            >
+              <Select
+                value={chargerType}
+                onValueChange={(v) => handleChargerTypeChange((v as "AC" | "DC") ?? "")}
+                disabled={readOnly}
+              >
+                <SelectTrigger id="charger_type" className="w-full">
+                  <SelectValue placeholder={t("type.unknown")} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="AC">{t("type.ac")}</SelectItem>
+                  <SelectItem value="DC">{t("type.dc")}</SelectItem>
+                </SelectContent>
+              </Select>
+              <input type="hidden" name="charger_type" value={chargerType} />
+            </FormField>
+            <FormField
+              id="charger_power_kw"
+              label={t("fields.chargerPowerKw")}
+              className="min-w-[8rem] flex-1"
+            >
+              <Select
+                value={chargerPowerKw}
+                onValueChange={(v) =>
+                  setChargerPowerKw(typeof v === "string" ? v : String(v ?? ""))
+                }
+                disabled={readOnly}
+              >
+                <SelectTrigger id="charger_power_kw" className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {powerKwOptions.map((p) => (
+                    <SelectItem key={p} value={String(p)}>
+                      {p} kW
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </FormField>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handleApplyChargerDefaults}
+              disabled={readOnly || (chargerType !== "AC" && chargerType !== "DC")}
+            >
+              {t("actions.applyChargerDefaults")}
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={handleResetChargerSection}
+              disabled={readOnly}
+            >
+              {t("actions.cancelChargerChanges")}
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => setChargerDetailsExpanded((v) => !v)}
+              aria-expanded={chargerDetailsExpanded}
+              aria-controls="charger-details"
+            >
+              {chargerDetailsExpanded ? (
+                <ChevronUp className="size-4" aria-hidden />
+              ) : (
+                <ChevronDown className="size-4" aria-hidden />
+              )}
+              {chargerDetailsExpanded
+                ? t("actions.hideChargerDetails")
+                : t("actions.showChargerDetails")}
+            </Button>
+          </div>
+        </section>
+      ) : null}
+      </div>
+      {locationPanel}
+      </div>
+
+      {tickContext && chargerDetailsExpanded ? (
         <>
           <Separator />
-          <section className="space-y-4">
-            <div className="flex flex-wrap items-center gap-3">
-              <h2 className="text-base font-semibold">{t("sections.charger")}</h2>
-              {tickContext.chargerType === "mixed" ? (
-                <Badge variant="outline" className="border-warn/50 bg-warn/10 text-warn">
-                  {t("type.mixed")}
-                </Badge>
-              ) : null}
-            </div>
-            {tickContext.chargerType === "mixed" ? (
-              <p className="text-xs text-warn">{t("warnings.chargerTypeMixed")}</p>
-            ) : null}
-            <div className="flex flex-wrap items-end gap-3">
-              <FormField
-                id="charger_type"
-                label={t("fields.chargerType")}
-                error={fe.charger_type}
-                hint={
-                  chargerTypeChanged
-                    ? t("hints.chargerTypeChangeWillUpdateTicks", { n: tickContext.ticksCount })
-                    : undefined
-                }
-                className="min-w-[12rem] flex-1"
-              >
-                <Select
-                  value={chargerType}
-                  onValueChange={(v) => handleChargerTypeChange((v as "AC" | "DC") ?? "")}
-                  disabled={readOnly}
-                >
-                  <SelectTrigger id="charger_type" className="w-full">
-                    <SelectValue placeholder={t("type.unknown")} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="AC">{t("type.ac")}</SelectItem>
-                    <SelectItem value="DC">{t("type.dc")}</SelectItem>
-                  </SelectContent>
-                </Select>
-                <input type="hidden" name="charger_type" value={chargerType} />
-              </FormField>
-              <FormField
-                id="charger_power_kw"
-                label={t("fields.chargerPowerKw")}
-                className="min-w-[10rem] flex-1"
-              >
-                <Select
-                  value={chargerPowerKw}
-                  onValueChange={(v) =>
-                    setChargerPowerKw(typeof v === "string" ? v : String(v ?? ""))
-                  }
-                  disabled={readOnly}
-                >
-                  <SelectTrigger id="charger_power_kw" className="w-full">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {powerKwOptions.map((p) => (
-                      <SelectItem key={p} value={String(p)}>
-                        {p} kW
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </FormField>
-              <div className="flex gap-2 pb-1">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={handleApplyChargerDefaults}
-                  disabled={readOnly || (chargerType !== "AC" && chargerType !== "DC")}
-                >
-                  {t("actions.applyChargerDefaults")}
-                </Button>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleResetChargerSection}
-                  disabled={readOnly}
-                >
-                  {t("actions.cancelChargerChanges")}
-                </Button>
-              </div>
-            </div>
-
-            <Separator />
-
+          <section id="charger-details" className="space-y-4">
             <div className="grid gap-4 sm:grid-cols-2">
               <ChargerTickField
                 id="charger_voltage"
@@ -688,66 +757,6 @@ export function ChargeProcessForm({
       <Separator />
 
       <section className="space-y-4">
-        <h2 className="text-base font-semibold">{t("sections.energy")}</h2>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <FieldWithTickHint
-            kind="number"
-            id="charge_energy_added"
-            name="charge_energy_added"
-            label={t("fields.chargeEnergyAdded")}
-            value={chargeEnergyAdded}
-            onChange={setChargeEnergyAdded}
-            tickValue={lastTick?.charge_energy_added ?? null}
-            tolerance={0.01}
-            step="0.01"
-            min={0}
-            max={999999.99}
-            disabled={readOnly}
-            error={fe.charge_energy_added ?? null}
-          />
-          <FormField
-            id="charge_energy_used"
-            label={t("fields.chargeEnergyUsed")}
-            error={fe.charge_energy_used}
-          >
-            <NumberInput
-              id="charge_energy_used"
-              name="charge_energy_used"
-              defaultValue={initial.charge_energy_used}
-              step="0.01"
-              min={0}
-              max={999999.99}
-              disabled={readOnly}
-            />
-          </FormField>
-          <FormField id="cost" label={t("fields.cost")} error={fe.cost}>
-            <NumberInput
-              id="cost"
-              name="cost"
-              defaultValue={initial.cost}
-              step="0.01"
-              min={0}
-              max={9999.99}
-              disabled={readOnly}
-            />
-          </FormField>
-        </div>
-        <div>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={handleEstimate}
-            disabled={readOnly || deriving}
-          >
-            {deriving ? t("estimateToast.estimating") : t("actions.estimateEndValues")}
-          </Button>
-        </div>
-      </section>
-
-      <Separator />
-
-      <section className="space-y-4">
         <h2 className="text-base font-semibold">{t("sections.battery")}</h2>
         <div className="grid gap-4 sm:grid-cols-2">
           <FieldWithTickHint
@@ -835,54 +844,6 @@ export function ChargeProcessForm({
         </div>
       </section>
 
-      <Separator />
-
-      <section className="space-y-4">
-        <h2 className="text-base font-semibold">{t("sections.location")}</h2>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <FormField id="address_id" label={t("fields.addressId")} error={fe.address_id}>
-            <FKCombobox
-              id="address_id"
-              name="address_id"
-              initial={initialOptions.address}
-              searchAction={searchAddressesAction}
-              disabled={readOnly}
-              allowClear
-            />
-          </FormField>
-          <FormField id="geofence_id" label={t("fields.geofenceId")} error={fe.geofence_id}>
-            <FKCombobox
-              id="geofence_id"
-              name="geofence_id"
-              initial={initialOptions.geofence}
-              searchAction={searchGeofencesAction}
-              disabled={readOnly}
-              allowClear
-            />
-          </FormField>
-        </div>
-      </section>
-
-      <Separator />
-
-      <section className="space-y-4">
-        <h2 className="text-base font-semibold">{t("sections.weather")}</h2>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <FormField
-            id="outside_temp_avg"
-            label={t("fields.outsideTempAvg")}
-            error={fe.outside_temp_avg}
-          >
-            <NumberInput
-              id="outside_temp_avg"
-              name="outside_temp_avg"
-              defaultValue={initial.outside_temp_avg}
-              step="0.1"
-              disabled={readOnly}
-            />
-          </FormField>
-        </div>
-      </section>
     </div>
   );
 }

@@ -9,13 +9,15 @@ import { getSelectedTimezone } from "@/lib/timezone";
 import { VehiclePicker } from "@/components/app-shell/vehicle-picker";
 import { TimezonePicker } from "@/components/app-shell/timezone-picker";
 import { ThemeSwitcher } from "@/components/app-shell/theme-switcher";
+import { LocaleSwitcher } from "@/components/app-shell/locale-switcher";
+import { MobileMenu } from "@/components/app-shell/mobile-menu";
 
 /**
- * Header global : logo + sélecteur de véhicule global + slot droit (sélecteur
- * langue, logout). Le `VehiclePicker` lit la liste des véhicules en SSR ; sa
- * server action met à jour le cookie `tmfix_car_id` et revalide la layout.
+ * Header global. Toujours visible : logo + sélecteur véhicule.
+ * Desktop (≥ md) : cluster fuseau + thème + langue + logout.
+ * Mobile (< md) : tout le cluster bascule dans un menu burger (MobileMenu).
  */
-export async function AppHeader({ rightSlot }: { rightSlot?: React.ReactNode }) {
+export async function AppHeader() {
   const t = await getTranslations("common");
   const [cars, selected, timeZone] = await Promise.all([
     listCars(),
@@ -24,26 +26,33 @@ export async function AppHeader({ rightSlot }: { rightSlot?: React.ReactNode }) 
   ]);
   return (
     <header className="sticky top-0 z-30 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
-      <div className="mx-auto flex h-14 max-w-6xl items-center justify-between gap-4 px-4">
+      <div className="mx-auto flex h-14 max-w-6xl items-center justify-between gap-2 px-4">
         <Link href="/" className="flex items-center gap-2">
           <Logo />
         </Link>
         <div className="flex items-center gap-2">
           {selected ? <VehiclePicker cars={cars} selectedId={selected.id} /> : null}
-          <TimezonePicker selected={timeZone} />
-          <ThemeSwitcher />
-          {rightSlot}
-          <form action={logoutAction}>
-            <Button
-              type="submit"
-              variant="ghost"
-              size="sm"
-              aria-label={t("logout")}
-            >
-              <LogOut className="size-4" aria-hidden />
-              <span className="sr-only md:not-sr-only">{t("logout")}</span>
-            </Button>
-          </form>
+
+          <div className="hidden items-center gap-2 md:flex">
+            <TimezonePicker selected={timeZone} />
+            <ThemeSwitcher />
+            <LocaleSwitcher />
+            <form action={logoutAction}>
+              <Button
+                type="submit"
+                variant="ghost"
+                size="sm"
+                aria-label={t("logout")}
+              >
+                <LogOut className="size-4" aria-hidden />
+                <span className="sr-only md:not-sr-only">{t("logout")}</span>
+              </Button>
+            </form>
+          </div>
+
+          <div className="md:hidden">
+            <MobileMenu selectedTimezone={timeZone} logoutAction={logoutAction} />
+          </div>
         </div>
       </div>
     </header>

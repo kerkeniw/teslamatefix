@@ -3,7 +3,6 @@ import { requireSession } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { AppHeader } from "@/components/app-shell/header";
 import { MainNav } from "@/components/app-shell/main-nav";
-import { LocaleSwitcher } from "@/components/app-shell/locale-switcher";
 import { GeofenceListClient } from "@/components/entities/geofences/GeofenceListClient";
 import type { GeofenceRow } from "@/components/entities/geofences/GeofenceDataTableColumns";
 
@@ -66,7 +65,7 @@ export default async function GeofencesPage({
 
   return (
     <>
-      <AppHeader rightSlot={<LocaleSwitcher />} />
+      <AppHeader />
       <MainNav />
       <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6">
         <header className="mb-6">

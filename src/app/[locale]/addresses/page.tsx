@@ -4,7 +4,6 @@ import { requireSession } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { AppHeader } from "@/components/app-shell/header";
 import { MainNav } from "@/components/app-shell/main-nav";
-import { LocaleSwitcher } from "@/components/app-shell/locale-switcher";
 import { AddressListClient } from "@/components/entities/addresses/AddressListClient";
 import type { AddressRow } from "@/components/entities/addresses/AddressDataTableColumns";
 
@@ -80,7 +79,7 @@ export default async function AddressesPage({
 
   return (
     <>
-      <AppHeader rightSlot={<LocaleSwitcher />} />
+      <AppHeader />
       <MainNav />
       <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6">
         <header className="mb-6">

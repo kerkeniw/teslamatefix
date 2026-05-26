@@ -9,12 +9,33 @@ TeslaMate, se connecte à sa base PostgreSQL et expose une UI sécurisée pour
 réparer chaque entité (`drives`, `charges`, `positions`, `addresses`,
 `geofences`, `states`, `updates`, `cars`, `settings`).
 
-> **Statut v0.3.0** — seuls les modules de **création et de modification
+> **Statut v0.4.0** — seuls les modules de **création et de modification
 > des charges** ont été testés et validés. Les autres entités (trajets,
 > positions, adresses, géofences, états, mises à jour de firmware, voitures,
 > paramètres) sont accessibles en **consultation** mais leurs flux d'édition
 > n'ont pas encore été validés. À utiliser avec précaution et **toujours sur
 > une base sauvegardée** (`pg_dump` recommandé avant la première utilisation).
+
+## Nouveautés v0.4.0
+
+Refonte UI majeure de l'écran d'édition d'une charge et adaptation mobile :
+
+- **Carte géographique** centrée sur la position de la charge, avec marqueur
+  Leaflet + tuiles OpenStreetMap. Affichée uniquement sur l'onglet Session.
+- **Delta SOC dans le titre** (`32 % → 80 %`) avec picto pile rempli vert
+  proportionnel à la capacité atteinte ; bouton pour basculer entre % et km
+  d'autonomie idéale.
+- **Bloc Borne scindé** : type + puissance + *Appliquer* / *Annuler* en haut,
+  détails (V, A, phases, marque, câble, …) repliables — bloc Batterie remonté
+  juste sous le bloc principal.
+- **Header mobile compacté** : logo + sélecteur véhicule visibles ; navigation
+  principale + fuseau horaire + thème + langue + déconnexion regroupés dans
+  un menu burger `☰` (panneau latéral).
+- **`outside_temp_avg`** propagé sur les ticks selon la règle métier
+  *Appliquer à tous les ticks* (même verrouillage qu'AC/DC).
+
+Détails complets, schéma serveur et dépendances :
+[`docs/RELEASE_v0.4.0.md`](docs/RELEASE_v0.4.0.md).
 
 ## Installation
 

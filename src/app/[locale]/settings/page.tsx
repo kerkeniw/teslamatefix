@@ -4,7 +4,6 @@ import { env } from "@/lib/env";
 import { prisma } from "@/lib/db";
 import { AppHeader } from "@/components/app-shell/header";
 import { MainNav } from "@/components/app-shell/main-nav";
-import { LocaleSwitcher } from "@/components/app-shell/locale-switcher";
 import { SettingsForm } from "@/components/entities/settings/SettingsForm";
 import { updateSettingsAction } from "./actions";
 
@@ -23,7 +22,7 @@ export default async function SettingsPage({
 
   return (
     <>
-      <AppHeader rightSlot={<LocaleSwitcher />} />
+      <AppHeader />
       <MainNav />
       <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-6">
         <header className="mb-6">

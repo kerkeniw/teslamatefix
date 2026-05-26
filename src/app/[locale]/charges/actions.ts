@@ -285,6 +285,36 @@ export async function updateChargeAction(
         }
       }
 
+      // outside_temp_avg : si la valeur change OU que apply_all est cochée,
+      // on propage la valeur courante sur les ticks. Même règle métier que
+      // pour les champs charger : apply_all est ignoré si la session a > 2
+      // ticks (les intermédiaires sont fiables, on ne touche qu'au dernier).
+      {
+        const v = parsed.data.outside_temp_avg;
+        const initial = parsed.data.outside_temp_avg_initial;
+        const applyAllRaw = parsed.data.outside_temp_avg_apply_all === true;
+        const changed = v !== initial;
+        if (changed || applyAllRaw) {
+          const tickIds = await tx.charges.findMany({
+            where: { charging_process_id: id },
+            orderBy: { date: "asc" },
+            select: { id: true },
+          });
+          const tickCount = tickIds.length;
+          const firstTickId = tickIds[0]?.id;
+          const lastTickId = tickIds[tickIds.length - 1]?.id;
+          const applyAll = applyAllRaw && tickCount === 2;
+          const value = v == null ? null : new Prisma.Decimal(v);
+          const updateData = { outside_temp: value };
+          if (applyAll && firstTickId != null && lastTickId != null) {
+            await tx.charges.update({ where: { id: firstTickId }, data: updateData });
+            await tx.charges.update({ where: { id: lastTickId }, data: updateData });
+          } else if (changed && lastTickId != null) {
+            await tx.charges.update({ where: { id: lastTickId }, data: updateData });
+          }
+        }
+      }
+
       // Propagation des bornes start_date / end_date aux ticks. En cas de
       // mono-tick, le helper crée un second tick pour maintenir l'invariant
       // ≥ 2 ticks.
