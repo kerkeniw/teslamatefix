@@ -96,6 +96,9 @@ Pièges documentés :
 
 - [ ] Déposer la clé : `mkdir -p ./tesla-well-known && cp public-key.pem
       ./tesla-well-known/com.tesla.3p.public-key.pem`.
+- [ ] **Permissions** (container = user `node`/uid 1000, bind-mount garde les
+      perms hôte) : `chmod 755 ./tesla-well-known &&
+      chmod 644 ./tesla-well-known/com.tesla.3p.public-key.pem` — sinon `EACCES`.
 - [ ] `docker compose up -d teslamatefix`.
 - [ ] Depuis l'hôte/container :
       `curl -i http://127.0.0.1:3001/.well-known/appspecific/com.tesla.3p.public-key.pem`

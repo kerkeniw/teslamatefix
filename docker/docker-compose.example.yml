@@ -47,6 +47,11 @@ services:
       # contenant `com.tesla.3p.public-key.pem`. TeslaMateFix la sert alors sur
       # https://<DOMAIN>/.well-known/appspecific/com.tesla.3p.public-key.pem
       # (via rewrite interne) — aucun service web supplémentaire nécessaire.
+      #
+      # ⚠️ Le container tourne en user `node` (uid 1000) : le bind-mount conserve
+      # les permissions de l'hôte. Rendre le fichier lisible (clé publique → sans
+      # risque) sinon EACCES :
+      #   chmod 755 tesla-well-known && chmod 644 tesla-well-known/com.tesla.3p.public-key.pem
       - ./tesla-well-known:/well-known:ro
     healthcheck:
       test: ["CMD", "wget", "--quiet", "--spider", "http://127.0.0.1:3001/api/health"]

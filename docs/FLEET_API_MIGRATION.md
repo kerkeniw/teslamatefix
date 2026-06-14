@@ -95,6 +95,11 @@ l'auth dans `src/proxy.ts`. Le fichier est monté en lecture seule, lu à chaud
    ```bash
    mkdir -p ./tesla-well-known
    cp public-key.pem ./tesla-well-known/com.tesla.3p.public-key.pem
+   # ⚠️ Le container tourne en user `node` (uid 1000) et le bind-mount conserve
+   # les permissions de l'hôte → rendre le fichier lisible (clé publique, sans
+   # risque), sinon EACCES :
+   chmod 755 ./tesla-well-known
+   chmod 644 ./tesla-well-known/com.tesla.3p.public-key.pem
    ```
 
 2. Le service `teslamatefix` monte déjà ce dossier sur `/well-known:ro` et
