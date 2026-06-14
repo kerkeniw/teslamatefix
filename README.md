@@ -9,12 +9,32 @@ TeslaMate, se connecte à sa base PostgreSQL et expose une UI sécurisée pour
 réparer chaque entité (`drives`, `charges`, `positions`, `addresses`,
 `geofences`, `states`, `updates`, `cars`, `settings`).
 
-> **Statut v0.4.0** — seuls les modules de **création et de modification
+> **Statut v0.5.0** — seuls les modules de **création et de modification
 > des charges** ont été testés et validés. Les autres entités (trajets,
 > positions, adresses, géofences, états, mises à jour de firmware, voitures,
 > paramètres) sont accessibles en **consultation** mais leurs flux d'édition
 > n'ont pas encore été validés. À utiliser avec précaution et **toujours sur
 > une base sauvegardée** (`pg_dump` recommandé avant la première utilisation).
+
+## Nouveautés v0.5.0
+
+Tesla a coupé l'**Owner API** pour les particuliers (juin 2026, erreurs `403`) :
+TeslaMate ne collecte plus de données sans migration vers la **Fleet API**.
+Celle-ci impose d'héberger une clé publique sur un domaine pour valider
+l'application — TeslaMateFix sait désormais le faire :
+
+- **Clé publique Tesla servie par TeslaMateFix** sur
+  `/.well-known/appspecific/com.tesla.3p.public-key.pem` — **aucun service web
+  supplémentaire** : un *rewrite* interne route l'URL vers une route handler
+  publique, le fichier `.pem` est monté en lecture seule (`/well-known:ro`) et
+  lu à chaud (rotation possible sans rebuild). Variable `TESLA_PUBLIC_KEY_FILE`.
+- **Guide de migration Owner API → Fleet API** pas-à-pas (app developer Tesla,
+  clés EC, enregistrement de domaine, tokens utilisateur `access`+`refresh`,
+  reconfiguration TeslaMate) :
+  [`docs/FLEET_API_MIGRATION.md`](docs/FLEET_API_MIGRATION.md).
+
+Détails techniques et checklist de release :
+[`docs/RELEASE_v0.5.0.md`](docs/RELEASE_v0.5.0.md).
 
 ## Nouveautés v0.4.0
 

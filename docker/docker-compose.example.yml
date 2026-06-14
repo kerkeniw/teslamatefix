@@ -35,10 +35,19 @@ services:
       DATABASE_USER: "${DATABASE_USER:-teslamate}"
       DATABASE_PASS: "${DATABASE_PASS}"
       DATABASE_NAME: "${DATABASE_NAME:-teslamate}"
+      # Chemin (dans le container) de la clé publique Tesla servie sur
+      # /.well-known/appspecific/com.tesla.3p.public-key.pem. Valeur par défaut
+      # déjà dans l'image ; surchargez seulement si vous montez ailleurs.
+      TESLA_PUBLIC_KEY_FILE: "/well-known/com.tesla.3p.public-key.pem"
     volumes:
       # Persiste auth_secret + username + password_hash entre redémarrages.
       # Le volume nommé est créé automatiquement par Docker au premier `up`.
       - teslamatefix-data:/data
+      # Clé publique Tesla (Fleet API). Monter en lecture seule le dossier hôte
+      # contenant `com.tesla.3p.public-key.pem`. TeslaMateFix la sert alors sur
+      # https://<DOMAIN>/.well-known/appspecific/com.tesla.3p.public-key.pem
+      # (via rewrite interne) — aucun service web supplémentaire nécessaire.
+      - ./tesla-well-known:/well-known:ro
     healthcheck:
       test: ["CMD", "wget", "--quiet", "--spider", "http://127.0.0.1:3001/api/health"]
       interval: 30s

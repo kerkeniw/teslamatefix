@@ -46,7 +46,11 @@ export async function proxy(req: NextRequest) {
   // Seul le healthcheck léger reste public (probe Docker liveness).
   // /api/health/db, qui ouvre une connexion Postgres, exige une session pour
   // ne pas révéler la disponibilité du backend à un attaquant non authentifié.
-  if (pathname === "/api/health") {
+  //
+  // /api/tesla-public-key sert la clé publique Tesla (validation domaine Fleet
+  // API) : Tesla doit pouvoir la lire sans session. Cible du rewrite défini
+  // dans next.config.ts pour /.well-known/appspecific/com.tesla.3p.public-key.pem.
+  if (pathname === "/api/health" || pathname === "/api/tesla-public-key") {
     return NextResponse.next();
   }
 

@@ -32,6 +32,21 @@ const nextConfig: NextConfig = {
       },
     ];
   },
+  /**
+   * Mappe l'URL exacte exigée par Tesla pour la validation de domaine Fleet API
+   * vers la route handler `src/app/api/tesla-public-key/route.ts`. Les points
+   * littéraux du chemin sont échappés (`\\.`) car `source` est interprété en
+   * path-to-regexp. La route cible est rendue publique dans `src/proxy.ts`.
+   */
+  async rewrites() {
+    return [
+      {
+        source:
+          "/\\.well-known/appspecific/com\\.tesla\\.3p\\.public-key\\.pem",
+        destination: "/api/tesla-public-key",
+      },
+    ];
+  },
 };
 
 export default withNextIntl(nextConfig);

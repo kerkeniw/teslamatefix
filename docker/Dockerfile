@@ -88,6 +88,9 @@ ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV PORT=3001
 ENV HOSTNAME=0.0.0.0
+# Clé publique Tesla (Fleet API) servie sur /.well-known/appspecific/...
+# Monter en lecture seule le fichier (ou le dossier) à cet emplacement.
+ENV TESLA_PUBLIC_KEY_FILE=/well-known/com.tesla.3p.public-key.pem
 
 # OpenSSL pour le binaire libquery_engine de Prisma + wget pour le HEALTHCHECK.
 # `tini` (init PID 1) gère proprement les signaux (SIGTERM/SIGINT) lors d'un
@@ -95,8 +98,8 @@ ENV HOSTNAME=0.0.0.0
 RUN apt-get update \
  && apt-get install -y --no-install-recommends ca-certificates openssl wget tini \
  && rm -rf /var/lib/apt/lists/* \
- && mkdir -p /app/.next /data \
- && chown -R node:node /app /data
+ && mkdir -p /app/.next /data /well-known \
+ && chown -R node:node /app /data /well-known
 
 # Sortie standalone Next.js : contient server.js + un node_modules minimal
 # avec le client Prisma déjà inclus par le tracing automatique de Next 16.

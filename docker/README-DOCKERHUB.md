@@ -13,7 +13,7 @@ each entity.
 
 **Source code & full documentation:** https://github.com/kerkeniw/teslamatefix
 
-> **v0.4.0 status** — only the **charges create/edit** module has been
+> **v0.5.0 status** — only the **charges create/edit** module has been
 > tested and validated in this release. Other entities (drives, positions,
 > addresses, geofences, states, firmware updates, cars, settings) are
 > available for **read-only browsing**; their edit flows have not been
@@ -71,7 +71,7 @@ for breaking changes between versions.
 ## Tags
 
 - `latest` — most recent stable release.
-- `0.4.0`, `0.3.0`, `0.2.0`, … — semver-pinned releases (recommended for production).
+- `0.5.0`, `0.4.0`, `0.3.0`, … — semver-pinned releases (recommended for production).
 
 Each tag is built multi-arch (`linux/amd64` + `linux/arm64`) via
 [GitHub Actions](https://github.com/kerkeniw/teslamatefix/actions).
