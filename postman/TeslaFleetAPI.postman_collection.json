@@ -1,0 +1,3909 @@
+{
+  "info": {
+    "name": "Tesla Fleet API (complète)",
+    "_postman_id": "tesla-fleet-api-full-0001",
+    "description": "Collection COMPLÈTE de la Tesla Fleet API.\n\nEndpoints extraits de la lib open-source Teslemetry/python-tesla-fleet-api (mapping 1:1 avec la doc officielle developer.tesla.com/docs/fleet-api).\n\n## Mise en route\n1. Renseigne les variables de collection (ou importe l'environnement fourni) : client_id, client_secret, redirect_uri, base_url, login_url, auth_url, scope, vin, energy_site_id.\n2. Dossier 'Authentication' : étape 1 (Authorize) dans un navigateur -> récupère le ?code= -> colle-le dans la variable 'code' -> lance l'étape 2. Les tokens sont enregistrés automatiquement.\n3. Les autres requêtes utilisent {{access_token}} (Bearer) au niveau collection.\n\n## base_url régional\n- Amérique du Nord / Asie-Pacifique : https://fleet-api.prd.na.vn.cloud.tesla.com\n- Europe / Moyen-Orient / Afrique : https://fleet-api.prd.eu.vn.cloud.tesla.com\n- Chine : https://fleet-api.prd.cn.vn.cloud.tesla.cn\n(GET /api/1/users/region donne l'URL exacte de ton compte.)\n\n## ⚠️ Commandes véhicule\nDepuis fin 2024, la plupart des commandes (dossier 'Vehicle Commands') doivent être SIGNÉES via le Tesla Vehicle Command Protocol. En REST direct elles renvoient une erreur. La lecture (vehicle_data, vehicles, products), l'auth et le partner endpoint fonctionnent normalement.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{access_token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "item": [
+    {
+      "name": "Authentication (OAuth)",
+      "description": "Flux OAuth 2.0 : authorize, token, refresh, partner.",
+      "item": [
+        {
+          "name": "1. Authorize (ouvrir dans le navigateur)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{login_url}}/oauth2/v3/authorize?response_type=code&client_id={{client_id}}&redirect_uri={{redirect_uri}}&scope={{scope}}&state={{state}}&audience={{base_url}}",
+              "host": [
+                "{{login_url}}"
+              ],
+              "path": [
+                "oauth2",
+                "v3",
+                "authorize"
+              ],
+              "query": [
+                {
+                  "key": "response_type",
+                  "value": "code"
+                },
+                {
+                  "key": "client_id",
+                  "value": "{{client_id}}"
+                },
+                {
+                  "key": "redirect_uri",
+                  "value": "{{redirect_uri}}"
+                },
+                {
+                  "key": "scope",
+                  "value": "{{scope}}"
+                },
+                {
+                  "key": "state",
+                  "value": "{{state}}"
+                },
+                {
+                  "key": "audience",
+                  "value": "{{base_url}}"
+                }
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "Flux Authorization Code. Cette requete ne se 'send' pas dans Postman : copiez l'URL (raw) dans un navigateur, connectez-vous, puis recuperez le parametre ?code= de l'URL de redirection. Collez-le dans la requete suivante. login_url = auth.tesla.com (ou auth.tesla.cn en Chine)."
+          },
+          "response": []
+        },
+        {
+          "name": "2. Exchange code -> tokens",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{auth_url}}/oauth2/v3/token",
+              "host": [
+                "{{auth_url}}"
+              ],
+              "path": [
+                "oauth2",
+                "v3",
+                "token"
+              ]
+            },
+            "description": "Echange le 'code' (recupere a l'etape 1) contre un access_token + refresh_token. Le test-script enregistre automatiquement les tokens dans les variables de collection.",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"grant_type\": \"authorization_code\",\n  \"client_id\": \"{{client_id}}\",\n  \"client_secret\": \"{{client_secret}}\",\n  \"code\": \"{{code}}\",\n  \"audience\": \"{{base_url}}\",\n  \"redirect_uri\": \"{{redirect_uri}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const d = pm.response.json();",
+                  "if (d.access_token) pm.collectionVariables.set('access_token', d.access_token);",
+                  "if (d.refresh_token) pm.collectionVariables.set('refresh_token', d.refresh_token);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "3. Refresh access token",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{auth_url}}/oauth2/v3/token",
+              "host": [
+                "{{auth_url}}"
+              ],
+              "path": [
+                "oauth2",
+                "v3",
+                "token"
+              ]
+            },
+            "description": "Rafraichit l'access_token a partir du refresh_token. A utiliser quand l'access_token (8h) expire.",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"grant_type\": \"refresh_token\",\n  \"client_id\": \"{{client_id}}\",\n  \"refresh_token\": \"{{refresh_token}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const d = pm.response.json();",
+                  "if (d.access_token) pm.collectionVariables.set('access_token', d.access_token);",
+                  "if (d.refresh_token) pm.collectionVariables.set('refresh_token', d.refresh_token);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "4. Partner token (client_credentials)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{auth_url}}/oauth2/v3/token",
+              "host": [
+                "{{auth_url}}"
+              ],
+              "path": [
+                "oauth2",
+                "v3",
+                "token"
+              ]
+            },
+            "description": "Token applicatif (sans utilisateur) requis pour les endpoints /partner_accounts (register, public_key).",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"grant_type\": \"client_credentials\",\n  \"client_id\": \"{{client_id}}\",\n  \"client_secret\": \"{{client_secret}}\",\n  \"scope\": \"{{scope}}\",\n  \"audience\": \"{{base_url}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const d = pm.response.json();",
+                  "if (d.access_token) pm.collectionVariables.set('partner_token', d.access_token);"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "User",
+      "description": "",
+      "item": [
+        {
+          "name": "Me",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/1/users/me",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "1",
+                "users",
+                "me"
+              ]
+            },
+            "description": "Profil de l'utilisateur courant."
+          },
+          "response": []
+        },
+        {
+          "name": "Region",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/1/users/region",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "1",
+                "users",
+                "region"
+              ]
+            },
+            "description": "Région du compte + URL de base régionale de la Fleet API."
+          },
+          "response": []
+        },
+        {
+          "name": "Orders",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/1/users/orders",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "1",
+                "users",
+                "orders"
+              ]
+            },
+            "description": "Commandes Tesla de l'utilisateur."
+          },
+          "response": []
+        },
+        {
+          "name": "Feature config",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/1/users/feature_config",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "1",
+                "users",
+                "feature_config"
+              ]
+            },
+            "description": "Configuration des fonctionnalités du compte."
+          },
+          "response": []
+        },
+        {
+          "name": "Backup key",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/1/users/backup_key",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "1",
+                "users",
+                "backup_key"
+              ]
+            },
+            "description": "Clé publique de secours de l'utilisateur."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Vehicle (data & management)",
+      "description": "",
+      "item": [
+        {
+          "name": "List vehicles",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/1/vehicles?page=1&per_page=100",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "1",
+                "vehicles"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "disabled": true
+                },
+                {
+                  "key": "per_page",
+                  "value": "100",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Liste des véhicules du compte."
+          },
+          "response": []
+        },
+        {
+          "name": "Get vehicle",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/1/vehicles/{{vin}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "1",
+                "vehicles",
+                "{{vin}}"
+              ]
+            },
+            "description": "Détail d'un véhicule (état online/asleep)."
+          },
+          "response": []
+        },
+        {
+          "name": "Vehicle data",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/1/vehicles/{{vin}}/vehicle_data?endpoints=charge_state;climate_state;drive_state;vehicle_state;vehicle_config;location_data",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "1",
+                "vehicles",
+                "{{vin}}",
+                "vehicle_data"
+              ],
+              "query": [
+                {
+                  "key": "endpoints",
+                  "value": "charge_state;climate_state;drive_state;vehicle_state;vehicle_config;location_data",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Données complètes du véhicule (charge, climat, position, etc.). Le véhicule doit être éveillé."
+          },
+          "response": []
+        },
+        {
+          "name": "Wake up",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/1/vehicles/{{vin}}/wake_up",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "1",
+                "vehicles",
+                "{{vin}}",
+                "wake_up"
+              ]
+            },
+            "description": "Réveille le véhicule."
+          },
+          "response": []
+        },
+        {
+          "name": "Mobile enabled",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/1/vehicles/{{vin}}/mobile_enabled",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "1",
+                "vehicles",
+                "{{vin}}",
+                "mobile_enabled"
+              ]
+            },
+            "description": "Indique si l'accès mobile est activé."
+          },
+          "response": []
+        },
+        {
+          "name": "Nearby charging sites",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/1/vehicles/{{vin}}/nearby_charging_sites",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "1",
+                "vehicles",
+                "{{vin}}",
+                "nearby_charging_sites"
+              ]
+            },
+            "description": "Superchargers et destinations à proximité."
+          },
+          "response": []
+        },
+        {
+          "name": "Recent alerts",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/1/vehicles/{{vin}}/recent_alerts",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "1",
+                "vehicles",
+                "{{vin}}",
+                "recent_alerts"
+              ]
+            },
+            "description": "Alertes récentes du véhicule."
+          },
+          "response": []
+        },
+        {
+          "name": "Release notes",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/1/vehicles/{{vin}}/release_notes",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "1",
+                "vehicles",
+                "{{vin}}",
+                "release_notes"
+              ]
+            },
+            "description": "Notes de version du dernier logiciel."
+          },
+          "response": []
+        },
+        {
+          "name": "Service data",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/1/vehicles/{{vin}}/service_data",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "1",
+                "vehicles",
+                "{{vin}}",
+                "service_data"
+              ]
+            },
+            "description": "État/données de service (Tesla Service)."
+          },
+          "response": []
+        },
+        {
+          "name": "Drivers (list)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/1/vehicles/{{vin}}/drivers",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "1",
+                "vehicles",
+                "{{vin}}",
+                "drivers"
+              ]
+            },
+            "description": "Liste des conducteurs autorisés."
+          },
+          "response": []
+        },
+        {
+          "name": "Drivers (remove)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/1/vehicles/{{vin}}/drivers?share_user_id=",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "1",
+                "vehicles",
+                "{{vin}}",
+                "drivers"
+              ],
+              "query": [
+                {
+                  "key": "share_user_id",
+                  "value": ""
+                }
+              ]
+            },
+            "description": "Retire un conducteur."
+          },
+          "response": []
+        },
+        {
+          "name": "Vehicle options (dx)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/1/dx/vehicles/options?vin={{vin}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "1",
+                "dx",
+                "vehicles",
+                "options"
+              ],
+              "query": [
+                {
+                  "key": "vin",
+                  "value": "{{vin}}"
+                }
+              ]
+            },
+            "description": "Codes d'options/équipements du véhicule par VIN."
+          },
+          "response": []
+        },
+        {
+          "name": "Warranty details (dx)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/1/dx/warranty/details?vin={{vin}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "1",
+                "dx",
+                "warranty",
+                "details"
+              ],
+              "query": [
+                {
+                  "key": "vin",
+                  "value": "{{vin}}"
+                }
+              ]
+            },
+            "description": "Détails de garantie par VIN."
+          },
+          "response": []
+        },
+        {
+          "name": "Invitations (list)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/1/vehicles/{{vin}}/invitations",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "1",
+                "vehicles",
+                "{{vin}}",
+                "invitations"
+              ]
+            },
+            "description": "Invitations de partage actives."
+          },
+          "response": []
+        },
+        {
+          "name": "Invitations (create)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/1/vehicles/{{vin}}/invitations",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "1",
+                "vehicles",
+                "{{vin}}",
+                "invitations"
+              ]
+            },
+            "description": "Crée une invitation de partage.",
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Invitations (revoke)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/1/vehicles/{{vin}}/invitations/{{invitation_id}}/revoke",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "1",
+                "vehicles",
+                "{{vin}}",
+                "invitations",
+                "{{invitation_id}}",
+                "revoke"
+              ]
+            },
+            "description": "Révoque une invitation."
+          },
+          "response": []
+        },
+        {
+          "name": "Redeem invitation",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/1/invitations/redeem",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "1",
+                "invitations",
+                "redeem"
+              ]
+            },
+            "description": "Accepte une invitation de partage.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Fleet status",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/1/vehicles/fleet_status",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "1",
+                "vehicles",
+                "fleet_status"
+              ]
+            },
+            "description": "Vérifie pour une liste de VIN s'ils sont compatibles commandes signées + état firmware.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"vins\": [\n    \"{{vin}}\"\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Fleet telemetry config (create)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/1/vehicles/fleet_telemetry_config",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "1",
+                "vehicles",
+                "fleet_telemetry_config"
+              ]
+            },
+            "description": "Configure le streaming télémétrie pour des véhicules.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"vins\": [\n    \"{{vin}}\"\n  ],\n  \"config\": {\n    \"hostname\": \"\",\n    \"ca\": \"\",\n    \"fields\": {}\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Fleet telemetry config (get)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/1/vehicles/{{vin}}/fleet_telemetry_config",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "1",
+                "vehicles",
+                "{{vin}}",
+                "fleet_telemetry_config"
+              ]
+            },
+            "description": "Config télémétrie d'un véhicule."
+          },
+          "response": []
+        },
+        {
+          "name": "Fleet telemetry config (delete)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/1/vehicles/{{vin}}/fleet_telemetry_config",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "1",
+                "vehicles",
+                "{{vin}}",
+                "fleet_telemetry_config"
+              ]
+            },
+            "description": "Supprime la config télémétrie."
+          },
+          "response": []
+        },
+        {
+          "name": "Signed command (proxy)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/1/vehicles/{{vin}}/signed_command",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "1",
+                "vehicles",
+                "{{vin}}",
+                "signed_command"
+              ]
+            },
+            "description": "Endpoint des commandes SIGNÉES (Vehicle Command Protocol). Le body est un RoutableMessage protobuf signé — généralement produit par le SDK/tesla-http-proxy, pas à la main.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"routable_message\": \"<base64 protobuf sign\\u00e9>\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Vehicle Commands (REST / à signer)",
+      "description": "",
+      "item": [
+        {
+          "name": "actuate_trunk",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/1/vehicles/{{vin}}/command/actuate_trunk",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "1",
+                "vehicles",
+                "{{vin}}",
+                "command",
+                "actuate_trunk"
+              ]
+            },
+            "description": "Commande véhicule REST (non signée). ⚠️ Sur la majorité des véhicules 2021+, ces endpoints renvoient une erreur de signature : la commande doit passer par le Vehicle Command Protocol (signed_command / tesla-http-proxy).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"which_trunk\": \"rear\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "add_charge_schedule",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/1/vehicles/{{vin}}/command/add_charge_schedule",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "1",
+                "vehicles",
+                "{{vin}}",
+                "command",
+                "add_charge_schedule"
+              ]
+            },
+            "description": "Commande véhicule REST (non signée). ⚠️ Sur la majorité des véhicules 2021+, ces endpoints renvoient une erreur de signature : la commande doit passer par le Vehicle Command Protocol (signed_command / tesla-http-proxy)."
+          },
+          "response": []
+        },
+        {
+          "name": "add_precondition_schedule",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/1/vehicles/{{vin}}/command/add_precondition_schedule",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "1",
+                "vehicles",
+                "{{vin}}",
+                "command",
+                "add_precondition_schedule"
+              ]
+            },
+            "description": "Commande véhicule REST (non signée). ⚠️ Sur la majorité des véhicules 2021+, ces endpoints renvoient une erreur de signature : la commande doit passer par le Vehicle Command Protocol (signed_command / tesla-http-proxy)."
+          },
+          "response": []
+        },
+        {
+          "name": "adjust_volume",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/1/vehicles/{{vin}}/command/adjust_volume",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "1",
+                "vehicles",
+                "{{vin}}",
+                "command",
+                "adjust_volume"
+              ]
+            },
+            "description": "Commande véhicule REST (non signée). ⚠️ Sur la majorité des véhicules 2021+, ces endpoints renvoient une erreur de signature : la commande doit passer par le Vehicle Command Protocol (signed_command / tesla-http-proxy).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"volume\": 5.0\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "auto_conditioning_start",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/1/vehicles/{{vin}}/command/auto_conditioning_start",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "1",
+                "vehicles",
+                "{{vin}}",
+                "command",
+                "auto_conditioning_start"
+              ]
+            },
+            "description": "Commande véhicule REST (non signée). ⚠️ Sur la majorité des véhicules 2021+, ces endpoints renvoient une erreur de signature : la commande doit passer par le Vehicle Command Protocol (signed_command / tesla-http-proxy)."
+          },
+          "response": []
+        },
+        {
+          "name": "auto_conditioning_stop",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/1/vehicles/{{vin}}/command/auto_conditioning_stop",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "1",
+                "vehicles",
+                "{{vin}}",
+                "command",
+                "auto_conditioning_stop"
+              ]
+            },
+            "description": "Commande véhicule REST (non signée). ⚠️ Sur la majorité des véhicules 2021+, ces endpoints renvoient une erreur de signature : la commande doit passer par le Vehicle Command Protocol (signed_command / tesla-http-proxy)."
+          },
+          "response": []
+        },
+        {
+          "name": "batch_remove_charge_schedules",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/1/vehicles/{{vin}}/command/batch_remove_charge_schedules",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "1",
+                "vehicles",
+                "{{vin}}",
+                "command",
+                "batch_remove_charge_schedules"
+              ]
+            },
+            "description": "Commande véhicule REST (non signée). ⚠️ Sur la majorité des véhicules 2021+, ces endpoints renvoient une erreur de signature : la commande doit passer par le Vehicle Command Protocol (signed_command / tesla-http-proxy).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"home\": true,\n  \"work\": false,\n  \"other\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "batch_remove_precondition_schedules",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/1/vehicles/{{vin}}/command/batch_remove_precondition_schedules",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "1",
+                "vehicles",
+                "{{vin}}",
+                "command",
+                "batch_remove_precondition_schedules"
+              ]
+            },
+            "description": "Commande véhicule REST (non signée). ⚠️ Sur la majorité des véhicules 2021+, ces endpoints renvoient une erreur de signature : la commande doit passer par le Vehicle Command Protocol (signed_command / tesla-http-proxy).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"home\": true,\n  \"work\": false,\n  \"other\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "cancel_software_update",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/1/vehicles/{{vin}}/command/cancel_software_update",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "1",
+                "vehicles",
+                "{{vin}}",
+                "command",
+                "cancel_software_update"
+              ]
+            },
+            "description": "Commande véhicule REST (non signée). ⚠️ Sur la majorité des véhicules 2021+, ces endpoints renvoient une erreur de signature : la commande doit passer par le Vehicle Command Protocol (signed_command / tesla-http-proxy)."
+          },
+          "response": []
+        },
+        {
+          "name": "charge_max_range",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/1/vehicles/{{vin}}/command/charge_max_range",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "1",
+                "vehicles",
+                "{{vin}}",
+                "command",
+                "charge_max_range"
+              ]
+            },
+            "description": "Commande véhicule REST (non signée). ⚠️ Sur la majorité des véhicules 2021+, ces endpoints renvoient une erreur de signature : la commande doit passer par le Vehicle Command Protocol (signed_command / tesla-http-proxy)."
+          },
+          "response": []
+        },
+        {
+          "name": "charge_port_door_close",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/1/vehicles/{{vin}}/command/charge_port_door_close",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "1",
+                "vehicles",
+                "{{vin}}",
+                "command",
+                "charge_port_door_close"
+              ]
+            },
+            "description": "Commande véhicule REST (non signée). ⚠️ Sur la majorité des véhicules 2021+, ces endpoints renvoient une erreur de signature : la commande doit passer par le Vehicle Command Protocol (signed_command / tesla-http-proxy)."
+          },
+          "response": []
+        },
+        {
+          "name": "charge_port_door_open",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/1/vehicles/{{vin}}/command/charge_port_door_open",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "1",
+                "vehicles",
+                "{{vin}}",
+                "command",
+                "charge_port_door_open"
+              ]
+            },
+            "description": "Commande véhicule REST (non signée). ⚠️ Sur la majorité des véhicules 2021+, ces endpoints renvoient une erreur de signature : la commande doit passer par le Vehicle Command Protocol (signed_command / tesla-http-proxy)."
+          },
+          "response": []
+        },
+        {
+          "name": "charge_standard",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/1/vehicles/{{vin}}/command/charge_standard",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "1",
+                "vehicles",
+                "{{vin}}",
+                "command",
+                "charge_standard"
+              ]
+            },
+            "description": "Commande véhicule REST (non signée). ⚠️ Sur la majorité des véhicules 2021+, ces endpoints renvoient une erreur de signature : la commande doit passer par le Vehicle Command Protocol (signed_command / tesla-http-proxy)."
+          },
+          "response": []
+        },
+        {
+          "name": "charge_start",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/1/vehicles/{{vin}}/command/charge_start",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "1",
+                "vehicles",
+                "{{vin}}",
+                "command",
+                "charge_start"
+              ]
+            },
+            "description": "Commande véhicule REST (non signée). ⚠️ Sur la majorité des véhicules 2021+, ces endpoints renvoient une erreur de signature : la commande doit passer par le Vehicle Command Protocol (signed_command / tesla-http-proxy)."
+          },
+          "response": []
+        },
+        {
+          "name": "charge_stop",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/1/vehicles/{{vin}}/command/charge_stop",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "1",
+                "vehicles",
+                "{{vin}}",
+                "command",
+                "charge_stop"
+              ]
+            },
+            "description": "Commande véhicule REST (non signée). ⚠️ Sur la majorité des véhicules 2021+, ces endpoints renvoient une erreur de signature : la commande doit passer par le Vehicle Command Protocol (signed_command / tesla-http-proxy)."
+          },
+          "response": []
+        },
+        {
+          "name": "clear_pin_to_drive_admin",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/1/vehicles/{{vin}}/command/clear_pin_to_drive_admin",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "1",
+                "vehicles",
+                "{{vin}}",
+                "command",
+                "clear_pin_to_drive_admin"
+              ]
+            },
+            "description": "Commande véhicule REST (non signée). ⚠️ Sur la majorité des véhicules 2021+, ces endpoints renvoient une erreur de signature : la commande doit passer par le Vehicle Command Protocol (signed_command / tesla-http-proxy).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"pin\": \"1234\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "door_lock",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/1/vehicles/{{vin}}/command/door_lock",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "1",
+                "vehicles",
+                "{{vin}}",
+                "command",
+                "door_lock"
+              ]
+            },
+            "description": "Commande véhicule REST (non signée). ⚠️ Sur la majorité des véhicules 2021+, ces endpoints renvoient une erreur de signature : la commande doit passer par le Vehicle Command Protocol (signed_command / tesla-http-proxy)."
+          },
+          "response": []
+        },
+        {
+          "name": "door_unlock",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/1/vehicles/{{vin}}/command/door_unlock",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "1",
+                "vehicles",
+                "{{vin}}",
+                "command",
+                "door_unlock"
+              ]
+            },
+            "description": "Commande véhicule REST (non signée). ⚠️ Sur la majorité des véhicules 2021+, ces endpoints renvoient une erreur de signature : la commande doit passer par le Vehicle Command Protocol (signed_command / tesla-http-proxy)."
+          },
+          "response": []
+        },
+        {
+          "name": "erase_user_data",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/1/vehicles/{{vin}}/command/erase_user_data",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "1",
+                "vehicles",
+                "{{vin}}",
+                "command",
+                "erase_user_data"
+              ]
+            },
+            "description": "Commande véhicule REST (non signée). ⚠️ Sur la majorité des véhicules 2021+, ces endpoints renvoient une erreur de signature : la commande doit passer par le Vehicle Command Protocol (signed_command / tesla-http-proxy)."
+          },
+          "response": []
+        },
+        {
+          "name": "flash_lights",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/1/vehicles/{{vin}}/command/flash_lights",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "1",
+                "vehicles",
+                "{{vin}}",
+                "command",
+                "flash_lights"
+              ]
+            },
+            "description": "Commande véhicule REST (non signée). ⚠️ Sur la majorité des véhicules 2021+, ces endpoints renvoient une erreur de signature : la commande doit passer par le Vehicle Command Protocol (signed_command / tesla-http-proxy)."
+          },
+          "response": []
+        },
+        {
+          "name": "guest_mode",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/1/vehicles/{{vin}}/command/guest_mode",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "1",
+                "vehicles",
+                "{{vin}}",
+                "command",
+                "guest_mode"
+              ]
+            },
+            "description": "Commande véhicule REST (non signée). ⚠️ Sur la majorité des véhicules 2021+, ces endpoints renvoient une erreur de signature : la commande doit passer par le Vehicle Command Protocol (signed_command / tesla-http-proxy).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"enable\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "honk_horn",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/1/vehicles/{{vin}}/command/honk_horn",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "1",
+                "vehicles",
+                "{{vin}}",
+                "command",
+                "honk_horn"
+              ]
+            },
+            "description": "Commande véhicule REST (non signée). ⚠️ Sur la majorité des véhicules 2021+, ces endpoints renvoient une erreur de signature : la commande doit passer par le Vehicle Command Protocol (signed_command / tesla-http-proxy)."
+          },
+          "response": []
+        },
+        {
+          "name": "media_next_fav",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/1/vehicles/{{vin}}/command/media_next_fav",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "1",
+                "vehicles",
+                "{{vin}}",
+                "command",
+                "media_next_fav"
+              ]
+            },
+            "description": "Commande véhicule REST (non signée). ⚠️ Sur la majorité des véhicules 2021+, ces endpoints renvoient une erreur de signature : la commande doit passer par le Vehicle Command Protocol (signed_command / tesla-http-proxy)."
+          },
+          "response": []
+        },
+        {
+          "name": "media_next_track",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/1/vehicles/{{vin}}/command/media_next_track",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "1",
+                "vehicles",
+                "{{vin}}",
+                "command",
+                "media_next_track"
+              ]
+            },
+            "description": "Commande véhicule REST (non signée). ⚠️ Sur la majorité des véhicules 2021+, ces endpoints renvoient une erreur de signature : la commande doit passer par le Vehicle Command Protocol (signed_command / tesla-http-proxy)."
+          },
+          "response": []
+        },
+        {
+          "name": "media_prev_fav",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/1/vehicles/{{vin}}/command/media_prev_fav",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "1",
+                "vehicles",
+                "{{vin}}",
+                "command",
+                "media_prev_fav"
+              ]
+            },
+            "description": "Commande véhicule REST (non signée). ⚠️ Sur la majorité des véhicules 2021+, ces endpoints renvoient une erreur de signature : la commande doit passer par le Vehicle Command Protocol (signed_command / tesla-http-proxy)."
+          },
+          "response": []
+        },
+        {
+          "name": "media_prev_track",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/1/vehicles/{{vin}}/command/media_prev_track",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "1",
+                "vehicles",
+                "{{vin}}",
+                "command",
+                "media_prev_track"
+              ]
+            },
+            "description": "Commande véhicule REST (non signée). ⚠️ Sur la majorité des véhicules 2021+, ces endpoints renvoient une erreur de signature : la commande doit passer par le Vehicle Command Protocol (signed_command / tesla-http-proxy)."
+          },
+          "response": []
+        },
+        {
+          "name": "media_toggle_playback",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/1/vehicles/{{vin}}/command/media_toggle_playback",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "1",
+                "vehicles",
+                "{{vin}}",
+                "command",
+                "media_toggle_playback"
+              ]
+            },
+            "description": "Commande véhicule REST (non signée). ⚠️ Sur la majorité des véhicules 2021+, ces endpoints renvoient une erreur de signature : la commande doit passer par le Vehicle Command Protocol (signed_command / tesla-http-proxy)."
+          },
+          "response": []
+        },
+        {
+          "name": "media_volume_down",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/1/vehicles/{{vin}}/command/media_volume_down",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "1",
+                "vehicles",
+                "{{vin}}",
+                "command",
+                "media_volume_down"
+              ]
+            },
+            "description": "Commande véhicule REST (non signée). ⚠️ Sur la majorité des véhicules 2021+, ces endpoints renvoient une erreur de signature : la commande doit passer par le Vehicle Command Protocol (signed_command / tesla-http-proxy)."
+          },
+          "response": []
+        },
+        {
+          "name": "navigation_gps_request",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/1/vehicles/{{vin}}/command/navigation_gps_request",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "1",
+                "vehicles",
+                "{{vin}}",
+                "command",
+                "navigation_gps_request"
+              ]
+            },
+            "description": "Commande véhicule REST (non signée). ⚠️ Sur la majorité des véhicules 2021+, ces endpoints renvoient une erreur de signature : la commande doit passer par le Vehicle Command Protocol (signed_command / tesla-http-proxy).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"lat\": 37.7749,\n  \"lon\": -122.4194,\n  \"order\": 0\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "navigation_request",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/1/vehicles/{{vin}}/command/navigation_request",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "1",
+                "vehicles",
+                "{{vin}}",
+                "command",
+                "navigation_request"
+              ]
+            },
+            "description": "Commande véhicule REST (non signée). ⚠️ Sur la majorité des véhicules 2021+, ces endpoints renvoient une erreur de signature : la commande doit passer par le Vehicle Command Protocol (signed_command / tesla-http-proxy).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"value\": \"1600 Pennsylvania Ave\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "navigation_sc_request",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/1/vehicles/{{vin}}/command/navigation_sc_request",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "1",
+                "vehicles",
+                "{{vin}}",
+                "command",
+                "navigation_sc_request"
+              ]
+            },
+            "description": "Commande véhicule REST (non signée). ⚠️ Sur la majorité des véhicules 2021+, ces endpoints renvoient une erreur de signature : la commande doit passer par le Vehicle Command Protocol (signed_command / tesla-http-proxy).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": 1,\n  \"order\": 0\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "remote_auto_seat_climate_request",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/1/vehicles/{{vin}}/command/remote_auto_seat_climate_request",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "1",
+                "vehicles",
+                "{{vin}}",
+                "command",
+                "remote_auto_seat_climate_request"
+              ]
+            },
+            "description": "Commande véhicule REST (non signée). ⚠️ Sur la majorité des véhicules 2021+, ces endpoints renvoient une erreur de signature : la commande doit passer par le Vehicle Command Protocol (signed_command / tesla-http-proxy).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"auto_seat_position\": 1,\n  \"auto_climate_on\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "remote_auto_steering_wheel_heat_climate_request",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/1/vehicles/{{vin}}/command/remote_auto_steering_wheel_heat_climate_request",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "1",
+                "vehicles",
+                "{{vin}}",
+                "command",
+                "remote_auto_steering_wheel_heat_climate_request"
+              ]
+            },
+            "description": "Commande véhicule REST (non signée). ⚠️ Sur la majorité des véhicules 2021+, ces endpoints renvoient une erreur de signature : la commande doit passer par le Vehicle Command Protocol (signed_command / tesla-http-proxy).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"on\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "remote_boombox",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/1/vehicles/{{vin}}/command/remote_boombox",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "1",
+                "vehicles",
+                "{{vin}}",
+                "command",
+                "remote_boombox"
+              ]
+            },
+            "description": "Commande véhicule REST (non signée). ⚠️ Sur la majorité des véhicules 2021+, ces endpoints renvoient une erreur de signature : la commande doit passer par le Vehicle Command Protocol (signed_command / tesla-http-proxy).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sound\": 0\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "remote_seat_cooler_request",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/1/vehicles/{{vin}}/command/remote_seat_cooler_request",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "1",
+                "vehicles",
+                "{{vin}}",
+                "command",
+                "remote_seat_cooler_request"
+              ]
+            },
+            "description": "Commande véhicule REST (non signée). ⚠️ Sur la majorité des véhicules 2021+, ces endpoints renvoient une erreur de signature : la commande doit passer par le Vehicle Command Protocol (signed_command / tesla-http-proxy).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"seat_position\": 1,\n  \"seat_cooler_level\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "remote_seat_heater_request",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/1/vehicles/{{vin}}/command/remote_seat_heater_request",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "1",
+                "vehicles",
+                "{{vin}}",
+                "command",
+                "remote_seat_heater_request"
+              ]
+            },
+            "description": "Commande véhicule REST (non signée). ⚠️ Sur la majorité des véhicules 2021+, ces endpoints renvoient une erreur de signature : la commande doit passer par le Vehicle Command Protocol (signed_command / tesla-http-proxy).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"heater\": 0,\n  \"level\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "remote_start_drive",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/1/vehicles/{{vin}}/command/remote_start_drive",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "1",
+                "vehicles",
+                "{{vin}}",
+                "command",
+                "remote_start_drive"
+              ]
+            },
+            "description": "Commande véhicule REST (non signée). ⚠️ Sur la majorité des véhicules 2021+, ces endpoints renvoient une erreur de signature : la commande doit passer par le Vehicle Command Protocol (signed_command / tesla-http-proxy)."
+          },
+          "response": []
+        },
+        {
+          "name": "remote_steering_wheel_heat_level_request",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/1/vehicles/{{vin}}/command/remote_steering_wheel_heat_level_request",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "1",
+                "vehicles",
+                "{{vin}}",
+                "command",
+                "remote_steering_wheel_heat_level_request"
+              ]
+            },
+            "description": "Commande véhicule REST (non signée). ⚠️ Sur la majorité des véhicules 2021+, ces endpoints renvoient une erreur de signature : la commande doit passer par le Vehicle Command Protocol (signed_command / tesla-http-proxy).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"level\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "remote_steering_wheel_heater_request",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/1/vehicles/{{vin}}/command/remote_steering_wheel_heater_request",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "1",
+                "vehicles",
+                "{{vin}}",
+                "command",
+                "remote_steering_wheel_heater_request"
+              ]
+            },
+            "description": "Commande véhicule REST (non signée). ⚠️ Sur la majorité des véhicules 2021+, ces endpoints renvoient une erreur de signature : la commande doit passer par le Vehicle Command Protocol (signed_command / tesla-http-proxy).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"on\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "remove_charge_schedule",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/1/vehicles/{{vin}}/command/remove_charge_schedule",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "1",
+                "vehicles",
+                "{{vin}}",
+                "command",
+                "remove_charge_schedule"
+              ]
+            },
+            "description": "Commande véhicule REST (non signée). ⚠️ Sur la majorité des véhicules 2021+, ces endpoints renvoient une erreur de signature : la commande doit passer par le Vehicle Command Protocol (signed_command / tesla-http-proxy).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "remove_precondition_schedule",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/1/vehicles/{{vin}}/command/remove_precondition_schedule",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "1",
+                "vehicles",
+                "{{vin}}",
+                "command",
+                "remove_precondition_schedule"
+              ]
+            },
+            "description": "Commande véhicule REST (non signée). ⚠️ Sur la majorité des véhicules 2021+, ces endpoints renvoient une erreur de signature : la commande doit passer par le Vehicle Command Protocol (signed_command / tesla-http-proxy).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "reset_pin_to_drive_pin",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/1/vehicles/{{vin}}/command/reset_pin_to_drive_pin",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "1",
+                "vehicles",
+                "{{vin}}",
+                "command",
+                "reset_pin_to_drive_pin"
+              ]
+            },
+            "description": "Commande véhicule REST (non signée). ⚠️ Sur la majorité des véhicules 2021+, ces endpoints renvoient une erreur de signature : la commande doit passer par le Vehicle Command Protocol (signed_command / tesla-http-proxy)."
+          },
+          "response": []
+        },
+        {
+          "name": "reset_valet_pin",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/1/vehicles/{{vin}}/command/reset_valet_pin",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "1",
+                "vehicles",
+                "{{vin}}",
+                "command",
+                "reset_valet_pin"
+              ]
+            },
+            "description": "Commande véhicule REST (non signée). ⚠️ Sur la majorité des véhicules 2021+, ces endpoints renvoient une erreur de signature : la commande doit passer par le Vehicle Command Protocol (signed_command / tesla-http-proxy)."
+          },
+          "response": []
+        },
+        {
+          "name": "schedule_software_update",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/1/vehicles/{{vin}}/command/schedule_software_update",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "1",
+                "vehicles",
+                "{{vin}}",
+                "command",
+                "schedule_software_update"
+              ]
+            },
+            "description": "Commande véhicule REST (non signée). ⚠️ Sur la majorité des véhicules 2021+, ces endpoints renvoient une erreur de signature : la commande doit passer par le Vehicle Command Protocol (signed_command / tesla-http-proxy).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"offset_sec\": 0\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "set_bioweapon_mode",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/1/vehicles/{{vin}}/command/set_bioweapon_mode",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "1",
+                "vehicles",
+                "{{vin}}",
+                "command",
+                "set_bioweapon_mode"
+              ]
+            },
+            "description": "Commande véhicule REST (non signée). ⚠️ Sur la majorité des véhicules 2021+, ces endpoints renvoient une erreur de signature : la commande doit passer par le Vehicle Command Protocol (signed_command / tesla-http-proxy).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"on\": true,\n  \"manual_override\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "set_cabin_overheat_protection",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/1/vehicles/{{vin}}/command/set_cabin_overheat_protection",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "1",
+                "vehicles",
+                "{{vin}}",
+                "command",
+                "set_cabin_overheat_protection"
+              ]
+            },
+            "description": "Commande véhicule REST (non signée). ⚠️ Sur la majorité des véhicules 2021+, ces endpoints renvoient une erreur de signature : la commande doit passer par le Vehicle Command Protocol (signed_command / tesla-http-proxy).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"on\": true,\n  \"fan_only\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "set_charge_limit",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/1/vehicles/{{vin}}/command/set_charge_limit",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "1",
+                "vehicles",
+                "{{vin}}",
+                "command",
+                "set_charge_limit"
+              ]
+            },
+            "description": "Commande véhicule REST (non signée). ⚠️ Sur la majorité des véhicules 2021+, ces endpoints renvoient une erreur de signature : la commande doit passer par le Vehicle Command Protocol (signed_command / tesla-http-proxy).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"percent\": 80\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "set_charging_amps",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/1/vehicles/{{vin}}/command/set_charging_amps",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "1",
+                "vehicles",
+                "{{vin}}",
+                "command",
+                "set_charging_amps"
+              ]
+            },
+            "description": "Commande véhicule REST (non signée). ⚠️ Sur la majorité des véhicules 2021+, ces endpoints renvoient une erreur de signature : la commande doit passer par le Vehicle Command Protocol (signed_command / tesla-http-proxy).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"charging_amps\": 16\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "set_climate_keeper_mode",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/1/vehicles/{{vin}}/command/set_climate_keeper_mode",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "1",
+                "vehicles",
+                "{{vin}}",
+                "command",
+                "set_climate_keeper_mode"
+              ]
+            },
+            "description": "Commande véhicule REST (non signée). ⚠️ Sur la majorité des véhicules 2021+, ces endpoints renvoient une erreur de signature : la commande doit passer par le Vehicle Command Protocol (signed_command / tesla-http-proxy).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"climate_keeper_mode\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "set_cop_temp",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/1/vehicles/{{vin}}/command/set_cop_temp",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "1",
+                "vehicles",
+                "{{vin}}",
+                "command",
+                "set_cop_temp"
+              ]
+            },
+            "description": "Commande véhicule REST (non signée). ⚠️ Sur la majorité des véhicules 2021+, ces endpoints renvoient une erreur de signature : la commande doit passer par le Vehicle Command Protocol (signed_command / tesla-http-proxy).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cop_temp\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "set_pin_to_drive",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/1/vehicles/{{vin}}/command/set_pin_to_drive",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "1",
+                "vehicles",
+                "{{vin}}",
+                "command",
+                "set_pin_to_drive"
+              ]
+            },
+            "description": "Commande véhicule REST (non signée). ⚠️ Sur la majorité des véhicules 2021+, ces endpoints renvoient une erreur de signature : la commande doit passer par le Vehicle Command Protocol (signed_command / tesla-http-proxy).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"on\": true,\n  \"password\": \"1234\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "set_preconditioning_max",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/1/vehicles/{{vin}}/command/set_preconditioning_max",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "1",
+                "vehicles",
+                "{{vin}}",
+                "command",
+                "set_preconditioning_max"
+              ]
+            },
+            "description": "Commande véhicule REST (non signée). ⚠️ Sur la majorité des véhicules 2021+, ces endpoints renvoient une erreur de signature : la commande doit passer par le Vehicle Command Protocol (signed_command / tesla-http-proxy).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"on\": true,\n  \"manual_override\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "set_scheduled_charging",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/1/vehicles/{{vin}}/command/set_scheduled_charging",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "1",
+                "vehicles",
+                "{{vin}}",
+                "command",
+                "set_scheduled_charging"
+              ]
+            },
+            "description": "Commande véhicule REST (non signée). ⚠️ Sur la majorité des véhicules 2021+, ces endpoints renvoient une erreur de signature : la commande doit passer par le Vehicle Command Protocol (signed_command / tesla-http-proxy).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"enable\": true,\n  \"time\": 480\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "set_scheduled_departure",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/1/vehicles/{{vin}}/command/set_scheduled_departure",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "1",
+                "vehicles",
+                "{{vin}}",
+                "command",
+                "set_scheduled_departure"
+              ]
+            },
+            "description": "Commande véhicule REST (non signée). ⚠️ Sur la majorité des véhicules 2021+, ces endpoints renvoient une erreur de signature : la commande doit passer par le Vehicle Command Protocol (signed_command / tesla-http-proxy).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"enable\": true,\n  \"preconditioning_enabled\": false,\n  \"preconditioning_weekdays_only\": false,\n  \"departure_time\": 480,\n  \"off_peak_charging_enabled\": false,\n  \"off_peak_charging_weekdays_only\": false,\n  \"end_off_peak_time\": 360\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "set_sentry_mode",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/1/vehicles/{{vin}}/command/set_sentry_mode",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "1",
+                "vehicles",
+                "{{vin}}",
+                "command",
+                "set_sentry_mode"
+              ]
+            },
+            "description": "Commande véhicule REST (non signée). ⚠️ Sur la majorité des véhicules 2021+, ces endpoints renvoient une erreur de signature : la commande doit passer par le Vehicle Command Protocol (signed_command / tesla-http-proxy).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"on\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "set_temps",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/1/vehicles/{{vin}}/command/set_temps",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "1",
+                "vehicles",
+                "{{vin}}",
+                "command",
+                "set_temps"
+              ]
+            },
+            "description": "Commande véhicule REST (non signée). ⚠️ Sur la majorité des véhicules 2021+, ces endpoints renvoient une erreur de signature : la commande doit passer par le Vehicle Command Protocol (signed_command / tesla-http-proxy).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"driver_temp\": 21.0,\n  \"passenger_temp\": 21.0\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "set_valet_mode",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/1/vehicles/{{vin}}/command/set_valet_mode",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "1",
+                "vehicles",
+                "{{vin}}",
+                "command",
+                "set_valet_mode"
+              ]
+            },
+            "description": "Commande véhicule REST (non signée). ⚠️ Sur la majorité des véhicules 2021+, ces endpoints renvoient une erreur de signature : la commande doit passer par le Vehicle Command Protocol (signed_command / tesla-http-proxy)."
+          },
+          "response": []
+        },
+        {
+          "name": "set_vehicle_name",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/1/vehicles/{{vin}}/command/set_vehicle_name",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "1",
+                "vehicles",
+                "{{vin}}",
+                "command",
+                "set_vehicle_name"
+              ]
+            },
+            "description": "Commande véhicule REST (non signée). ⚠️ Sur la majorité des véhicules 2021+, ces endpoints renvoient une erreur de signature : la commande doit passer par le Vehicle Command Protocol (signed_command / tesla-http-proxy).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"vehicle_name\": \"My Tesla\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "speed_limit_activate",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/1/vehicles/{{vin}}/command/speed_limit_activate",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "1",
+                "vehicles",
+                "{{vin}}",
+                "command",
+                "speed_limit_activate"
+              ]
+            },
+            "description": "Commande véhicule REST (non signée). ⚠️ Sur la majorité des véhicules 2021+, ces endpoints renvoient une erreur de signature : la commande doit passer par le Vehicle Command Protocol (signed_command / tesla-http-proxy).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"pin\": \"1234\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "speed_limit_clear_pin",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/1/vehicles/{{vin}}/command/speed_limit_clear_pin",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "1",
+                "vehicles",
+                "{{vin}}",
+                "command",
+                "speed_limit_clear_pin"
+              ]
+            },
+            "description": "Commande véhicule REST (non signée). ⚠️ Sur la majorité des véhicules 2021+, ces endpoints renvoient une erreur de signature : la commande doit passer par le Vehicle Command Protocol (signed_command / tesla-http-proxy).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"pin\": \"1234\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "speed_limit_clear_pin_admin",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/1/vehicles/{{vin}}/command/speed_limit_clear_pin_admin",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "1",
+                "vehicles",
+                "{{vin}}",
+                "command",
+                "speed_limit_clear_pin_admin"
+              ]
+            },
+            "description": "Commande véhicule REST (non signée). ⚠️ Sur la majorité des véhicules 2021+, ces endpoints renvoient une erreur de signature : la commande doit passer par le Vehicle Command Protocol (signed_command / tesla-http-proxy)."
+          },
+          "response": []
+        },
+        {
+          "name": "speed_limit_deactivate",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/1/vehicles/{{vin}}/command/speed_limit_deactivate",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "1",
+                "vehicles",
+                "{{vin}}",
+                "command",
+                "speed_limit_deactivate"
+              ]
+            },
+            "description": "Commande véhicule REST (non signée). ⚠️ Sur la majorité des véhicules 2021+, ces endpoints renvoient une erreur de signature : la commande doit passer par le Vehicle Command Protocol (signed_command / tesla-http-proxy).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"pin\": \"1234\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "speed_limit_set_limit",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/1/vehicles/{{vin}}/command/speed_limit_set_limit",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "1",
+                "vehicles",
+                "{{vin}}",
+                "command",
+                "speed_limit_set_limit"
+              ]
+            },
+            "description": "Commande véhicule REST (non signée). ⚠️ Sur la majorité des véhicules 2021+, ces endpoints renvoient une erreur de signature : la commande doit passer par le Vehicle Command Protocol (signed_command / tesla-http-proxy).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"limit_mph\": 80\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "sun_roof_control",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/1/vehicles/{{vin}}/command/sun_roof_control",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "1",
+                "vehicles",
+                "{{vin}}",
+                "command",
+                "sun_roof_control"
+              ]
+            },
+            "description": "Commande véhicule REST (non signée). ⚠️ Sur la majorité des véhicules 2021+, ces endpoints renvoient une erreur de signature : la commande doit passer par le Vehicle Command Protocol (signed_command / tesla-http-proxy).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"state\": \"vent\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "take_drivenote",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/1/vehicles/{{vin}}/command/take_drivenote",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "1",
+                "vehicles",
+                "{{vin}}",
+                "command",
+                "take_drivenote"
+              ]
+            },
+            "description": "Commande véhicule REST (non signée). ⚠️ Sur la majorité des véhicules 2021+, ces endpoints renvoient une erreur de signature : la commande doit passer par le Vehicle Command Protocol (signed_command / tesla-http-proxy).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"note\": \"note\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "trigger_homelink",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/1/vehicles/{{vin}}/command/trigger_homelink",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "1",
+                "vehicles",
+                "{{vin}}",
+                "command",
+                "trigger_homelink"
+              ]
+            },
+            "description": "Commande véhicule REST (non signée). ⚠️ Sur la majorité des véhicules 2021+, ces endpoints renvoient une erreur de signature : la commande doit passer par le Vehicle Command Protocol (signed_command / tesla-http-proxy)."
+          },
+          "response": []
+        },
+        {
+          "name": "upcoming_calendar_entries",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/1/vehicles/{{vin}}/command/upcoming_calendar_entries",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "1",
+                "vehicles",
+                "{{vin}}",
+                "command",
+                "upcoming_calendar_entries"
+              ]
+            },
+            "description": "Commande véhicule REST (non signée). ⚠️ Sur la majorité des véhicules 2021+, ces endpoints renvoient une erreur de signature : la commande doit passer par le Vehicle Command Protocol (signed_command / tesla-http-proxy).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"calendar_data\": {}\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "window_control",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/1/vehicles/{{vin}}/command/window_control",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "1",
+                "vehicles",
+                "{{vin}}",
+                "command",
+                "window_control"
+              ]
+            },
+            "description": "Commande véhicule REST (non signée). ⚠️ Sur la majorité des véhicules 2021+, ces endpoints renvoient une erreur de signature : la commande doit passer par le Vehicle Command Protocol (signed_command / tesla-http-proxy).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"lat\": 37.7749,\n  \"lon\": -122.4194,\n  \"command\": \"vent\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Charging",
+      "description": "",
+      "item": [
+        {
+          "name": "Charging history",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/1/dx/charging/history?vin={{vin}}&startTime=&endTime=&pageNo=1&pageSize=50&sortBy=&sortOrder=",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "1",
+                "dx",
+                "charging",
+                "history"
+              ],
+              "query": [
+                {
+                  "key": "vin",
+                  "value": "{{vin}}",
+                  "disabled": true
+                },
+                {
+                  "key": "startTime",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "endTime",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "pageNo",
+                  "value": "1",
+                  "disabled": true
+                },
+                {
+                  "key": "pageSize",
+                  "value": "50",
+                  "disabled": true
+                },
+                {
+                  "key": "sortBy",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "sortOrder",
+                  "value": "",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Historique de charge paginé (sessions Supercharger facturées)."
+          },
+          "response": []
+        },
+        {
+          "name": "Charging sessions",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/1/dx/charging/sessions?vin={{vin}}&date_from=&date_to=&limit=50&offset=0",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "1",
+                "dx",
+                "charging",
+                "sessions"
+              ],
+              "query": [
+                {
+                  "key": "vin",
+                  "value": "{{vin}}",
+                  "disabled": true
+                },
+                {
+                  "key": "date_from",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "date_to",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "limit",
+                  "value": "50",
+                  "disabled": true
+                },
+                {
+                  "key": "offset",
+                  "value": "0",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Détails des sessions de charge (prix + énergie). Réservé aux comptes business avec flotte."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Energy",
+      "description": "",
+      "item": [
+        {
+          "name": "Products (vehicles + energy)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/1/products",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "1",
+                "products"
+              ]
+            },
+            "description": "Liste tous les produits du compte : véhicules ET sites d'énergie. Source du energy_site_id."
+          },
+          "response": []
+        },
+        {
+          "name": "Live status",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/1/energy_sites/{{energy_site_id}}/live_status",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "1",
+                "energy_sites",
+                "{{energy_site_id}}",
+                "live_status"
+              ]
+            },
+            "description": "État temps réel (charge batterie, flux solaire/réseau)."
+          },
+          "response": []
+        },
+        {
+          "name": "Site info",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/1/energy_sites/{{energy_site_id}}/site_info",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "1",
+                "energy_sites",
+                "{{energy_site_id}}",
+                "site_info"
+              ]
+            },
+            "description": "Configuration et informations du site d'énergie."
+          },
+          "response": []
+        },
+        {
+          "name": "Calendar history",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/1/energy_sites/{{energy_site_id}}/calendar_history?kind=energy&period=day&start_date=&end_date=&time_zone=Europe/Paris",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "1",
+                "energy_sites",
+                "{{energy_site_id}}",
+                "calendar_history"
+              ],
+              "query": [
+                {
+                  "key": "kind",
+                  "value": "energy"
+                },
+                {
+                  "key": "period",
+                  "value": "day"
+                },
+                {
+                  "key": "start_date",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "end_date",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "time_zone",
+                  "value": "Europe/Paris",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Historique (energy_history / backup_history selon 'kind')."
+          },
+          "response": []
+        },
+        {
+          "name": "Telemetry history (charge history)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/1/energy_sites/{{energy_site_id}}/telemetry_history?kind=charge&period=day",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "1",
+                "energy_sites",
+                "{{energy_site_id}}",
+                "telemetry_history"
+              ],
+              "query": [
+                {
+                  "key": "kind",
+                  "value": "charge"
+                },
+                {
+                  "key": "period",
+                  "value": "day"
+                }
+              ]
+            },
+            "description": "Historique de charge télémétrie."
+          },
+          "response": []
+        },
+        {
+          "name": "Backup reserve",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/1/energy_sites/{{energy_site_id}}/backup",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "1",
+                "energy_sites",
+                "{{energy_site_id}}",
+                "backup"
+              ]
+            },
+            "description": "Définit le pourcentage de réserve de secours du Powerwall.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"backup_reserve_percent\": 20\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Operation mode",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/1/energy_sites/{{energy_site_id}}/operation",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "1",
+                "energy_sites",
+                "{{energy_site_id}}",
+                "operation"
+              ]
+            },
+            "description": "Mode de fonctionnement : self_consumption / autonomous / backup.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"default_real_mode\": \"self_consumption\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Storm mode",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/1/energy_sites/{{energy_site_id}}/storm_mode",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "1",
+                "energy_sites",
+                "{{energy_site_id}}",
+                "storm_mode"
+              ]
+            },
+            "description": "Active/désactive le mode tempête.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"enabled\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Grid import/export",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/1/energy_sites/{{energy_site_id}}/grid_import_export",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "1",
+                "energy_sites",
+                "{{energy_site_id}}",
+                "grid_import_export"
+              ]
+            },
+            "description": "Réglages d'import/export réseau.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"disallow_charge_from_grid_with_solar_installed\": false,\n  \"customer_preferred_export_rule\": \"battery_ok\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Off-grid vehicle charging reserve",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/1/energy_sites/{{energy_site_id}}/off_grid_vehicle_charging_reserve",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "1",
+                "energy_sites",
+                "{{energy_site_id}}",
+                "off_grid_vehicle_charging_reserve"
+              ]
+            },
+            "description": "Réserve de charge véhicule hors-réseau.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"off_grid_vehicle_charging_reserve_percent\": 65\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Time of use settings",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/1/energy_sites/{{energy_site_id}}/time_of_use_settings",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "1",
+                "energy_sites",
+                "{{energy_site_id}}",
+                "time_of_use_settings"
+              ]
+            },
+            "description": "Réglages tarification heures pleines/creuses.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tou_settings\": {}\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Device command (gRPC, avancé)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/1/energy_sites/{{energy_site_id}}/command",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "1",
+                "energy_sites",
+                "{{energy_site_id}}",
+                "command"
+              ]
+            },
+            "description": "Commande gRPC bas-niveau vers la gateway (système, réseau, TEG, autorisation). Avancé/non documenté.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"command_type\": \"grpc_command\",\n  \"command_properties\": {\n    \"message\": {\n      \"common\": {\n        \"get_system_info_request\": {}\n      }\n    },\n    \"identifier_type\": 1\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Partner",
+      "description": "",
+      "item": [
+        {
+          "name": "Register partner account",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/1/partner_accounts",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "1",
+                "partner_accounts"
+              ]
+            },
+            "description": "Enregistre le domaine de l'application (1x par domaine). Nécessite un Partner token (client_credentials).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"domain\": \"example.com\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{partner_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get partner public key",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/1/partner_accounts/public_key?domain=example.com",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "1",
+                "partner_accounts",
+                "public_key"
+              ],
+              "query": [
+                {
+                  "key": "domain",
+                  "value": "example.com"
+                }
+              ]
+            },
+            "description": "Récupère la clé publique enregistrée pour un domaine.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{partner_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Fleet telemetry errors",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/1/partner_accounts/fleet_telemetry_errors?domain=example.com",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "1",
+                "partner_accounts",
+                "fleet_telemetry_errors"
+              ],
+              "query": [
+                {
+                  "key": "domain",
+                  "value": "example.com"
+                }
+              ]
+            },
+            "description": "Erreurs de configuration télémétrie pour le domaine.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{partner_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "https://fleet-api.prd.eu.vn.cloud.tesla.com"
+    },
+    {
+      "key": "login_url",
+      "value": "https://auth.tesla.com"
+    },
+    {
+      "key": "auth_url",
+      "value": "https://fleet-auth.prd.vn.cloud.tesla.com"
+    },
+    {
+      "key": "client_id",
+      "value": ""
+    },
+    {
+      "key": "client_secret",
+      "value": ""
+    },
+    {
+      "key": "redirect_uri",
+      "value": "https://localhost/callback"
+    },
+    {
+      "key": "scope",
+      "value": "openid offline_access vehicle_device_data vehicle_cmds vehicle_charging_cmds energy_device_data energy_cmds user_data"
+    },
+    {
+      "key": "state",
+      "value": "tmf123"
+    },
+    {
+      "key": "code",
+      "value": ""
+    },
+    {
+      "key": "access_token",
+      "value": ""
+    },
+    {
+      "key": "refresh_token",
+      "value": ""
+    },
+    {
+      "key": "partner_token",
+      "value": ""
+    },
+    {
+      "key": "vin",
+      "value": ""
+    },
+    {
+      "key": "energy_site_id",
+      "value": ""
+    },
+    {
+      "key": "invitation_id",
+      "value": ""
+    }
+  ]
+}
