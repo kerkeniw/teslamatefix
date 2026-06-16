@@ -43,9 +43,12 @@ Variables à remplacer dans tout le doc :
    - **OAuth Grant Types** : cocher **Authorization Code & Machine-to-Machine**
      (il faut les deux : *Authorization Code* pour le login TeslaMate, *Client
      Credentials* pour générer le partner token de l'étape 4).
-   - **Scopes** : `vehicle_device_data` (lecture des données — suffisant pour
-     TeslaMate). Pas besoin des scopes `vehicle_cmds` / charging (TeslaMate ne
-     pilote rien → pas de proxy de commandes requis). Les scopes `openid` et
+   - **Scopes** : `vehicle_device_data` **et `vehicle_location`** (lecture des
+     données + position GPS). ⚠️ `vehicle_location` est **obligatoire** : Tesla a
+     isolé l'accès à la localisation (`drive_state`) dans ce scope dédié ; sans lui
+     TeslaMate reçoit un **403 `missing scopes vehicle_location`** sur `vehicle_data`
+     et ne collecte rien. Pas besoin des scopes `vehicle_cmds` / charging (TeslaMate
+     ne pilote rien → pas de proxy de commandes requis). Les scopes `openid` et
      **`offline_access`** sont standard et indispensables : c'est `offline_access`
      qui permet d'obtenir un **refresh token** (étape 6).
    - **Allowed Origin (URL)** : `https://<DOMAIN>`
@@ -225,7 +228,7 @@ Construire l'URL ci-dessous (remplacer `<CLIENT_ID>` et `<DOMAIN>`) et l'ouvrir
 dans un navigateur **connecté à ton compte Tesla** :
 
 ```
-https://auth.tesla.com/oauth2/v3/authorize?response_type=code&client_id=<CLIENT_ID>&redirect_uri=https://<DOMAIN>/callback&scope=openid%20offline_access%20vehicle_device_data&state=tm123
+https://auth.tesla.com/oauth2/v3/authorize?response_type=code&client_id=<CLIENT_ID>&redirect_uri=https://<DOMAIN>/callback&scope=openid%20offline_access%20vehicle_device_data%20vehicle_location&state=tm123
 ```
 
 Se connecter + **autoriser l'application** pour ton véhicule. Le navigateur est
@@ -358,6 +361,40 @@ Vérifier que de nouveaux points apparaissent dans Grafana / la DB.
   refaire l'étape 8.1 (**sign out** — indispensable pour que les `TESLA_*` soient
   relus) ; vérifier que `TESLA_API_HOST` est bien injecté
   (`docker compose config | grep TESLA`).
+- **403 `Unauthorized missing scopes vehicle_location for vehicle data access`**
+  → le token utilisé par TeslaMate ne porte pas `vehicle_location`. TeslaMate demande
+  **toujours** `location_data;drive_state` dans `vehicle_data` (codé en dur, non
+  désactivable) → sans ce scope : 403, aucune donnée collectée. Ajouter
+  `vehicle_location` **aux scopes de l'app** (étape 1) **et** à l'URL d'autorisation
+  (6.1), puis refaire 6.1 → 6.3 et réinjecter la nouvelle paire de tokens.
+
+- **403 `missing scopes vehicle_location` qui PERSISTE après une ré-autorisation** →
+  vérifier que le token porte **réellement** le scope, ne pas se fier à un test partiel :
+  1. **Décoder le JWT** `access_token` et inspecter la claim `scp` :
+     ```bash
+     echo '<ACCESS_TOKEN>' | cut -d. -f2 | base64 -d 2>/dev/null | python3 -m json.tool
+     ```
+     `vehicle_location` doit figurer dans `scp`.
+  2. **Faux positif Postman** : la requête « Vehicle data » de la collection a le param
+     `endpoints` **désactivé** → elle ne demande pas `location_data` et passe même sans
+     le scope. Réactiver `endpoints` avec `…;drive_state;…;location_data` pour un vrai test.
+  3. Si `vehicle_location` est **absent** du `scp` : ⚠️ **cause la plus fréquente** — il
+     faut gérer le scope à **deux endroits distincts**, pas seulement sur l'app :
+     - **`developer.tesla.com`** : l'app *déclare* les scopes qu'elle peut demander.
+     - **`account.tesla.com`** (Compte → applications tierces / *Third-Party Apps*) : ce
+       sont les scopes **réellement accordés** à l'app par le propriétaire du véhicule.
+       C'est **ici** qu'il faut vérifier/activer `vehicle_location` (accès à la
+       localisation). Tant qu'il n'y est pas coché/accordé, Tesla émet un token sans le
+       scope même si l'URL d'autorisation et l'app le demandent.
+
+     → Accorder `vehicle_location` dans `account.tesla.com`, puis ré-autoriser (6.1),
+     re-vérifier le `scp`, et réinjecter la nouvelle paire dans TeslaMate.
+  4. Si `vehicle_location` est **présent** dans le JWT mais que TeslaMate échoue quand
+     même : c'est le **refresh** de TeslaMate qui rétrograde le scope. Au sign-in,
+     TeslaMate rafraîchit aussitôt le token collé via `lib/tesla_api/auth/refresh.ex`,
+     qui envoie un `scope` codé en dur (`"openid email offline_access"`). Correctif :
+     patcher `refresh.ex` pour inclure `vehicle_location` (ou retirer la clé `scope` afin
+     de conserver les scopes du grant), rebuild de l'image TeslaMate, puis re-sign-in.
 - **`login_required` / pas de `refresh_token` dans la réponse 6.2** → le scope
   `offline_access` manquait dans l'URL d'autorisation (6.1) ou dans les scopes de
   l'app (étape 1). Le refresh token n'est émis **qu'**avec `offline_access`.
