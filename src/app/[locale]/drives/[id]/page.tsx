@@ -52,25 +52,49 @@ export default async function DriveEditPage({
   const id = parseInt(idStr, 10);
   if (!Number.isFinite(id)) notFound();
 
-  const [drive, selectedCar, positionsCount, positionsHead] = await Promise.all([
-    prisma.drives.findUnique({ where: { id } }),
-    getSelectedCarOrDefault(),
-    prisma.positions.count({ where: { drive_id: id } }),
-    prisma.positions.findMany({
-      where: { drive_id: id },
-      orderBy: { date: "asc" },
-      take: 50,
-      select: {
-        id: true,
-        date: true,
-        latitude: true,
-        longitude: true,
-        speed: true,
-        battery_level: true,
-      },
-    }),
-  ]);
+  const [drive, selectedCar, positionsCount, positionsHead, trackRows] =
+    await Promise.all([
+      prisma.drives.findUnique({ where: { id } }),
+      getSelectedCarOrDefault(),
+      prisma.positions.count({ where: { drive_id: id } }),
+      prisma.positions.findMany({
+        where: { drive_id: id },
+        orderBy: { date: "asc" },
+        take: 50,
+        select: {
+          id: true,
+          date: true,
+          latitude: true,
+          longitude: true,
+          speed: true,
+          battery_level: true,
+        },
+      }),
+      // Tracé complet pour la carte : uniquement les colonnes nécessaires.
+      prisma.positions.findMany({
+        where: { drive_id: id },
+        orderBy: { date: "asc" },
+        take: 5000,
+        select: { latitude: true, longitude: true, speed: true, power: true },
+      }),
+    ]);
   if (!drive || !selectedCar) notFound();
+
+  // Facteur d'efficacité (kWh/km) du véhicule du trajet, pour l'estimation
+  // d'énergie consommée affichée dans le formulaire.
+  const car = await prisma.cars.findUnique({
+    where: { id: drive.car_id },
+    select: { efficiency: true },
+  });
+
+  const track = trackRows
+    .filter((p) => p.latitude != null && p.longitude != null)
+    .map((p) => ({
+      lat: Number(p.latitude),
+      lng: Number(p.longitude),
+      speed: p.speed ?? null,
+      power: p.power ?? null,
+    }));
 
   // Précharge uniquement les libellés des FK référencées par ce drive — la
   // recherche typeahead complète passe par les server actions search-*.
@@ -166,7 +190,7 @@ export default async function DriveEditPage({
     <>
       <AppHeader />
       <MainNav />
-      <main className="mx-auto w-full max-w-4xl flex-1 px-4 py-6">
+      <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6">
         <div className="mb-4">
           <ButtonLink variant="ghost" size="sm" href="/drives">
             <ArrowLeft className="size-4" aria-hidden />
@@ -181,6 +205,8 @@ export default async function DriveEditPage({
           id={drive.id}
           initial={initial}
           initialOptions={initialOptions}
+          track={track}
+          efficiency={car?.efficiency ?? null}
           readOnly={env.READ_ONLY}
           saveAction={boundUpdate}
           deleteAction={boundDelete}

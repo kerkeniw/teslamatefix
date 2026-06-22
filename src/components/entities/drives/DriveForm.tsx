@@ -1,13 +1,12 @@
 "use client";
 
+import { useMemo, useState, type ReactNode } from "react";
 import { useTranslations } from "next-intl";
 import { Separator } from "@/components/ui/separator";
 import { FormField } from "@/components/form/form-field";
 import { NumberInput } from "@/components/form/number-input";
 import { DateTimeInput } from "@/components/form/datetime-input";
-import { FKCombobox, type FKOption } from "@/components/form/fk-combobox";
-import { searchAddressesAction } from "@/app/actions/search-addresses";
-import { searchGeofencesAction } from "@/app/actions/search-geofences";
+import { type FKOption } from "@/components/form/fk-combobox";
 
 export type DriveFormValues = {
   car_id: string;
@@ -47,34 +46,60 @@ export function DriveForm({
   initialOptions,
   fieldErrors = {},
   readOnly = false,
+  efficiency = null,
+  locationPanel,
 }: {
   initial: DriveFormValues;
   initialOptions: DriveFormInitialOptions;
   fieldErrors?: Record<string, string | undefined>;
   readOnly?: boolean;
   mode: "create" | "edit";
+  /** kWh/km (cars.efficiency) pour l'estimation d'énergie consommée. */
+  efficiency?: number | null;
+  /** Colonne de droite (carte + localisation + odomètre). */
+  locationPanel?: ReactNode;
 }) {
   const t = useTranslations("drives");
   const fe = fieldErrors;
 
-  return (
-    <div className="space-y-8">
-      {/* car_id est imposé par le sélecteur de véhicule du header. On le rend
-         hidden + un libellé statique pour rappel. */}
+  // Champs d'autonomie pilotés pour recalculer l'énergie consommée en live.
+  const [startRated, setStartRated] = useState(initial.start_rated_range_km);
+  const [endRated, setEndRated] = useState(initial.end_rated_range_km);
+  const [startIdeal, setStartIdeal] = useState(initial.start_ideal_range_km);
+  const [endIdeal, setEndIdeal] = useState(initial.end_ideal_range_km);
+
+  const energyUsedKwh = useMemo(() => {
+    if (efficiency == null || efficiency <= 0) return null;
+    const num = (v: string) => (v.trim() === "" ? null : Number(v));
+    let deltaKm: number | null = null;
+    const sr = num(startRated);
+    const er = num(endRated);
+    if (sr != null && er != null && Number.isFinite(sr) && Number.isFinite(er)) {
+      deltaKm = sr - er;
+    } else {
+      const si = num(startIdeal);
+      const ei = num(endIdeal);
+      if (si != null && ei != null && Number.isFinite(si) && Number.isFinite(ei)) {
+        deltaKm = si - ei;
+      }
+    }
+    if (deltaKm == null) return null;
+    return Math.max(0, deltaKm) * efficiency;
+  }, [efficiency, startRated, endRated, startIdeal, endIdeal]);
+
+  const sections = (
+    <div className="space-y-8 lg:col-span-1">
+      {/* car_id est imposé par le sélecteur de véhicule du header. */}
       <input type="hidden" name="car_id" value={initial.car_id} />
 
       <section className="space-y-4">
         <h2 className="text-base font-semibold">{t("sections.time")}</h2>
         <p className="text-xs text-muted-foreground">
-          {t("fields.carId")} : <span className="font-medium text-foreground">{initialOptions.car.label}</span>
+          {t("fields.carId")} :{" "}
+          <span className="font-medium text-foreground">{initialOptions.car.label}</span>
         </p>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <FormField
-            id="start_date"
-            label={t("fields.startDate")}
-            required
-            error={fe.start_date}
-          >
+        <div className="space-y-4">
+          <FormField id="start_date" label={t("fields.startDate")} required error={fe.start_date}>
             <DateTimeInput
               id="start_date"
               name="start_date"
@@ -91,11 +116,7 @@ export function DriveForm({
               disabled={readOnly}
             />
           </FormField>
-          <FormField
-            id="duration_min"
-            label={t("fields.durationMin")}
-            error={fe.duration_min}
-          >
+          <FormField id="duration_min" label={t("fields.durationMin")} error={fe.duration_min}>
             <NumberInput
               id="duration_min"
               name="duration_min"
@@ -112,38 +133,8 @@ export function DriveForm({
       <Separator />
 
       <section className="space-y-4">
-        <h2 className="text-base font-semibold">{t("sections.distance")}</h2>
+        <h2 className="text-base font-semibold">{t("sections.energy")}</h2>
         <div className="grid gap-4 sm:grid-cols-2">
-          <FormField id="start_km" label={t("fields.startKm")} error={fe.start_km}>
-            <NumberInput
-              id="start_km"
-              name="start_km"
-              defaultValue={initial.start_km}
-              step="0.001"
-              min={0}
-              disabled={readOnly}
-            />
-          </FormField>
-          <FormField id="end_km" label={t("fields.endKm")} error={fe.end_km}>
-            <NumberInput
-              id="end_km"
-              name="end_km"
-              defaultValue={initial.end_km}
-              step="0.001"
-              min={0}
-              disabled={readOnly}
-            />
-          </FormField>
-          <FormField id="distance" label={t("fields.distance")} error={fe.distance}>
-            <NumberInput
-              id="distance"
-              name="distance"
-              defaultValue={initial.distance}
-              step="0.001"
-              min={0}
-              disabled={readOnly}
-            />
-          </FormField>
           <FormField
             id="start_ideal_range_km"
             label={t("fields.startIdealRangeKm")}
@@ -152,7 +143,8 @@ export function DriveForm({
             <NumberInput
               id="start_ideal_range_km"
               name="start_ideal_range_km"
-              defaultValue={initial.start_ideal_range_km}
+              value={startIdeal}
+              onChange={(e) => setStartIdeal((e.target as HTMLInputElement).value)}
               step="0.01"
               disabled={readOnly}
             />
@@ -165,7 +157,8 @@ export function DriveForm({
             <NumberInput
               id="end_ideal_range_km"
               name="end_ideal_range_km"
-              defaultValue={initial.end_ideal_range_km}
+              value={endIdeal}
+              onChange={(e) => setEndIdeal((e.target as HTMLInputElement).value)}
               step="0.01"
               disabled={readOnly}
             />
@@ -178,7 +171,8 @@ export function DriveForm({
             <NumberInput
               id="start_rated_range_km"
               name="start_rated_range_km"
-              defaultValue={initial.start_rated_range_km}
+              value={startRated}
+              onChange={(e) => setStartRated((e.target as HTMLInputElement).value)}
               step="0.01"
               disabled={readOnly}
             />
@@ -191,110 +185,24 @@ export function DriveForm({
             <NumberInput
               id="end_rated_range_km"
               name="end_rated_range_km"
-              defaultValue={initial.end_rated_range_km}
+              value={endRated}
+              onChange={(e) => setEndRated((e.target as HTMLInputElement).value)}
               step="0.01"
               disabled={readOnly}
             />
           </FormField>
         </div>
-      </section>
-
-      <Separator />
-
-      <section className="space-y-4">
-        <h2 className="text-base font-semibold">{t("sections.location")}</h2>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <FormField
-            id="start_address_id"
-            label={t("fields.startAddress")}
-            error={fe.start_address_id}
+        <FormField id="energy_used_estimate" label={t("fields.energyUsedEstimate")}>
+          <p
+            id="energy_used_estimate"
+            className="font-mono text-sm tabular-nums"
+            aria-live="polite"
           >
-            <FKCombobox
-              id="start_address_id"
-              name="start_address_id"
-              initial={initialOptions.startAddress}
-              searchAction={searchAddressesAction}
-              disabled={readOnly}
-              allowClear
-            />
-          </FormField>
-          <FormField
-            id="end_address_id"
-            label={t("fields.endAddress")}
-            error={fe.end_address_id}
-          >
-            <FKCombobox
-              id="end_address_id"
-              name="end_address_id"
-              initial={initialOptions.endAddress}
-              searchAction={searchAddressesAction}
-              disabled={readOnly}
-              allowClear
-            />
-          </FormField>
-          <FormField
-            id="start_geofence_id"
-            label={t("fields.startGeofence")}
-            error={fe.start_geofence_id}
-          >
-            <FKCombobox
-              id="start_geofence_id"
-              name="start_geofence_id"
-              initial={initialOptions.startGeofence}
-              searchAction={searchGeofencesAction}
-              disabled={readOnly}
-              allowClear
-            />
-          </FormField>
-          <FormField
-            id="end_geofence_id"
-            label={t("fields.endGeofence")}
-            error={fe.end_geofence_id}
-          >
-            <FKCombobox
-              id="end_geofence_id"
-              name="end_geofence_id"
-              initial={initialOptions.endGeofence}
-              searchAction={searchGeofencesAction}
-              disabled={readOnly}
-              allowClear
-            />
-          </FormField>
-        </div>
-      </section>
-
-      <Separator />
-
-      <section className="space-y-4">
-        <h2 className="text-base font-semibold">{t("sections.weather")}</h2>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <FormField
-            id="outside_temp_avg"
-            label={t("fields.outsideTempAvg")}
-            error={fe.outside_temp_avg}
-          >
-            <NumberInput
-              id="outside_temp_avg"
-              name="outside_temp_avg"
-              defaultValue={initial.outside_temp_avg}
-              step="0.1"
-              disabled={readOnly}
-            />
-          </FormField>
-          <FormField
-            id="inside_temp_avg"
-            label={t("fields.insideTempAvg")}
-            error={fe.inside_temp_avg}
-          >
-            <NumberInput
-              id="inside_temp_avg"
-              name="inside_temp_avg"
-              defaultValue={initial.inside_temp_avg}
-              step="0.1"
-              disabled={readOnly}
-            />
-          </FormField>
-        </div>
+            {energyUsedKwh == null
+              ? "—"
+              : `${energyUsedKwh.toLocaleString(undefined, { maximumFractionDigits: 1 })} kWh`}
+          </p>
+        </FormField>
       </section>
 
       <Separator />
@@ -355,6 +263,49 @@ export function DriveForm({
           </FormField>
         </div>
       </section>
+
+      <Separator />
+
+      <section className="space-y-4">
+        <h2 className="text-base font-semibold">{t("sections.weather")}</h2>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <FormField
+            id="outside_temp_avg"
+            label={t("fields.outsideTempAvg")}
+            error={fe.outside_temp_avg}
+          >
+            <NumberInput
+              id="outside_temp_avg"
+              name="outside_temp_avg"
+              defaultValue={initial.outside_temp_avg}
+              step="0.1"
+              disabled={readOnly}
+            />
+          </FormField>
+          <FormField
+            id="inside_temp_avg"
+            label={t("fields.insideTempAvg")}
+            error={fe.inside_temp_avg}
+          >
+            <NumberInput
+              id="inside_temp_avg"
+              name="inside_temp_avg"
+              defaultValue={initial.inside_temp_avg}
+              step="0.1"
+              disabled={readOnly}
+            />
+          </FormField>
+        </div>
+      </section>
+    </div>
+  );
+
+  if (!locationPanel) return sections;
+
+  return (
+    <div className="grid gap-6 lg:grid-cols-3">
+      {sections}
+      {locationPanel}
     </div>
   );
 }

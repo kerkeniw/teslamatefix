@@ -412,10 +412,21 @@
     },
     "sections": {
       "time": "Time",
+      "energy": "Energy / Range",
+      "odometer": "Odometer",
       "distance": "Distance & energy",
       "location": "Location",
       "weather": "Weather",
       "performance": "Performance"
+    },
+    "map": {
+      "colorBy": "Color by",
+      "modeTrack": "Track",
+      "modePower": "Power",
+      "modeSpeed": "Speed",
+      "start": "Start",
+      "end": "End",
+      "noTrack": "No GPS positions to draw this trip."
     },
     "fields": {
       "carId": "Vehicle",
@@ -433,6 +444,7 @@
       "endIdealRangeKm": "End ideal range (km)",
       "startRatedRangeKm": "Start rated range (km)",
       "endRatedRangeKm": "End rated range (km)",
+      "energyUsedEstimate": "Energy used ≈",
       "outsideTempAvg": "Outside temp avg (°C)",
       "insideTempAvg": "Inside temp avg (°C)",
       "speedMax": "Max speed (km/h)",

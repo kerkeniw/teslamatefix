@@ -412,10 +412,21 @@
     },
     "sections": {
       "time": "Temps",
+      "energy": "Énergie / Autonomie",
+      "odometer": "Odomètre",
       "distance": "Distance & énergie",
       "location": "Localisation",
       "weather": "Météo",
       "performance": "Performances"
+    },
+    "map": {
+      "colorBy": "Colorer par",
+      "modeTrack": "Trajet",
+      "modePower": "Puissance",
+      "modeSpeed": "Vitesse",
+      "start": "Départ",
+      "end": "Arrivée",
+      "noTrack": "Aucune position GPS pour tracer ce trajet."
     },
     "fields": {
       "carId": "Véhicule",
@@ -433,6 +444,7 @@
       "endIdealRangeKm": "Autonomie idéale arrivée (km)",
       "startRatedRangeKm": "Autonomie rated départ (km)",
       "endRatedRangeKm": "Autonomie rated arrivée (km)",
+      "energyUsedEstimate": "Énergie consommée ≈",
       "outsideTempAvg": "Temp. extérieure moyenne (°C)",
       "insideTempAvg": "Temp. intérieure moyenne (°C)",
       "speedMax": "Vitesse max (km/h)",

@@ -65,7 +65,7 @@ export default async function NewDrivePage({
     <>
       <AppHeader />
       <MainNav />
-      <main className="mx-auto w-full max-w-4xl flex-1 px-4 py-6">
+      <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6">
         <div className="mb-4">
           <ButtonLink variant="ghost" size="sm" href="/drives">
             <ArrowLeft className="size-4" aria-hidden />

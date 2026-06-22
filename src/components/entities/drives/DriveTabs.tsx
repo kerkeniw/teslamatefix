@@ -13,7 +13,11 @@ import {
   type DriveFormValues,
   type DriveFormInitialOptions,
 } from "./DriveForm";
+import { DriveLocationPanel } from "./DriveLocationPanel";
+import type { TrackPoint } from "./DriveTrackMap";
 import { useRouter } from "@/i18n/navigation";
+
+const DRIVE_FORM_ID = "drive-edit-form";
 
 export type DriveActionState = {
   ok: boolean;
@@ -25,6 +29,8 @@ export function DriveTabs({
   id,
   initial,
   initialOptions,
+  track,
+  efficiency,
   readOnly,
   saveAction,
   deleteAction,
@@ -34,6 +40,8 @@ export function DriveTabs({
   id: number;
   initial: DriveFormValues;
   initialOptions: DriveFormInitialOptions;
+  track: TrackPoint[];
+  efficiency: number | null;
   readOnly: boolean;
   saveAction: (
     prev: DriveActionState | null,
@@ -105,13 +113,36 @@ export function DriveTabs({
         </TabsList>
 
         <TabsContent value="drive" className="pt-4">
-          <form action={formAction} className="space-y-6" data-drive-id={id}>
+          <form
+            action={formAction}
+            id={DRIVE_FORM_ID}
+            className="space-y-6"
+            data-drive-id={id}
+          >
             <DriveForm
               initial={initial}
               initialOptions={initialOptions}
               fieldErrors={fe}
               readOnly={readOnly}
               mode="edit"
+              efficiency={efficiency}
+              locationPanel={
+                <DriveLocationPanel
+                  formId={DRIVE_FORM_ID}
+                  initial={{
+                    start_km: initial.start_km,
+                    end_km: initial.end_km,
+                    distance: initial.distance,
+                  }}
+                  startAddress={initialOptions.startAddress}
+                  endAddress={initialOptions.endAddress}
+                  startGeofence={initialOptions.startGeofence}
+                  endGeofence={initialOptions.endGeofence}
+                  track={track}
+                  fieldErrors={fe}
+                  readOnly={readOnly}
+                />
+              }
             />
             <Separator />
             <div className="flex flex-wrap items-center justify-between gap-3">

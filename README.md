@@ -16,6 +16,26 @@ réparer chaque entité (`drives`, `charges`, `positions`, `addresses`,
 > n'ont pas encore été validés. À utiliser avec précaution et **toujours sur
 > une base sauvegardée** (`pg_dump` recommandé avant la première utilisation).
 
+## Nouveautés v0.6.0
+
+L'écran d'**édition d'un trajet** adopte la mise en page large de l'édition de
+charge et gagne une **carte du trajet parcouru** :
+
+- **Layout deux colonnes** (1/3 – 2/3) : à gauche les sections *Temps*,
+  *Énergie / Autonomie*, *Performances* et *Météo* ; à droite la localisation
+  (adresses + géofences départ/arrivée), l'odomètre (départ / arrivée / distance)
+  et la carte.
+- **Énergie consommée estimée** affichée en direct, dérivée du delta d'autonomie
+  *rated* (à défaut *ideal*) × `cars.efficiency` (kWh/km).
+- **Carte Leaflet du trajet** : marqueurs départ (vert) et arrivée (rouge), tracé
+  de toutes les positions GPS, cadrage automatique.
+- **Colorisation du tracé** via boutons radio : *Trajet* (bleu), *Puissance*
+  (dégradé vert foncé → rouge foncé selon `power_min`/`power_max`) et *Vitesse*
+  (dégradé vert → jaune → rouge).
+
+Détails techniques et checklist de release :
+[`docs/RELEASE_v0.6.0.md`](docs/RELEASE_v0.6.0.md).
+
 ## Nouveautés v0.5.0
 
 Tesla a coupé l'**Owner API** pour les particuliers (juin 2026, erreurs `403`) :

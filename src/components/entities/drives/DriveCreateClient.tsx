@@ -9,8 +9,11 @@ import {
   type DriveFormValues,
   type DriveFormInitialOptions,
 } from "./DriveForm";
+import { DriveLocationPanel } from "./DriveLocationPanel";
 import type { DriveActionState } from "./DriveTabs";
 import { useRouter } from "@/i18n/navigation";
+
+const DRIVE_CREATE_FORM_ID = "drive-create-form";
 
 export function DriveCreateClient({
   initial,
@@ -47,7 +50,7 @@ export function DriveCreateClient({
   );
 
   return (
-    <form action={formAction} className="space-y-6">
+    <form action={formAction} id={DRIVE_CREATE_FORM_ID} className="space-y-6">
       {readOnly ? (
         <div className="rounded-xl border border-warn/30 bg-warn/10 p-3 text-sm text-warn">
           {tCommon("readOnlyMode")}
@@ -72,6 +75,23 @@ export function DriveCreateClient({
         fieldErrors={fe}
         readOnly={readOnly}
         mode="create"
+        locationPanel={
+          <DriveLocationPanel
+            formId={DRIVE_CREATE_FORM_ID}
+            initial={{
+              start_km: initial.start_km,
+              end_km: initial.end_km,
+              distance: initial.distance,
+            }}
+            startAddress={initialOptions.startAddress}
+            endAddress={initialOptions.endAddress}
+            startGeofence={initialOptions.startGeofence}
+            endGeofence={initialOptions.endGeofence}
+            track={[]}
+            fieldErrors={fe}
+            readOnly={readOnly}
+          />
+        }
       />
 
       <Separator />
