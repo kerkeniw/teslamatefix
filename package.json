@@ -1,6 +1,6 @@
 {
   "name": "teslamatefix",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "private": true,
   "description": "Application Next.js mobile-first pour corriger les données collectées par TeslaMate (drives, charges, positions, états).",
   "license": "MIT",

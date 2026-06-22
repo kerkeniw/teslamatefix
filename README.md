@@ -9,12 +9,29 @@ TeslaMate, se connecte à sa base PostgreSQL et expose une UI sécurisée pour
 réparer chaque entité (`drives`, `charges`, `positions`, `addresses`,
 `geofences`, `states`, `updates`, `cars`, `settings`).
 
-> **Statut v0.5.0** — seuls les modules de **création et de modification
+> **Statut v0.5.1** — seuls les modules de **création et de modification
 > des charges** ont été testés et validés. Les autres entités (trajets,
 > positions, adresses, géofences, états, mises à jour de firmware, voitures,
 > paramètres) sont accessibles en **consultation** mais leurs flux d'édition
 > n'ont pas encore été validés. À utiliser avec précaution et **toujours sur
 > une base sauvegardée** (`pg_dump` recommandé avant la première utilisation).
+
+## Nouveautés v0.5.1
+
+Outillage et correctifs autour de la Fleet API (release **doc only**, aucun
+changement de code applicatif) :
+
+- **Collection Postman complète de la Fleet API** (116 requêtes : auth OAuth,
+  vehicle data & commandes, charging, energy, partner, user) pour explorer/tester
+  ce que l'API expose — Tesla ne publiant ni OpenAPI ni collection officielle.
+  Environnement EU pré-rempli inclus : [`postman/`](postman/).
+- **Fix `403 missing scopes vehicle_location`** : le scope `vehicle_location` est
+  désormais documenté (scopes de l'app + URL d'autorisation), avec un dépannage du
+  **403 qui persiste après ré-auth**. Piège clé : le scope doit être accordé dans
+  **`account.tesla.com`** (applications tierces), pas seulement déclaré sur
+  `developer.tesla.com`. Voir [`docs/FLEET_API_MIGRATION.md`](docs/FLEET_API_MIGRATION.md).
+
+Détails et checklist : [`docs/RELEASE_v0.5.1.md`](docs/RELEASE_v0.5.1.md).
 
 ## Nouveautés v0.5.0
 
