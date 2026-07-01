@@ -97,6 +97,10 @@
     "title": "Tableau de bord",
     "statusLabel": "Statut",
     "vehicleImageAlt": "Photo officielle {model}",
+    "imageMissing": {
+      "title": "Photo indisponible",
+      "body": "Aucun code option disponible. Configurez TESLAMATE_ENCRYPTION_KEY (API Tesla) ou TESLA_VEHICLE_OPTIONS (repli) dans l'environnement pour afficher la photo du véhicule. Voir .env.example."
+    },
     "imageSource": {
       "api": {
         "badge": "API Tesla",

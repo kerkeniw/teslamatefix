@@ -4,6 +4,7 @@ import {
   BatteryCharging,
   Car as CarIcon,
   ChevronRight,
+  ImageOff,
   Plus,
 } from "lucide-react";
 import type { DashboardData } from "@/lib/dashboard";
@@ -147,11 +148,24 @@ export async function Dashboard({ data }: { data: DashboardData }) {
           </div>
           </div>
 
-          {/* DROITE — slider des photos officielles du véhicule */}
-          <VehicleImage
-            image={car?.image ?? null}
-            model={car?.marketingName ?? car?.model ?? "Tesla"}
-          />
+          {/* DROITE — slider des photos, ou message si aucune image disponible */}
+          {car?.image ? (
+            <VehicleImage
+              image={car.image}
+              model={car.marketingName ?? car.model ?? "Tesla"}
+            />
+          ) : car ? (
+            <div
+              role="note"
+              className="flex flex-col items-center justify-center gap-2 rounded-xl border border-dashed bg-muted/30 p-6 text-center"
+            >
+              <ImageOff className="size-6 text-muted-foreground" aria-hidden />
+              <p className="text-sm font-medium">{t("imageMissing.title")}</p>
+              <p className="text-xs text-muted-foreground">
+                {t("imageMissing.body")}
+              </p>
+            </div>
+          ) : null}
         </div>
       </section>
 

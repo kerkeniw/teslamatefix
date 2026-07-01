@@ -97,6 +97,10 @@
     "title": "Dashboard",
     "statusLabel": "Status",
     "vehicleImageAlt": "Official {model} photo",
+    "imageMissing": {
+      "title": "Photo unavailable",
+      "body": "No option codes available. Set TESLAMATE_ENCRYPTION_KEY (Tesla API) or TESLA_VEHICLE_OPTIONS (fallback) in your environment to display the vehicle photo. See .env.example."
+    },
     "imageSource": {
       "api": {
         "badge": "Tesla API",
