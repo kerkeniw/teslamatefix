@@ -9,7 +9,7 @@ TeslaMate, se connecte à sa base PostgreSQL et expose une UI sécurisée pour
 réparer chaque entité (`drives`, `charges`, `positions`, `addresses`,
 `geofences`, `states`, `updates`, `cars`, `settings`).
 
-> **Statut v0.5.0** — seuls les modules de **création et de modification
+> **Statut v0.5.2** — seuls les modules de **création et de modification
 > des charges** ont été testés et validés. Les autres entités (trajets,
 > positions, adresses, géofences, états, mises à jour de firmware, voitures,
 > paramètres) sont accessibles en **consultation** mais leurs flux d'édition
@@ -35,6 +35,44 @@ charge et gagne une **carte du trajet parcouru** :
 
 Détails techniques et checklist de release :
 [`docs/RELEASE_v0.6.0.md`](docs/RELEASE_v0.6.0.md).
+
+## Nouveautés v0.5.2
+
+**Photo officielle du véhicule sur l'accueil.** Le bloc STATUS est désormais
+divisé en deux : infos à gauche, **photo officielle Tesla** à droite (rendu
+*compositor*, comme sur le site Tesla).
+
+- Les **codes option** du véhicule sont récupérés via la Fleet API
+  `GET /api/1/dx/vehicles/options?vin=` ; **l'ensemble de la réponse est mis en
+  cache** (fichier JSON dans `/data`) et sert à générer l'URL du média.
+- Le token utilisé est celui de **TeslaMate** : TeslaMateFix lit (en **lecture
+  seule**) la table `tokens` et la déchiffre avec la clé Cloak partagée
+  (`TESLAMATE_ENCRYPTION_KEY`). Aucun refresh n'est déclenché côté TeslaMateFix.
+- **Repli** : si l'API est inaccessible (pas de token / clé KO / hors-ligne), on
+  utilise la variable `TESLA_VEHICLE_OPTIONS`. Aucun code n'est codé en dur : sans
+  API ni variable, aucune image n'est affichée.
+- **Slider multi-vues** (3/4 avant, profil, 3/4 arrière, jantes, sièges, intérieur) : défilement
+  automatique, pause au survol, flèches `<`/`>`. Une vue non supportée par la config est ignorée.
+
+Configuration : voir la section *Fleet API* de [`.env.example`](.env.example).
+Détails et checklist : [`docs/RELEASE_v0.5.2.md`](docs/RELEASE_v0.5.2.md).
+
+## Nouveautés v0.5.1
+
+Outillage et correctifs autour de la Fleet API (release **doc only**, aucun
+changement de code applicatif) :
+
+- **Collection Postman complète de la Fleet API** (116 requêtes : auth OAuth,
+  vehicle data & commandes, charging, energy, partner, user) pour explorer/tester
+  ce que l'API expose — Tesla ne publiant ni OpenAPI ni collection officielle.
+  Environnement EU pré-rempli inclus : [`postman/`](postman/).
+- **Fix `403 missing scopes vehicle_location`** : le scope `vehicle_location` est
+  désormais documenté (scopes de l'app + URL d'autorisation), avec un dépannage du
+  **403 qui persiste après ré-auth**. Piège clé : le scope doit être accordé dans
+  **`account.tesla.com`** (applications tierces), pas seulement déclaré sur
+  `developer.tesla.com`. Voir [`docs/FLEET_API_MIGRATION.md`](docs/FLEET_API_MIGRATION.md).
+
+Détails et checklist : [`docs/RELEASE_v0.5.1.md`](docs/RELEASE_v0.5.1.md).
 
 ## Nouveautés v0.5.0
 

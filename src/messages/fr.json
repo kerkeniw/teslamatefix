@@ -96,6 +96,33 @@
   "dashboard": {
     "title": "Tableau de bord",
     "statusLabel": "Statut",
+    "vehicleImageAlt": "Photo officielle {model}",
+    "imageMissing": {
+      "title": "Photo indisponible",
+      "body": "Aucun code option disponible. Configurez TESLAMATE_ENCRYPTION_KEY (API Tesla) ou TESLA_VEHICLE_OPTIONS (repli) dans l'environnement pour afficher la photo du véhicule. Voir .env.example."
+    },
+    "imageSource": {
+      "api": {
+        "badge": "API Tesla",
+        "title": "Image générée à partir des codes option renvoyés par l'API Tesla (mis en cache)."
+      },
+      "env": {
+        "badge": "Var. env",
+        "title": "Image générée à partir de la variable d'environnement TESLA_VEHICLE_OPTIONS."
+      }
+    },
+    "carousel": {
+      "prev": "Vue précédente",
+      "next": "Vue suivante"
+    },
+    "views": {
+      "FRONT34": "3/4 avant",
+      "SIDE": "Profil",
+      "REAR34": "3/4 arrière",
+      "RIMCLOSEUP": "Jantes",
+      "STUD_SEAT": "Sièges",
+      "INTERIOR_ROW2": "Intérieur arrière"
+    },
     "quickActions": "Actions rapides",
     "lastCharge": "Dernière charge",
     "lastDrive": "Dernier trajet",
@@ -261,7 +288,21 @@
     "deleteUnavailable": "Suppression non disponible : un effacement de véhicule en cascade purgerait l'intégralité de l'historique (trajets, charges, positions, états, mises à jour). À effectuer manuellement en base si nécessaire.",
     "tabs": {
       "vehicle": "Véhicule",
-      "settings": "Réglages"
+      "settings": "Réglages",
+      "options": "Options"
+    },
+    "readOnlyNotice": "Ces informations sont collectées automatiquement ou gérées dans TeslaMate. TeslaMateFix les présente en lecture seule.",
+    "options": {
+      "fromDb": "Depuis la base TeslaMate",
+      "fromApi": "Réponse de l'API Tesla (en cache)",
+      "fromApiHint": "Codes option renvoyés par GET /api/1/dx/vehicles/options, mémorisés pour générer la photo.",
+      "fromEnv": "Variable d'environnement",
+      "fromEnvHint": "Codes de repli utilisés quand l'API n'est pas accessible (TESLA_VEHICLE_OPTIONS).",
+      "codes": "Codes",
+      "rawResponse": "Réponse brute (JSON)",
+      "fetchedAt": "Récupéré le",
+      "apiUnavailable": "Aucune réponse d'API en cache pour ce véhicule.",
+      "envUnset": "Variable TESLA_VEHICLE_OPTIONS non définie."
     },
     "sections": {
       "identity": "Identité",
