@@ -6,9 +6,9 @@ import { prisma } from "@/lib/db";
 import { AppHeader } from "@/components/app-shell/header";
 import { MainNav } from "@/components/app-shell/main-nav";
 import { CarEditClient } from "@/components/entities/cars/CarEditClient";
+import { readCachedVehicleOptions } from "@/lib/tesla/vehicle-image";
 import { ButtonLink } from "@/components/ui/button-link";
 import { ArrowLeft } from "lucide-react";
-import { updateCarAction } from "../actions";
 
 export default async function CarEditPage({
   params,
@@ -30,7 +30,7 @@ export default async function CarEditPage({
   });
   if (!car) notFound();
 
-  const boundUpdate = updateCarAction.bind(null, id);
+  const cachedOptions = readCachedVehicleOptions(car.vin);
 
   return (
     <>
@@ -50,9 +50,18 @@ export default async function CarEditPage({
           <p className="mt-1 font-mono text-xs text-muted-foreground">#{car.id}</p>
         </header>
         <CarEditClient
-          id={car.id}
-          readOnly={env.READ_ONLY}
-          saveAction={boundUpdate}
+          optionsData={{
+            db: {
+              model: car.model,
+              marketingName: car.marketing_name,
+              trimBadging: car.trim_badging,
+              exteriorColor: car.exterior_color,
+              spoilerType: car.spoiler_type,
+              wheelType: car.wheel_type,
+            },
+            api: cachedOptions,
+            envOptions: env.TESLA_VEHICLE_OPTIONS || null,
+          }}
           carInitial={{
             name: car.name ?? "",
             vin: car.vin ?? "",

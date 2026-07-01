@@ -84,6 +84,20 @@ export const env = {
    * que ce dossier existe et appartient au user `node`.
    */
   SECRETS_DIR,
+  /**
+   * Fleet API (photo officielle du véhicule, depuis v0.5.2). Tout optionnel :
+   *   - TESLAMATE_ENCRYPTION_KEY : même valeur que `ENCRYPTION_KEY` de TeslaMate,
+   *     pour déchiffrer (en lecture seule) le token OAuth stocké dans `tokens` ;
+   *   - TESLA_FLEET_API_BASE_URL : base régionale de la Fleet API (EU par défaut) ;
+   *   - TESLA_VEHICLE_OPTIONS : codes option de repli (séparés par des virgules)
+   *     si l'appel Fleet échoue. Échapper les `$` (`\$MTY68,...`) côté .env.
+   */
+  TESLAMATE_ENCRYPTION_KEY: optional("TESLAMATE_ENCRYPTION_KEY", ""),
+  TESLA_FLEET_API_BASE_URL: optional(
+    "TESLA_FLEET_API_BASE_URL",
+    "https://fleet-api.prd.eu.vn.cloud.tesla.com",
+  ),
+  TESLA_VEHICLE_OPTIONS: optional("TESLA_VEHICLE_OPTIONS", ""),
 } as const;
 
 export type Env = typeof env;

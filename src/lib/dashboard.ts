@@ -1,5 +1,6 @@
 import { prisma } from "./db";
 import { getSelectedCarId } from "./vehicle";
+import { getVehicleImages, type VehicleImageSet } from "./tesla/vehicle-image";
 
 export type DashboardData = {
   car: {
@@ -8,6 +9,11 @@ export type DashboardData = {
     vin: string | null;
     model: string | null;
     marketingName: string | null;
+    /**
+     * Jeu de photos officielles Tesla (compositor), une par vue, + origine des
+     * codes. `null` si aucun code exploitable (pas d'image).
+     */
+    image: VehicleImageSet | null;
   } | null;
   currentState: {
     state: "online" | "offline" | "asleep";
@@ -210,6 +216,12 @@ export async function getDashboardData(): Promise<DashboardData> {
     lastChargingProcess?.addresses?.city ??
     null;
 
+  // Photo officielle : cache → Fleet API → TESLA_VEHICLE_OPTIONS (ne lève jamais ;
+  // `null` si rien). Borné par le timeout du fetch côté `vehicle-image`.
+  const image = car
+    ? await getVehicleImages({ vin: car.vin, model: car.model })
+    : null;
+
   return {
     car: car
       ? {
@@ -218,6 +230,7 @@ export async function getDashboardData(): Promise<DashboardData> {
           vin: car.vin,
           model: car.model,
           marketingName: car.marketing_name,
+          image,
         }
       : null,
     currentState: currentState

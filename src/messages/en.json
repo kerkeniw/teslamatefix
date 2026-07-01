@@ -96,6 +96,29 @@
   "dashboard": {
     "title": "Dashboard",
     "statusLabel": "Status",
+    "vehicleImageAlt": "Official {model} photo",
+    "imageSource": {
+      "api": {
+        "badge": "Tesla API",
+        "title": "Image generated from the option codes returned by the Tesla API (cached)."
+      },
+      "env": {
+        "badge": "Env var",
+        "title": "Image generated from the TESLA_VEHICLE_OPTIONS environment variable."
+      }
+    },
+    "carousel": {
+      "prev": "Previous view",
+      "next": "Next view"
+    },
+    "views": {
+      "FRONT34": "Front 3/4",
+      "SIDE": "Side",
+      "REAR34": "Rear 3/4",
+      "RIMCLOSEUP": "Wheels",
+      "STUD_SEAT": "Seats",
+      "INTERIOR_ROW2": "Rear interior"
+    },
     "quickActions": "Quick actions",
     "lastCharge": "Last charge",
     "lastDrive": "Last drive",
@@ -261,7 +284,21 @@
     "deleteUnavailable": "Deletion unavailable: cascading a vehicle delete would wipe the entire history (drives, charges, positions, states, updates). Run this manually in the database if truly required.",
     "tabs": {
       "vehicle": "Vehicle",
-      "settings": "Settings"
+      "settings": "Settings",
+      "options": "Options"
+    },
+    "readOnlyNotice": "This information is collected automatically or managed in TeslaMate. TeslaMateFix displays it read-only.",
+    "options": {
+      "fromDb": "From the TeslaMate database",
+      "fromApi": "Tesla API response (cached)",
+      "fromApiHint": "Option codes returned by GET /api/1/dx/vehicles/options, cached to generate the photo.",
+      "fromEnv": "Environment variable",
+      "fromEnvHint": "Fallback codes used when the API is unavailable (TESLA_VEHICLE_OPTIONS).",
+      "codes": "Codes",
+      "rawResponse": "Raw response (JSON)",
+      "fetchedAt": "Fetched at",
+      "apiUnavailable": "No cached API response for this vehicle.",
+      "envUnset": "TESLA_VEHICLE_OPTIONS is not set."
     },
     "sections": {
       "identity": "Identity",

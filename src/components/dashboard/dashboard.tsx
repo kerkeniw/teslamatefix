@@ -10,6 +10,7 @@ import type { DashboardData } from "@/lib/dashboard";
 import { Link } from "@/i18n/navigation";
 import { ButtonLink } from "@/components/ui/button-link";
 import { FirmwareLink } from "@/components/tesla/firmware-link";
+import { VehicleImage } from "@/components/dashboard/vehicle-image";
 import { STATE_TONES } from "@/components/entities/states/state-tones";
 import { cn } from "@/lib/utils";
 
@@ -70,7 +71,10 @@ export async function Dashboard({ data }: { data: DashboardData }) {
           aria-hidden
           className="pointer-events-none absolute inset-0 opacity-[0.04] [background-image:linear-gradient(to_right,currentColor_1px,transparent_1px),linear-gradient(to_bottom,currentColor_1px,transparent_1px)] [background-size:32px_32px]"
         />
-        <div className="relative flex flex-wrap items-end justify-between gap-3">
+        <div className="relative grid gap-6 md:grid-cols-2 md:items-center">
+          {/* GAUCHE — infos véhicule + KPI du mois */}
+          <div className="min-w-0">
+          <div className="flex flex-wrap items-end justify-between gap-3">
           <div className="min-w-0">
             <p
               id="overview-title"
@@ -114,32 +118,40 @@ export async function Dashboard({ data }: { data: DashboardData }) {
           </div>
         </div>
 
-        {/* KPI grid — month counts */}
-        <div className="relative mt-5 grid grid-cols-2 gap-px overflow-hidden rounded-xl border bg-border md:grid-cols-2">
-          <div className="bg-card p-4">
-            <p className="font-mono text-[11px] uppercase tracking-wider text-muted-foreground">
-              {t("drivesThisMonth")}
-            </p>
-            <Link
-              href="/drives"
-              className="mt-2 inline-flex items-baseline gap-2 font-mono text-3xl font-semibold tabular-nums hover:text-accent-blue"
-            >
-              {data.monthCounts.drives}
-              <ChevronRight className="size-4 text-muted-foreground" aria-hidden />
-            </Link>
+          {/* KPI grid — month counts */}
+          <div className="mt-5 grid grid-cols-2 gap-px overflow-hidden rounded-xl border bg-border md:grid-cols-2">
+            <div className="bg-card p-4">
+              <p className="font-mono text-[11px] uppercase tracking-wider text-muted-foreground">
+                {t("drivesThisMonth")}
+              </p>
+              <Link
+                href="/drives"
+                className="mt-2 inline-flex items-baseline gap-2 font-mono text-3xl font-semibold tabular-nums hover:text-accent-blue"
+              >
+                {data.monthCounts.drives}
+                <ChevronRight className="size-4 text-muted-foreground" aria-hidden />
+              </Link>
+            </div>
+            <div className="bg-card p-4">
+              <p className="font-mono text-[11px] uppercase tracking-wider text-muted-foreground">
+                {t("chargesThisMonth")}
+              </p>
+              <Link
+                href="/charges"
+                className="mt-2 inline-flex items-baseline gap-2 font-mono text-3xl font-semibold tabular-nums hover:text-accent-blue"
+              >
+                {data.monthCounts.charges}
+                <ChevronRight className="size-4 text-muted-foreground" aria-hidden />
+              </Link>
+            </div>
           </div>
-          <div className="bg-card p-4">
-            <p className="font-mono text-[11px] uppercase tracking-wider text-muted-foreground">
-              {t("chargesThisMonth")}
-            </p>
-            <Link
-              href="/charges"
-              className="mt-2 inline-flex items-baseline gap-2 font-mono text-3xl font-semibold tabular-nums hover:text-accent-blue"
-            >
-              {data.monthCounts.charges}
-              <ChevronRight className="size-4 text-muted-foreground" aria-hidden />
-            </Link>
           </div>
+
+          {/* DROITE — slider des photos officielles du véhicule */}
+          <VehicleImage
+            image={car?.image ?? null}
+            model={car?.marketingName ?? car?.model ?? "Tesla"}
+          />
         </div>
       </section>
 
