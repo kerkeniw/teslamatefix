@@ -125,7 +125,7 @@ export default async function DrivesPage({
     <>
       <AppHeader />
       <MainNav />
-      <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6">
+      <main className="mx-auto w-full max-w-none flex-1 px-4 py-6">
         <header className="mb-6">
           <h1 className="text-2xl font-semibold tracking-tight">{t("title")}</h1>
           <p className="mt-1 text-sm text-muted-foreground">{t("subtitle")}</p>

@@ -2,9 +2,8 @@
 
 import type { ColumnDef, VisibilityState } from "@tanstack/react-table";
 import { useTranslations, useFormatter } from "next-intl";
-import { Pencil } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { ButtonLink } from "@/components/ui/button-link";
+import { Link } from "@/i18n/navigation";
 import { formatDurationHHMM } from "@/lib/format/duration";
 import {
   kmToUnit,
@@ -51,6 +50,33 @@ function consumptionKwh(row: DriveRow): number | null {
 }
 
 const mono = "font-mono tabular-nums";
+
+/** Lien vers l'entité correspondante : géofence prioritaire (source du libellé), sinon adresse. */
+function entityHref(geofenceId: number | null, addressId: number | null): string | null {
+  if (geofenceId != null) return `/geofences/${geofenceId}`;
+  if (addressId != null) return `/addresses/${addressId}`;
+  return null;
+}
+
+function AddressCell({ label, href }: { label: string | null; href: string | null }) {
+  if (!label) return <span className="text-sm">—</span>;
+  if (!href) {
+    return (
+      <span className="block max-w-[220px] truncate text-sm" title={label}>
+        {label}
+      </span>
+    );
+  }
+  return (
+    <Link
+      href={href}
+      title={label}
+      className="block max-w-[220px] truncate text-sm font-medium text-primary underline-offset-4 hover:underline"
+    >
+      {label}
+    </Link>
+  );
+}
 
 function numCell(v: number | null, digits: number, suffix = "") {
   return (
@@ -106,15 +132,24 @@ export function useDriveColumns(opts: {
       <span className="font-mono text-xs">{row.original.id}</span>
     )),
     col("date", t("columns.date"), ({ row }) => (
-      <span className={`${mono} text-xs`}>
+      <Link
+        href={`/drives/${row.original.id}`}
+        className={`${mono} text-xs text-primary underline-offset-4 hover:underline`}
+      >
         {format.dateTime(new Date(row.original.start_date), "short")}
-      </span>
+      </Link>
     )),
     col("start_address", t("columns.start"), ({ row }) => (
-      <span className="text-sm">{row.original.start_address ?? "—"}</span>
+      <AddressCell
+        label={row.original.start_address}
+        href={entityHref(row.original.start_geofence_id, row.original.start_address_id)}
+      />
     )),
     col("end_address", t("columns.destination"), ({ row }) => (
-      <span className="text-sm">{row.original.end_address ?? "—"}</span>
+      <AddressCell
+        label={row.original.end_address}
+        href={entityHref(row.original.end_geofence_id, row.original.end_address_id)}
+      />
     )),
     col("duration_min", t("columns.duration"), ({ row }) => (
       <span className={`${mono} text-xs text-muted-foreground`}>
@@ -133,6 +168,19 @@ export function useDriveColumns(opts: {
     col("end_battery_level", t("columns.batteryEnd"), ({ row }) =>
       numCell(row.original.end_battery_level, 0, " %"),
     ),
+    col("efficiency", `${t("columns.efficiency")} (%)`, ({ row }) =>
+      numCell(efficiencyPercent(row.original, efficiencyMode), 0),
+    ),
+    col("consumption_kwh", `${t("columns.consumption")} (kWh)`, ({ row }) =>
+      numCell(consumptionKwh(row.original), 1),
+    ),
+    col("consumption_per", `${t("columns.consumptionPer")} (${cu})`, ({ row }) => {
+      const kwh = consumptionKwh(row.original);
+      const dist = row.original.distance;
+      const distUnit = dist != null ? kmToUnit(dist, length) : null;
+      const per = kwh != null && distUnit != null && distUnit > 0 ? (kwh / distUnit) * 1000 : null;
+      return numCell(per, 0);
+    }),
     col("outside_temp_avg", `${t("columns.outsideTemp")} (${tu})`, ({ row }) =>
       numCell(
         row.original.outside_temp_avg != null
@@ -161,19 +209,6 @@ export function useDriveColumns(opts: {
         {row.original.has_reduced_range ? "❄" : "—"}
       </span>
     )),
-    col("efficiency", `${t("columns.efficiency")} (%)`, ({ row }) =>
-      numCell(efficiencyPercent(row.original, efficiencyMode), 0),
-    ),
-    col("consumption_kwh", `${t("columns.consumption")} (kWh)`, ({ row }) =>
-      numCell(consumptionKwh(row.original), 1),
-    ),
-    col("consumption_per", `${t("columns.consumptionPer")} (${cu})`, ({ row }) => {
-      const kwh = consumptionKwh(row.original);
-      const dist = row.original.distance;
-      const distUnit = dist != null ? kmToUnit(dist, length) : null;
-      const per = kwh != null && distUnit != null && distUnit > 0 ? (kwh / distUnit) * 1000 : null;
-      return numCell(per, 0);
-    }),
 
     // --- Colonnes brutes « non interprétées » (masquées par défaut) ---
     col("start_km", `${t("columns.startKm")} (${lu})`, ({ row }) =>
@@ -254,23 +289,6 @@ export function useDriveColumns(opts: {
         !row.original.end_date ? (
           <Badge variant="secondary">{t("ongoing")}</Badge>
         ) : null,
-    },
-    {
-      id: "actions",
-      header: () => <span className="sr-only">{tCommon("actions")}</span>,
-      enableHiding: false,
-      cell: ({ row }) => (
-        <div className="flex justify-end">
-          <ButtonLink
-            variant="ghost"
-            size="icon-sm"
-            href={`/drives/${row.original.id}`}
-            aria-label={tCommon("edit")}
-          >
-            <Pencil className="size-3.5" aria-hidden />
-          </ButtonLink>
-        </div>
-      ),
     },
   ];
 }

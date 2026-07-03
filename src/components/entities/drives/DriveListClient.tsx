@@ -1,9 +1,10 @@
 "use client";
 
 import { useTranslations, useFormatter } from "next-intl";
-import { Plus } from "lucide-react";
+import { Plus, SlidersHorizontal } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import type { VisibilityState } from "@tanstack/react-table";
 import { Button } from "@/components/ui/button";
 import { ButtonLink } from "@/components/ui/button-link";
 import { Card, CardContent } from "@/components/ui/card";
@@ -71,6 +72,34 @@ export function DriveListClient({
   const [location, setLocation] = useState(filters.location);
   const [geofence, setGeofence] = useState<number[]>(filters.geofence);
   const [eff, setEff] = useState<EfficiencyMode>(filters.eff);
+
+  // Visibilité des colonnes pilotée ici (menu rendu dans le bloc filtres).
+  const [columnVisibility, setColumnVisibility] =
+    useState<VisibilityState>(DRIVE_DEFAULT_VISIBILITY);
+
+  useEffect(() => {
+    // Hydratation one-shot depuis localStorage après le montage : volontairement
+    // dans un effet (et non au 1er rendu) pour éviter tout mismatch SSR/CSR.
+    try {
+      const raw = window.localStorage.getItem("drives.columns");
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      if (raw) setColumnVisibility((prev) => ({ ...prev, ...JSON.parse(raw) }));
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem("drives.columns", JSON.stringify(columnVisibility));
+    } catch {
+      /* ignore */
+    }
+  }, [columnVisibility]);
+
+  const hideableCols = columns.filter(
+    (c) => c.id && c.enableHiding !== false && c.meta?.label,
+  );
 
   const lu = lengthLabel(units.length);
   const su = speedLabel(units.length);
@@ -181,19 +210,47 @@ export function DriveListClient({
             </label>
           </FormField>
         </div>
-        <div className="mt-3 flex flex-wrap gap-2">
-          <Button onClick={applyFilters}>{t("filters.apply")}</Button>
-          <Button variant="outline" onClick={resetFilters}>
-            {t("filters.reset")}
-          </Button>
+        <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
+          <div className="flex flex-wrap gap-2">
+            <Button onClick={applyFilters}>{t("filters.apply")}</Button>
+            <Button variant="outline" onClick={resetFilters}>
+              {t("filters.reset")}
+            </Button>
+          </div>
+          <div className="flex items-center gap-2">
+            <details className="relative hidden md:block">
+              <summary className="inline-flex h-9 cursor-pointer list-none items-center gap-2 rounded-md border bg-card px-3 text-sm font-medium shadow-sm [&::-webkit-details-marker]:hidden">
+                <SlidersHorizontal className="size-4" aria-hidden />
+                {t("columnsMenu")}
+              </summary>
+              <div className="absolute right-0 z-20 mt-1 max-h-80 w-64 overflow-auto rounded-md border bg-popover p-1 text-popover-foreground shadow-md">
+                {hideableCols.map((c) => {
+                  const id = c.id as string;
+                  return (
+                    <label
+                      key={id}
+                      className="flex cursor-pointer items-center gap-2 rounded-sm px-2 py-1.5 text-sm hover:bg-accent"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={columnVisibility[id] ?? true}
+                        onChange={(e) =>
+                          setColumnVisibility((prev) => ({ ...prev, [id]: e.target.checked }))
+                        }
+                        className="size-3.5"
+                      />
+                      {c.meta?.label}
+                    </label>
+                  );
+                })}
+              </div>
+            </details>
+            <ButtonLink href="/drives/new">
+              <Plus className="size-4" aria-hidden />
+              {t("new")}
+            </ButtonLink>
+          </div>
         </div>
-      </div>
-
-      <div className="flex items-center justify-end">
-        <ButtonLink href="/drives/new">
-          <Plus className="size-4" aria-hidden />
-          {t("new")}
-        </ButtonLink>
       </div>
 
       <div className="hidden md:block">
@@ -201,10 +258,10 @@ export function DriveListClient({
           columns={columns}
           data={data}
           emptyMessage={t("empty")}
-          enableColumnVisibility
-          initialColumnVisibility={DRIVE_DEFAULT_VISIBILITY}
-          visibilityStorageKey="drives.columns"
-          columnsLabel={t("columnsMenu")}
+          columnVisibility={columnVisibility}
+          onColumnVisibilityChange={setColumnVisibility}
+          scrollX
+          dense
         />
       </div>
 
