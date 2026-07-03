@@ -600,6 +600,59 @@
       },
       "applied": "Recalcul appliqué."
     },
+    "correction": {
+      "banner": "Ce trajet est en anomalie",
+      "recomputeTitle": "Recalcul depuis les positions",
+      "recomputeDescription": "Recalcule tous les champs du trajet (bornes, odomètre, autonomies, puissance, températures, distance/durée/dénivelés, adresses/géofences) et rattache les positions de fin, à partir des positions du trajet.",
+      "correct": "Corriger",
+      "computing": "Analyse…",
+      "apply": "Appliquer la correction",
+      "discard": "Annuler",
+      "applied": "Trajet corrigé.",
+      "noPositions": "Aucune position rattachée : correction automatique impossible (éditez ou supprimez manuellement).",
+      "absorbed": "{count} position(s) de fin seront rattachées à ce trajet.",
+      "reasons": {
+        "unclosed": "Trajet non fermé (date de fin manquante).",
+        "missingEndPosition": "Position ou odomètre d'arrivée manquant.",
+        "positionsBeyondEnd": "Des positions sont datées après la fin enregistrée.",
+        "missingMetrics": "Distance ou durée manquante."
+      },
+      "applyConfirm": {
+        "title": "Appliquer la correction ?",
+        "description": "Les bornes (dates, positions, odomètre, autonomies), les métriques et les adresses/géofences départ/arrivée seront reconstruites depuis les positions du trajet. Réversible par recalcul ou édition manuelle.",
+        "confirm": "Corriger"
+      },
+      "diff": {
+        "field": "Champ",
+        "before": "Actuel",
+        "after": "Corrigé"
+      },
+      "fields": {
+        "start_date": "Début",
+        "end_date": "Fin",
+        "start_position_id": "Position départ",
+        "end_position_id": "Position arrivée",
+        "start_km": "Odomètre départ (km)",
+        "end_km": "Odomètre arrivée (km)",
+        "start_ideal_range_km": "Auto. idéale départ (km)",
+        "end_ideal_range_km": "Auto. idéale arrivée (km)",
+        "start_rated_range_km": "Auto. rated départ (km)",
+        "end_rated_range_km": "Auto. rated arrivée (km)",
+        "start_address_id": "Adresse départ",
+        "end_address_id": "Adresse arrivée",
+        "start_geofence_id": "Géofence départ",
+        "end_geofence_id": "Géofence arrivée",
+        "distance": "Distance (km)",
+        "duration_min": "Durée (min)",
+        "ascent": "Ascension (m)",
+        "descent": "Descente (m)",
+        "speed_max": "Vitesse max",
+        "power_max": "Puissance max (kW)",
+        "power_min": "Puissance min (kW)",
+        "outside_temp_avg": "Temp. extérieure moy. (°C)",
+        "inside_temp_avg": "Temp. intérieure moy. (°C)"
+      }
+    },
     "actions": {
       "create": "Créer le trajet",
       "save": "Enregistrer",

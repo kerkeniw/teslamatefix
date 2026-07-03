@@ -600,6 +600,59 @@
       },
       "applied": "Recompute applied."
     },
+    "correction": {
+      "banner": "This drive has an anomaly",
+      "recomputeTitle": "Recompute from positions",
+      "recomputeDescription": "Recomputes all drive fields (boundaries, odometer, ranges, power, temperatures, distance/duration/elevation, addresses/geofences) and links the trailing positions, from the drive's positions.",
+      "correct": "Fix",
+      "computing": "Analyzing…",
+      "apply": "Apply fix",
+      "discard": "Cancel",
+      "applied": "Drive fixed.",
+      "noPositions": "No linked positions: automatic fix impossible (edit or delete manually).",
+      "absorbed": "{count} trailing position(s) will be linked to this drive.",
+      "reasons": {
+        "unclosed": "Unclosed drive (missing end date).",
+        "missingEndPosition": "Missing end position or odometer.",
+        "positionsBeyondEnd": "Some positions are dated after the recorded end.",
+        "missingMetrics": "Missing distance or duration."
+      },
+      "applyConfirm": {
+        "title": "Apply the fix?",
+        "description": "Boundaries (dates, positions, odometer, ranges), metrics and start/end addresses/geofences will be reconstructed from the drive's positions. Reversible via recompute or manual edit.",
+        "confirm": "Fix"
+      },
+      "diff": {
+        "field": "Field",
+        "before": "Current",
+        "after": "Fixed"
+      },
+      "fields": {
+        "start_date": "Start",
+        "end_date": "End",
+        "start_position_id": "Start position",
+        "end_position_id": "End position",
+        "start_km": "Start odometer (km)",
+        "end_km": "End odometer (km)",
+        "start_ideal_range_km": "Start ideal range (km)",
+        "end_ideal_range_km": "End ideal range (km)",
+        "start_rated_range_km": "Start rated range (km)",
+        "end_rated_range_km": "End rated range (km)",
+        "start_address_id": "Start address",
+        "end_address_id": "End address",
+        "start_geofence_id": "Start geofence",
+        "end_geofence_id": "End geofence",
+        "distance": "Distance (km)",
+        "duration_min": "Duration (min)",
+        "ascent": "Ascent (m)",
+        "descent": "Descent (m)",
+        "speed_max": "Max speed",
+        "power_max": "Max power (kW)",
+        "power_min": "Min power (kW)",
+        "outside_temp_avg": "Avg outside temp (°C)",
+        "inside_temp_avg": "Avg inside temp (°C)"
+      }
+    },
     "actions": {
       "create": "Create drive",
       "save": "Save",

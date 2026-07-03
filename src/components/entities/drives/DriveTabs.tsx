@@ -15,6 +15,8 @@ import {
 } from "./DriveForm";
 import { DriveLocationPanel } from "./DriveLocationPanel";
 import type { TrackPoint } from "./DriveTrackMap";
+import { DriveCorrectionPanel } from "./DriveCorrectionPanel";
+import type { DriveCorrectionSerialized } from "@/lib/integrity/drives";
 import { useRouter } from "@/i18n/navigation";
 
 const DRIVE_FORM_ID = "drive-edit-form";
@@ -31,6 +33,9 @@ export function DriveTabs({
   initialOptions,
   track,
   efficiency,
+  anomalyReasons,
+  correctAction,
+  applyCorrectAction,
   readOnly,
   saveAction,
   deleteAction,
@@ -42,6 +47,23 @@ export function DriveTabs({
   initialOptions: DriveFormInitialOptions;
   track: TrackPoint[];
   efficiency: number | null;
+  anomalyReasons: string[];
+  correctAction: (id: number) => Promise<{
+    ok: boolean;
+    error?: string;
+    before?: DriveCorrectionSerialized;
+    after?: DriveCorrectionSerialized;
+    beforeLabels?: import("@/lib/integrity/drives").FkLabels;
+    afterLabels?: import("@/lib/integrity/drives").FkLabels;
+    positionCount?: number;
+    absorbedPositionIds?: number[];
+    absorbedCount?: number;
+  }>;
+  applyCorrectAction: (
+    id: number,
+    after: DriveCorrectionSerialized,
+    absorbedPositionIds: number[],
+  ) => Promise<{ ok: boolean; error?: string }>;
   readOnly: boolean;
   saveAction: (
     prev: DriveActionState | null,
@@ -103,6 +125,15 @@ export function DriveTabs({
         <div role="alert" className="rounded-xl border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
           {state.error}
         </div>
+      ) : null}
+
+      {anomalyReasons.length > 0 ? (
+        <DriveCorrectionPanel
+          driveId={id}
+          reasons={anomalyReasons}
+          computeAction={correctAction}
+          applyAction={applyCorrectAction}
+        />
       ) : null}
 
       <Tabs defaultValue="drive" className="w-full">

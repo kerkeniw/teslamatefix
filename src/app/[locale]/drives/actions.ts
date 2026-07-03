@@ -9,9 +9,11 @@ import { requireSession } from "@/lib/auth";
 import { env } from "@/lib/env";
 import { logger } from "@/lib/logger";
 import {
-  recalcFromPositions,
-  applyRecalc as applyDriveRecalc,
-  type DriveRecalc,
+  correctDriveFromPositions,
+  applyDriveCorrection,
+  type DriveCorrection,
+  type DriveCorrectionSerialized,
+  type FkLabels,
 } from "@/lib/integrity/drives";
 
 export type DriveActionState = {
@@ -254,65 +256,84 @@ export async function deleteDriveAction(id: number): Promise<{ ok: boolean; erro
   return { ok: true };
 }
 
-function serializeRecalc(r: DriveRecalc) {
+// --- Correction / recalcul d'un trajet (moteur unifié) ---------------------
+
+function serializeCorrection(c: DriveCorrection): DriveCorrectionSerialized {
   return {
-    start_date: r.start_date ? r.start_date.toISOString() : null,
-    end_date: r.end_date ? r.end_date.toISOString() : null,
-    distance: r.distance,
-    duration_min: r.duration_min,
-    ascent: r.ascent,
-    descent: r.descent,
-    speed_max: r.speed_max,
+    ...c,
+    start_date: c.start_date ? c.start_date.toISOString() : null,
+    end_date: c.end_date ? c.end_date.toISOString() : null,
   };
 }
 
-export type SerializedRecalc = ReturnType<typeof serializeRecalc>;
+function deserializeCorrection(s: DriveCorrectionSerialized): DriveCorrection {
+  return {
+    ...s,
+    start_date: s.start_date ? new Date(s.start_date) : null,
+    end_date: s.end_date ? new Date(s.end_date) : null,
+  };
+}
 
-export async function recalcDriveAction(driveId: number): Promise<{
+export async function correctDriveAction(driveId: number): Promise<{
   ok: boolean;
   error?: string;
-  before?: SerializedRecalc;
-  after?: SerializedRecalc;
+  before?: DriveCorrectionSerialized;
+  after?: DriveCorrectionSerialized;
+  beforeLabels?: FkLabels;
+  afterLabels?: FkLabels;
+  positionCount?: number;
+  absorbedPositionIds?: number[];
+  absorbedCount?: number;
 }> {
   await requireSession();
   try {
-    const r = await recalcFromPositions(driveId);
-    return { ok: true, before: serializeRecalc(r.before), after: serializeRecalc(r.after) };
+    const r = await correctDriveFromPositions(driveId);
+    return {
+      ok: true,
+      before: serializeCorrection(r.before),
+      after: serializeCorrection(r.after),
+      beforeLabels: r.beforeLabels,
+      afterLabels: r.afterLabels,
+      positionCount: r.positionCount,
+      absorbedPositionIds: r.absorbedPositionIds,
+      absorbedCount: r.absorbedCount,
+    };
   } catch (e) {
-    logger.error({ event: "drives.recalc.error", id: driveId, err: String(e) }, "drives.recalc failed");
-    return { ok: false, error: "Recalcul impossible." };
+    logger.error({ event: "drives.correct.error", id: driveId, err: String(e) }, "drives.correct failed");
+    return { ok: false, error: "Correction impossible." };
   }
 }
 
-export async function applyRecalcDriveAction(
+export async function applyCorrectDriveAction(
   driveId: number,
-  after: SerializedRecalc,
+  after: DriveCorrectionSerialized,
+  absorbedPositionIds: number[] = [],
 ): Promise<{ ok: boolean; error?: string }> {
   const session = await requireSession();
-  if (env.READ_ONLY) return { ok: false, error: "Application en lecture seule." };
+  // NB : la correction/recalcul contourne volontairement le garde READ_ONLY
+  // (elle écrit aussi le drive_id des positions réaffectées).
 
   try {
-    await applyDriveRecalc(driveId, {
-      start_date: after.start_date ? new Date(after.start_date) : null,
-      end_date: after.end_date ? new Date(after.end_date) : null,
-      distance: after.distance,
-      duration_min: after.duration_min,
-      ascent: after.ascent,
-      descent: after.descent,
-      speed_max: after.speed_max,
-    });
+    await applyDriveCorrection(driveId, deserializeCorrection(after), absorbedPositionIds);
   } catch (e) {
+    if (e instanceof Prisma.PrismaClientKnownRequestError) {
+      if (e.code === "P2025") return { ok: false, error: "Trajet introuvable." };
+      if (e.code === "P2003") {
+        return { ok: false, error: "Référence introuvable (position, adresse ou géofence)." };
+      }
+    }
     logger.error(
-      { event: "drives.recalc.apply.error", id: driveId, err: String(e) },
-      "drives.recalc.apply failed",
+      { event: "drives.correct.apply.error", id: driveId, err: String(e) },
+      "drives.correct.apply failed",
     );
-    return { ok: false, error: "Échec de l'application du recalcul." };
+    return { ok: false, error: "Échec de la correction." };
   }
 
   logger.info(
-    { event: "drives.recalc.apply", user: session.userId, id: driveId },
-    "drives.recalc.apply",
+    { event: "drives.correct.apply", user: session.userId, id: driveId },
+    "drives.correct.apply",
   );
+  revalidatePath("/drives");
   revalidatePath(`/drives/${driveId}`);
   return { ok: true };
 }

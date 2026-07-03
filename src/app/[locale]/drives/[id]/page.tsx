@@ -8,7 +8,7 @@ import { AppHeader } from "@/components/app-shell/header";
 import { MainNav } from "@/components/app-shell/main-nav";
 import { DriveTabs } from "@/components/entities/drives/DriveTabs";
 import { ChildrenPositionsTable } from "@/components/entities/drives/ChildrenPositionsTable";
-import { DriveRecalcPanel } from "@/components/entities/drives/RecalcPanel";
+import { DriveCorrectionPanel } from "@/components/entities/drives/DriveCorrectionPanel";
 import type {
   DriveFormValues,
   DriveFormInitialOptions,
@@ -19,8 +19,8 @@ import type { FKOption } from "@/components/form/fk-combobox";
 import {
   updateDriveAction,
   deleteDriveAction,
-  recalcDriveAction,
-  applyRecalcDriveAction,
+  correctDriveAction,
+  applyCorrectDriveAction,
 } from "../actions";
 
 function addressLabel(a: {
@@ -52,7 +52,7 @@ export default async function DriveEditPage({
   const id = parseInt(idStr, 10);
   if (!Number.isFinite(id)) notFound();
 
-  const [drive, selectedCar, positionsCount, positionsHead, trackRows] =
+  const [drive, selectedCar, positionsCount, positionsHead, trackRows, lastPos] =
     await Promise.all([
       prisma.drives.findUnique({ where: { id } }),
       getSelectedCarOrDefault(),
@@ -77,8 +77,32 @@ export default async function DriveEditPage({
         take: 5000,
         select: { latitude: true, longitude: true, speed: true, power: true },
       }),
+      // Dernière position rattachée (détection d'anomalie « positions au-delà de la fin »).
+      prisma.positions.findFirst({
+        where: { drive_id: id },
+        orderBy: { date: "desc" },
+        select: { date: true },
+      }),
     ]);
   if (!drive || !selectedCar) notFound();
+
+  // Détection d'anomalie (cf. règle de correction). Produit des clés i18n.
+  const lastPositionDate = lastPos?.date ?? null;
+  const anomalyReasons: string[] = [];
+  if (drive.end_date == null) anomalyReasons.push("unclosed");
+  if (positionsCount > 0 && (drive.end_position_id == null || drive.end_km == null)) {
+    anomalyReasons.push("missingEndPosition");
+  }
+  if (
+    drive.end_date != null &&
+    lastPositionDate != null &&
+    lastPositionDate.getTime() > drive.end_date.getTime()
+  ) {
+    anomalyReasons.push("positionsBeyondEnd");
+  }
+  if (positionsCount >= 2 && (drive.distance == null || drive.duration_min == null)) {
+    anomalyReasons.push("missingMetrics");
+  }
 
   // Facteur d'efficacité (kWh/km) du véhicule du trajet, pour l'estimation
   // d'énergie consommée affichée dans le formulaire.
@@ -207,6 +231,9 @@ export default async function DriveEditPage({
           initialOptions={initialOptions}
           track={track}
           efficiency={car?.efficiency ?? null}
+          anomalyReasons={anomalyReasons}
+          correctAction={correctDriveAction}
+          applyCorrectAction={applyCorrectDriveAction}
           readOnly={env.READ_ONLY}
           saveAction={boundUpdate}
           deleteAction={boundDelete}
@@ -218,11 +245,11 @@ export default async function DriveEditPage({
             />
           }
           recalcTab={
-            <DriveRecalcPanel
+            <DriveCorrectionPanel
               driveId={drive.id}
-              computeAction={recalcDriveAction}
-              applyAction={applyRecalcDriveAction}
-              readOnly={env.READ_ONLY}
+              reasons={[]}
+              computeAction={correctDriveAction}
+              applyAction={applyCorrectDriveAction}
             />
           }
         />
