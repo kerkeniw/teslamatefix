@@ -8,15 +8,32 @@ import { Button } from "@/components/ui/button";
 import { ButtonLink } from "@/components/ui/button-link";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import { FormField } from "@/components/form/form-field";
 import { DateTimeInput } from "@/components/form/datetime-input";
 import { DataTable } from "@/components/data-table/data-table";
 import { OffsetPagination } from "@/components/data-table/pagination";
+import type { FKOption } from "@/components/form/fk-combobox";
+import { formatDurationHHMM } from "@/lib/format/duration";
+import { kmToUnit, lengthLabel, speedLabel, type LengthUnit, type TempUnit } from "@/lib/units";
+import { GeofenceMultiSelect } from "./GeofenceMultiSelect";
 import {
   useDriveColumns,
-  formatDuration,
+  DRIVE_DEFAULT_VISIBILITY,
   type DriveRow,
+  type EfficiencyMode,
 } from "./DriveDataTableColumns";
+
+export type DriveListFilters = {
+  from: string;
+  to: string;
+  open_only: boolean;
+  min_dist: string;
+  min_speed: string;
+  location: string;
+  geofence: number[];
+  eff: EfficiencyMode;
+};
 
 export function DriveListClient({
   data,
@@ -24,36 +41,54 @@ export function DriveListClient({
   page,
   pageSize,
   filters,
+  units,
+  geofenceInitial,
 }: {
   data: DriveRow[];
   total: number;
   page: number;
   pageSize: number;
-  filters: {
-    from: string;
-    to: string;
-    open_only: boolean;
-  };
+  filters: DriveListFilters;
+  units: { length: LengthUnit; temp: TempUnit };
+  geofenceInitial: FKOption[];
 }) {
   const t = useTranslations("drives");
   const tCommon = useTranslations("common");
   const format = useFormatter();
-  const columns = useDriveColumns();
+  const columns = useDriveColumns({
+    length: units.length,
+    temp: units.temp,
+    efficiencyMode: filters.eff,
+  });
   const router = useRouter();
   const searchParams = useSearchParams();
 
   const [from, setFrom] = useState(filters.from);
   const [to, setTo] = useState(filters.to);
   const [openOnly, setOpenOnly] = useState(filters.open_only);
+  const [minDist, setMinDist] = useState(filters.min_dist);
+  const [minSpeed, setMinSpeed] = useState(filters.min_speed);
+  const [location, setLocation] = useState(filters.location);
+  const [geofence, setGeofence] = useState<number[]>(filters.geofence);
+  const [eff, setEff] = useState<EfficiencyMode>(filters.eff);
+
+  const lu = lengthLabel(units.length);
+  const su = speedLabel(units.length);
 
   function applyFilters() {
     const params = new URLSearchParams(searchParams.toString());
-    if (from) params.set("from", from);
-    else params.delete("from");
-    if (to) params.set("to", to);
-    else params.delete("to");
+    const setOrDel = (key: string, val: string) =>
+      val ? params.set(key, val) : params.delete(key);
+    setOrDel("from", from);
+    setOrDel("to", to);
     if (openOnly) params.set("open_only", "1");
     else params.delete("open_only");
+    setOrDel("min_dist", minDist);
+    setOrDel("min_speed", minSpeed);
+    setOrDel("location", location.trim());
+    if (geofence.length) params.set("geofence", geofence.join(","));
+    else params.delete("geofence");
+    params.set("eff", eff);
     params.set("page", "1");
     router.push(`?${params.toString()}`);
   }
@@ -62,13 +97,18 @@ export function DriveListClient({
     setFrom("");
     setTo("");
     setOpenOnly(false);
+    setMinDist("");
+    setMinSpeed("");
+    setLocation("");
+    setGeofence([]);
+    setEff("slope");
     router.push("?");
   }
 
   return (
     <div className="space-y-4">
       <div className="rounded-xl border bg-card p-4 shadow-sm">
-        <div className="grid gap-3 sm:grid-cols-3">
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           <FormField id="filter_from" label={t("filters.from")}>
             <DateTimeInput
               id="filter_from"
@@ -83,8 +123,54 @@ export function DriveListClient({
               onChange={(e) => setTo((e.target as HTMLInputElement).value)}
             />
           </FormField>
+          <FormField id="filter_location" label={t("filters.location")}>
+            <Input
+              id="filter_location"
+              value={location}
+              onChange={(e) => setLocation(e.target.value)}
+              placeholder={t("filters.locationPlaceholder")}
+            />
+          </FormField>
+          <FormField id="filter_min_dist" label={`${t("filters.minDist")} (${lu})`}>
+            <Input
+              id="filter_min_dist"
+              type="number"
+              min={0}
+              step="0.1"
+              value={minDist}
+              onChange={(e) => setMinDist(e.target.value)}
+            />
+          </FormField>
+          <FormField id="filter_min_speed" label={`${t("filters.minSpeed")} (${su})`}>
+            <Input
+              id="filter_min_speed"
+              type="number"
+              min={0}
+              step="1"
+              value={minSpeed}
+              onChange={(e) => setMinSpeed(e.target.value)}
+            />
+          </FormField>
+          <FormField id="filter_efficiency" label={t("filters.efficiency")}>
+            <select
+              id="filter_efficiency"
+              value={eff}
+              onChange={(e) => setEff(e.target.value as EfficiencyMode)}
+              className="h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring"
+            >
+              <option value="slope">{t("efficiencyMode.slope")}</option>
+              <option value="distance">{t("efficiencyMode.distance")}</option>
+            </select>
+          </FormField>
+          <FormField id="filter_geofence" label={t("filters.geofence")}>
+            <GeofenceMultiSelect
+              value={geofence}
+              initial={geofenceInitial}
+              onChange={setGeofence}
+            />
+          </FormField>
           <FormField id="filter_open" label={t("filters.openOnly")}>
-            <label className="flex h-9 cursor-pointer items-center gap-2 px-2">
+            <label className="flex h-8 cursor-pointer items-center gap-2 px-1">
               <input
                 type="checkbox"
                 checked={openOnly}
@@ -111,7 +197,15 @@ export function DriveListClient({
       </div>
 
       <div className="hidden md:block">
-        <DataTable columns={columns} data={data} emptyMessage={t("empty")} />
+        <DataTable
+          columns={columns}
+          data={data}
+          emptyMessage={t("empty")}
+          enableColumnVisibility
+          initialColumnVisibility={DRIVE_DEFAULT_VISIBILITY}
+          visibilityStorageKey="drives.columns"
+          columnsLabel={t("columnsMenu")}
+        />
       </div>
 
       <div className="grid gap-3 md:hidden">
@@ -130,24 +224,27 @@ export function DriveListClient({
                 ) : null}
               </div>
               <div className="flex justify-between">
-                <span className="text-muted-foreground">{t("fields.startDate")}</span>
+                <span className="text-muted-foreground">{t("columns.date")}</span>
                 <span>{format.dateTime(new Date(row.start_date), "short")}</span>
               </div>
               <div>
-                <span className="text-muted-foreground">{t("fields.origin")} → </span>
                 <span>
-                  {row.origin ?? "—"} → {row.destination ?? "—"}
+                  {row.start_address ?? "—"}
+                  <span className="mx-1 text-muted-foreground">→</span>
+                  {row.end_address ?? "—"}
                 </span>
               </div>
               <div className="flex justify-between">
-                <span className="text-muted-foreground">{t("fields.distance")}</span>
+                <span className="text-muted-foreground">{t("columns.distance")}</span>
                 <span>
-                  {row.distance != null ? `${row.distance.toFixed(1)} km` : "—"}
+                  {row.distance != null
+                    ? `${kmToUnit(row.distance, units.length).toFixed(1)} ${lu}`
+                    : "—"}
                 </span>
               </div>
               <div className="flex justify-between">
-                <span className="text-muted-foreground">{t("fields.durationMin")}</span>
-                <span>{formatDuration(row.duration_min, t)}</span>
+                <span className="text-muted-foreground">{t("columns.duration")}</span>
+                <span>{formatDurationHHMM(row.duration_min)}</span>
               </div>
               <div className="pt-2">
                 <ButtonLink
