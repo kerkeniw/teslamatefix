@@ -6,7 +6,6 @@ import { toast } from "sonner";
 import { Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Separator } from "@/components/ui/separator";
 import { ConfirmDialog } from "@/components/tesla/confirm-dialog";
 import {
   DriveForm,
@@ -15,7 +14,7 @@ import {
 } from "./DriveForm";
 import { DriveLocationPanel } from "./DriveLocationPanel";
 import type { TrackPoint } from "./DriveTrackMap";
-import { DriveCorrectionPanel } from "./DriveCorrectionPanel";
+import { DriveCorrectionDialog } from "./DriveCorrectionDialog";
 import type { DriveCorrectionSerialized } from "@/lib/integrity/drives";
 import { useRouter } from "@/i18n/navigation";
 
@@ -40,7 +39,6 @@ export function DriveTabs({
   saveAction,
   deleteAction,
   positionsTab,
-  recalcTab,
 }: {
   id: number;
   initial: DriveFormValues;
@@ -71,7 +69,6 @@ export function DriveTabs({
   ) => Promise<DriveActionState>;
   deleteAction: () => Promise<{ ok: boolean; error?: string }>;
   positionsTab: ReactNode;
-  recalcTab: ReactNode;
 }) {
   const t = useTranslations("drives");
   const tCommon = useTranslations("common");
@@ -114,7 +111,7 @@ export function DriveTabs({
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {readOnly ? (
         <div className="rounded-xl border border-warn/30 bg-warn/10 p-3 text-sm text-warn">
           {tCommon("readOnlyMode")}
@@ -128,31 +125,27 @@ export function DriveTabs({
       ) : null}
 
       {anomalyReasons.length > 0 ? (
-        <DriveCorrectionPanel
-          driveId={id}
-          reasons={anomalyReasons}
-          computeAction={correctAction}
-          applyAction={applyCorrectAction}
-        />
+        <div className="rounded-md border border-warn/30 bg-warn/10 px-3 py-2 text-sm text-warn">
+          ⚠ {t("correction.banner")} :{" "}
+          {anomalyReasons.map((r) => t(`correction.reasonsShort.${r}`)).join(", ")}
+        </div>
       ) : null}
 
       <Tabs defaultValue="drive" className="w-full">
         <TabsList>
           <TabsTrigger value="drive">{t("tabs.drive")}</TabsTrigger>
           <TabsTrigger value="positions">{t("tabs.positions")}</TabsTrigger>
-          <TabsTrigger value="recalc">{t("tabs.recalc")}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="drive" className="pt-4">
           <form
             action={formAction}
             id={DRIVE_FORM_ID}
-            className="space-y-6"
+            className="space-y-4"
             data-drive-id={id}
           >
             <DriveForm
               initial={initial}
-              initialOptions={initialOptions}
               fieldErrors={fe}
               readOnly={readOnly}
               mode="edit"
@@ -175,9 +168,9 @@ export function DriveTabs({
                 />
               }
             />
-            <Separator />
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div className="flex gap-2">
+            {/* Barre d'actions flottante : toujours visible même sans scroller. */}
+            <div className="sticky bottom-0 z-20 -mx-4 flex flex-wrap items-center justify-between gap-3 border-t bg-background/95 px-4 py-3 backdrop-blur supports-backdrop-filter:bg-background/80">
+              <div className="flex flex-wrap gap-2">
                 <Button type="submit" disabled={pending || readOnly}>
                   {pending ? tCommon("saving") : t("actions.save")}
                 </Button>
@@ -189,6 +182,12 @@ export function DriveTabs({
                 >
                   {tCommon("cancel")}
                 </Button>
+                <DriveCorrectionDialog
+                  driveId={id}
+                  reasons={anomalyReasons}
+                  computeAction={correctAction}
+                  applyAction={applyCorrectAction}
+                />
               </div>
               <ConfirmDialog
                 destructive
@@ -210,10 +209,6 @@ export function DriveTabs({
 
         <TabsContent value="positions" className="pt-4">
           {positionsTab}
-        </TabsContent>
-
-        <TabsContent value="recalc" className="pt-4">
-          {recalcTab}
         </TabsContent>
       </Tabs>
     </div>

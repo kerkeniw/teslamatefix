@@ -86,7 +86,7 @@ export function GeofenceForm({
   const fe = state?.fieldErrors ?? {};
 
   return (
-    <form action={formAction} className="space-y-8">
+    <form action={formAction} className="space-y-4">
       {readOnly ? (
         <div className="rounded-xl border border-warn/30 bg-warn/10 p-3 text-sm text-warn">
           {tCommon("readOnlyMode")}
@@ -99,7 +99,7 @@ export function GeofenceForm({
         </div>
       ) : null}
 
-      <section className="space-y-4">
+      <section className="space-y-3">
         <h2 className="text-base font-semibold">{t("sections.identity")}</h2>
         <FormField id="name" label={t("fields.name")} required error={fe.name}>
           <Input
@@ -115,7 +115,7 @@ export function GeofenceForm({
 
       <Separator />
 
-      <section className="space-y-4">
+      <section className="space-y-3">
         <h2 className="text-base font-semibold">{t("sections.location")}</h2>
         <div className="grid gap-4 sm:grid-cols-2">
           <FormField
@@ -175,7 +175,7 @@ export function GeofenceForm({
 
       <Separator />
 
-      <section className="space-y-4">
+      <section className="space-y-3">
         <h2 className="text-base font-semibold">{t("sections.billing")}</h2>
         <div className="grid gap-4 sm:grid-cols-3">
           <FormField id="billing_type" label={t("fields.billingType")} error={fe.billing_type}>

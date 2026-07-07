@@ -617,6 +617,12 @@
         "positionsBeyondEnd": "Some positions are dated after the recorded end.",
         "missingMetrics": "Missing distance or duration."
       },
+      "reasonsShort": {
+        "unclosed": "unclosed",
+        "missingEndPosition": "missing end odometer",
+        "positionsBeyondEnd": "positions after end",
+        "missingMetrics": "missing distance/duration"
+      },
       "applyConfirm": {
         "title": "Apply the fix?",
         "description": "Boundaries (dates, positions, odometer, ranges), metrics and start/end addresses/geofences will be reconstructed from the drive's positions. Reversible via recompute or manual edit.",

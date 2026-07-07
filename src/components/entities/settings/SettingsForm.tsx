@@ -67,7 +67,7 @@ export function SettingsForm({ initial, readOnly = false, saveAction }: Settings
   const fe = state?.fieldErrors ?? {};
 
   return (
-    <form action={formAction} className="space-y-8">
+    <form action={formAction} className="space-y-4">
       {readOnly ? (
         <div className="rounded-xl border border-warn/30 bg-warn/10 p-3 text-sm text-warn">
           {tCommon("readOnlyMode")}
@@ -80,7 +80,7 @@ export function SettingsForm({ initial, readOnly = false, saveAction }: Settings
         </div>
       ) : null}
 
-      <section className="space-y-4">
+      <section className="space-y-3">
         <h2 className="text-base font-semibold">{t("sections.units")}</h2>
         <div className="grid gap-4 sm:grid-cols-3">
           <FormField id="unit_of_length" label={t("fields.unitOfLength")} error={fe.unit_of_length}>
@@ -138,7 +138,7 @@ export function SettingsForm({ initial, readOnly = false, saveAction }: Settings
 
       <Separator />
 
-      <section className="space-y-4">
+      <section className="space-y-3">
         <h2 className="text-base font-semibold">{t("sections.display")}</h2>
         <div className="grid gap-4 sm:grid-cols-2">
           <FormField id="preferred_range" label={t("fields.preferredRange")} error={fe.preferred_range}>
@@ -177,7 +177,7 @@ export function SettingsForm({ initial, readOnly = false, saveAction }: Settings
 
       <Separator />
 
-      <section className="space-y-4">
+      <section className="space-y-3">
         <h2 className="text-base font-semibold">{t("sections.urls")}</h2>
         <div className="grid gap-4">
           <FormField

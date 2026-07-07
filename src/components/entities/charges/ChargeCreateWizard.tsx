@@ -258,8 +258,8 @@ function Step1({
   const powers = values.charger_type === "AC" ? AC_POWERS : DC_POWERS;
 
   return (
-    <form onSubmit={onSubmit} className="space-y-6">
-      <section className="space-y-4">
+    <form onSubmit={onSubmit} className="space-y-4">
+      <section className="space-y-3">
         <h2 className="text-base font-semibold">{t("create.step1.title")}</h2>
         <p className="text-xs text-muted-foreground">
           {t("fields.carId")} :{" "}
@@ -316,7 +316,7 @@ function Step1({
 
       <Separator />
 
-      <section className="space-y-4">
+      <section className="space-y-3">
         <h2 className="text-base font-semibold">{t("sections.energy")}</h2>
         <div className="grid gap-4 sm:grid-cols-2">
           <FormField
@@ -389,7 +389,7 @@ function Step1({
 
       <Separator />
 
-      <section className="space-y-4">
+      <section className="space-y-3">
         <h2 className="text-base font-semibold">{t("sections.charger")}</h2>
         <div className="grid gap-4 sm:grid-cols-2">
           <FormField id="charger_type" label={t("fields.chargerType")} required>
@@ -627,7 +627,7 @@ function Step2({
   }
   if (!context.ok) {
     return (
-      <div className="space-y-4">
+      <div className="space-y-3">
         <div
           role="alert"
           className="rounded-md border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive"
@@ -642,7 +642,7 @@ function Step2({
   }
   if (!context.position_before) {
     return (
-      <div className="space-y-4">
+      <div className="space-y-3">
         <div
           role="alert"
           className="rounded-md border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive"
@@ -661,7 +661,7 @@ function Step2({
   const warning = context.derived_charger?.warning;
 
   return (
-    <form action={formAction} className="space-y-6">
+    <form action={formAction} className="space-y-4">
       {state?.error ? (
         <div
           role="alert"
@@ -802,7 +802,7 @@ function Step2({
       <Separator />
 
       {/* Borne — V/A/phases éditables */}
-      <section className="space-y-4">
+      <section className="space-y-3">
         <h3 className="text-sm font-semibold">{t("sections.charger")}</h3>
         <div className="grid gap-4 sm:grid-cols-2">
           <FormField id="charger_voltage" label={t("fields.chargerVoltage")}>
@@ -878,7 +878,7 @@ function Step2({
       <Separator />
 
       {/* Détails borne — câble, marque, type, chauffage batterie */}
-      <section className="space-y-4">
+      <section className="space-y-3">
         <h3 className="text-sm font-semibold">{t("sections.chargerDetails")}</h3>
         <div className="grid gap-4 sm:grid-cols-2">
           <FormField id="conn_charge_cable" label={t("fields.connChargeCable")}>
@@ -949,7 +949,7 @@ function Step2({
       <Separator />
 
       {/* Localisation */}
-      <section className="space-y-4">
+      <section className="space-y-3">
         <h3 className="text-sm font-semibold">{t("sections.location")}</h3>
         <div className="grid gap-4 sm:grid-cols-2">
           <FormField id="address_id" label={t("fields.addressId")} error={fe.address_id}>

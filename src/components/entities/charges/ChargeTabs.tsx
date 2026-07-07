@@ -110,7 +110,7 @@ export function ChargeTabs({
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {readOnly ? (
         <div className="rounded-xl border border-warn/30 bg-warn/10 p-3 text-sm text-warn">
           {tCommon("readOnlyMode")}
@@ -134,7 +134,7 @@ export function ChargeTabs({
           <form
             action={formAction}
             id="charge-session-form"
-            className="space-y-6"
+            className="space-y-4"
             data-charge-id={id}
           >
             <ChargeProcessForm

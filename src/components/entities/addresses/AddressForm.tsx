@@ -109,7 +109,7 @@ export function AddressForm({
   return (
     <form
       action={formAction}
-      className="space-y-8"
+      className="space-y-4"
       onSubmit={(e) => {
         if (!validateRaw(rawValue)) {
           e.preventDefault();
@@ -128,7 +128,7 @@ export function AddressForm({
         </div>
       ) : null}
 
-      <section className="space-y-4">
+      <section className="space-y-3">
         <h2 className="text-base font-semibold">{t("sections.identity")}</h2>
         <div className="grid gap-4 sm:grid-cols-2">
           <FormField
@@ -160,7 +160,7 @@ export function AddressForm({
 
       <Separator />
 
-      <section className="space-y-4">
+      <section className="space-y-3">
         <h2 className="text-base font-semibold">{t("sections.location")}</h2>
         <div className="grid gap-4 sm:grid-cols-2">
           <FormField
@@ -281,7 +281,7 @@ export function AddressForm({
 
       <Separator />
 
-      <section className="space-y-4">
+      <section className="space-y-3">
         <h2 className="text-base font-semibold">{t("sections.osm")}</h2>
         <p className="text-xs text-muted-foreground">{t("hints.osmReadOnly")}</p>
         <div className="grid gap-4 sm:grid-cols-2">
@@ -308,7 +308,7 @@ export function AddressForm({
 
       <Separator />
 
-      <section className="space-y-4">
+      <section className="space-y-3">
         <h2 className="text-base font-semibold">{t("sections.raw")}</h2>
         <FormField
           id="raw"

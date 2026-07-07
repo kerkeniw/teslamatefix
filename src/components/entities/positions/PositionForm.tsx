@@ -166,7 +166,7 @@ export function PositionForm({
   }
 
   return (
-    <form action={formAction} className="space-y-6" data-position-id={id}>
+    <form action={formAction} className="space-y-4" data-position-id={id}>
       {readOnly ? (
         <div className="rounded-xl border border-warn/30 bg-warn/10 p-3 text-sm text-warn">
           {tCommon("readOnlyMode")}
@@ -191,7 +191,7 @@ export function PositionForm({
         </div>
       ) : null}
 
-      <section className="space-y-4">
+      <section className="space-y-3">
         <h2 className="text-base font-semibold">{t("sections.core")}</h2>
         <div className="grid gap-4 sm:grid-cols-2">
           <FormField id="car_label" label={t("fields.carId")} required error={fe.car_id}>
@@ -312,7 +312,7 @@ export function PositionForm({
 
       <Separator />
 
-      <section className="space-y-4">
+      <section className="space-y-3">
         <h2 className="text-base font-semibold">{t("sections.battery")}</h2>
         <div className="grid gap-4 sm:grid-cols-2">
           <FormField id="battery_level" label={t("fields.batteryLevel")} error={fe.battery_level}>
@@ -344,7 +344,7 @@ export function PositionForm({
 
       <Separator />
 
-      <section className="space-y-4">
+      <section className="space-y-3">
         <h2 className="text-base font-semibold">{t("sections.climate")}</h2>
         <div className="grid gap-4 sm:grid-cols-2">
           <FormField id="fan_status" label={t("fields.fanStatus")} error={fe.fan_status}>
@@ -370,7 +370,7 @@ export function PositionForm({
 
       <Separator />
 
-      <section className="space-y-4">
+      <section className="space-y-3">
         <h2 className="text-base font-semibold">{t("sections.tpms")}</h2>
         <div className="grid gap-4 sm:grid-cols-2">
           <FormField id="tpms_pressure_fl" label={t("fields.tpmsFl")} error={fe.tpms_pressure_fl}>

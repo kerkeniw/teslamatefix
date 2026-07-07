@@ -617,6 +617,12 @@
         "positionsBeyondEnd": "Des positions sont datées après la fin enregistrée.",
         "missingMetrics": "Distance ou durée manquante."
       },
+      "reasonsShort": {
+        "unclosed": "non fermé",
+        "missingEndPosition": "odomètre arrivée manquant",
+        "positionsBeyondEnd": "positions après la fin",
+        "missingMetrics": "distance/durée manquante"
+      },
       "applyConfirm": {
         "title": "Appliquer la correction ?",
         "description": "Les bornes (dates, positions, odomètre, autonomies), les métriques et les adresses/géofences départ/arrivée seront reconstruites depuis les positions du trajet. Réversible par recalcul ou édition manuelle.",

@@ -28,7 +28,7 @@ export function LeafletMap({ lat, lng }: { lat: number; lng: number }) {
   }, []);
 
   return (
-    <div className="h-[280px] w-full overflow-hidden rounded-lg ring-1 ring-foreground/10">
+    <div className="isolate h-[280px] w-full overflow-hidden rounded-lg ring-1 ring-foreground/10">
       <MapContainer
         center={[lat, lng]}
         zoom={15}

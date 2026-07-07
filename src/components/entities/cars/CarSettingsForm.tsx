@@ -67,8 +67,8 @@ export function CarSettingsForm({
   const fe = fieldErrors;
 
   return (
-    <div className="space-y-8">
-      <section className="space-y-4">
+    <div className="space-y-4">
+      <section className="space-y-3">
         <h2 className="text-base font-semibold">{t("sections.polling")}</h2>
         <div className="grid gap-4 sm:grid-cols-2">
           <FormField
@@ -106,7 +106,7 @@ export function CarSettingsForm({
 
       <Separator />
 
-      <section className="space-y-4">
+      <section className="space-y-3">
         <h2 className="text-base font-semibold">{t("sections.flags")}</h2>
         <div className="grid gap-3 sm:grid-cols-2">
           <Toggle

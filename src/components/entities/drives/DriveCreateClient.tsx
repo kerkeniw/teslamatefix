@@ -50,7 +50,7 @@ export function DriveCreateClient({
   );
 
   return (
-    <form action={formAction} id={DRIVE_CREATE_FORM_ID} className="space-y-6">
+    <form action={formAction} id={DRIVE_CREATE_FORM_ID} className="space-y-4">
       {readOnly ? (
         <div className="rounded-xl border border-warn/30 bg-warn/10 p-3 text-sm text-warn">
           {tCommon("readOnlyMode")}
@@ -71,7 +71,6 @@ export function DriveCreateClient({
 
       <DriveForm
         initial={initial}
-        initialOptions={initialOptions}
         fieldErrors={fe}
         readOnly={readOnly}
         mode="create"

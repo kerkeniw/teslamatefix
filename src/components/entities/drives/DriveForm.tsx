@@ -43,14 +43,12 @@ export type DriveFormInitialOptions = {
 
 export function DriveForm({
   initial,
-  initialOptions,
   fieldErrors = {},
   readOnly = false,
   efficiency = null,
   locationPanel,
 }: {
   initial: DriveFormValues;
-  initialOptions: DriveFormInitialOptions;
   fieldErrors?: Record<string, string | undefined>;
   readOnly?: boolean;
   mode: "create" | "edit";
@@ -88,17 +86,13 @@ export function DriveForm({
   }, [efficiency, startRated, endRated, startIdeal, endIdeal]);
 
   const sections = (
-    <div className="space-y-8 lg:col-span-1">
+    <div className="space-y-4 lg:col-span-1">
       {/* car_id est imposé par le sélecteur de véhicule du header. */}
       <input type="hidden" name="car_id" value={initial.car_id} />
 
-      <section className="space-y-4">
+      <section className="space-y-3">
         <h2 className="text-base font-semibold">{t("sections.time")}</h2>
-        <p className="text-xs text-muted-foreground">
-          {t("fields.carId")} :{" "}
-          <span className="font-medium text-foreground">{initialOptions.car.label}</span>
-        </p>
-        <div className="space-y-4">
+        <div className="space-y-3">
           <FormField id="start_date" label={t("fields.startDate")} required error={fe.start_date}>
             <DateTimeInput
               id="start_date"
@@ -132,7 +126,7 @@ export function DriveForm({
 
       <Separator />
 
-      <section className="space-y-4">
+      <section className="space-y-3">
         <h2 className="text-base font-semibold">{t("sections.energy")}</h2>
         <div className="grid gap-4 sm:grid-cols-2">
           <FormField
@@ -207,7 +201,7 @@ export function DriveForm({
 
       <Separator />
 
-      <section className="space-y-4">
+      <section className="space-y-3">
         <h2 className="text-base font-semibold">{t("sections.performance")}</h2>
         <div className="grid gap-4 sm:grid-cols-2">
           <FormField id="speed_max" label={t("fields.speedMax")} error={fe.speed_max}>
@@ -266,7 +260,7 @@ export function DriveForm({
 
       <Separator />
 
-      <section className="space-y-4">
+      <section className="space-y-3">
         <h2 className="text-base font-semibold">{t("sections.weather")}</h2>
         <div className="grid gap-4 sm:grid-cols-2">
           <FormField

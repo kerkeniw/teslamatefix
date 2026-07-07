@@ -62,7 +62,7 @@ export function DriveLocationPanel({
 
   return (
     <Card size="sm" className="lg:col-span-2">
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-3">
         {/* Localisation */}
         <div className="space-y-3">
           <h3 className="text-sm font-semibold">{t("sections.location")}</h3>

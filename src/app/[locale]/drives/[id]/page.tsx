@@ -8,7 +8,6 @@ import { AppHeader } from "@/components/app-shell/header";
 import { MainNav } from "@/components/app-shell/main-nav";
 import { DriveTabs } from "@/components/entities/drives/DriveTabs";
 import { ChildrenPositionsTable } from "@/components/entities/drives/ChildrenPositionsTable";
-import { DriveCorrectionPanel } from "@/components/entities/drives/DriveCorrectionPanel";
 import type {
   DriveFormValues,
   DriveFormInitialOptions,
@@ -215,15 +214,15 @@ export default async function DriveEditPage({
       <AppHeader />
       <MainNav />
       <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6">
-        <div className="mb-4">
+        <header className="mb-3 flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
+          <h1 className="text-2xl font-semibold tracking-tight">
+            {t("edit")}{" "}
+            <span className="font-mono text-base text-muted-foreground">#{drive.id}</span>
+          </h1>
           <ButtonLink variant="ghost" size="sm" href="/drives">
             <ArrowLeft className="size-4" aria-hidden />
             {tCommon("back")}
           </ButtonLink>
-        </div>
-        <header className="mb-6">
-          <h1 className="text-2xl font-semibold tracking-tight">{t("edit")}</h1>
-          <p className="mt-1 font-mono text-xs text-muted-foreground">#{drive.id}</p>
         </header>
         <DriveTabs
           id={drive.id}
@@ -242,14 +241,6 @@ export default async function DriveEditPage({
               driveId={drive.id}
               positions={positions}
               total={positionsCount}
-            />
-          }
-          recalcTab={
-            <DriveCorrectionPanel
-              driveId={drive.id}
-              reasons={[]}
-              computeAction={correctDriveAction}
-              applyAction={applyCorrectDriveAction}
             />
           }
         />

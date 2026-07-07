@@ -42,8 +42,8 @@ export function CarForm({
   const fe = fieldErrors;
 
   return (
-    <div className="space-y-8">
-      <section className="space-y-4">
+    <div className="space-y-4">
+      <section className="space-y-3">
         <h2 className="text-base font-semibold">{t("sections.identity")}</h2>
         <div className="grid gap-4 sm:grid-cols-2">
           <FormField id="name" label={t("fields.name")} error={fe.name}>
@@ -77,7 +77,7 @@ export function CarForm({
 
       <Separator />
 
-      <section className="space-y-4">
+      <section className="space-y-3">
         <h2 className="text-base font-semibold">{t("sections.model")}</h2>
         <div className="grid gap-4 sm:grid-cols-2">
           <FormField id="model" label={t("fields.model")} error={fe.model}>
@@ -126,7 +126,7 @@ export function CarForm({
 
       <Separator />
 
-      <section className="space-y-4">
+      <section className="space-y-3">
         <h2 className="text-base font-semibold">{t("sections.options")}</h2>
         <div className="grid gap-4 sm:grid-cols-2">
           <FormField id="exterior_color" label={t("fields.exteriorColor")} error={fe.exterior_color}>

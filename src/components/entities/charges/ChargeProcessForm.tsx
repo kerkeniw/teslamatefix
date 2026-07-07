@@ -347,18 +347,18 @@ export function ChargeProcessForm({
     chargerType !== "" && chargerType !== initialChargerType;
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-4">
       {/* car_id imposé par le sélecteur véhicule du header. */}
       <input type="hidden" name="car_id" value={initial.car_id} />
       <input type="hidden" name="charger_type_initial" value={initialChargerType} />
 
       <div className="grid gap-6 lg:grid-cols-2">
-      <div className="space-y-8">
-      <section className="space-y-4">
+      <div className="space-y-4">
+      <section className="space-y-3">
         <h2 className="text-base font-semibold">{t("sections.time")}</h2>
         {/* position_id reste obligatoire en base ; conservé en hidden, l'utilisateur ne le modifie plus ici. */}
         <input type="hidden" name="position_id" value={initial.position_id} />
-        <div className="space-y-4">
+        <div className="space-y-3">
           <FieldWithTickHint
             kind="datetime"
             id="start_date"
@@ -401,7 +401,7 @@ export function ChargeProcessForm({
         </div>
       </section>
 
-      <section className="space-y-4">
+      <section className="space-y-3">
         <h2 className="text-base font-semibold">{t("sections.energy")}</h2>
         <div className="grid gap-4 sm:grid-cols-3">
           <FieldWithTickHint
@@ -460,7 +460,7 @@ export function ChargeProcessForm({
       </section>
 
       {tickContext ? (
-        <section className="space-y-4">
+        <section className="space-y-3">
           <div className="flex flex-wrap items-center gap-3">
             <h2 className="text-base font-semibold">{t("sections.charger")}</h2>
             {tickContext.chargerType === "mixed" ? (
@@ -570,7 +570,7 @@ export function ChargeProcessForm({
       {tickContext && chargerDetailsExpanded ? (
         <>
           <Separator />
-          <section id="charger-details" className="space-y-4">
+          <section id="charger-details" className="space-y-3">
             <div className="grid gap-4 sm:grid-cols-2">
               <ChargerTickField
                 id="charger_voltage"
@@ -756,7 +756,7 @@ export function ChargeProcessForm({
 
       <Separator />
 
-      <section className="space-y-4">
+      <section className="space-y-3">
         <h2 className="text-base font-semibold">{t("sections.battery")}</h2>
         <div className="grid gap-4 sm:grid-cols-2">
           <FieldWithTickHint

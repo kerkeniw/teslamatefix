@@ -1,11 +1,21 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { useTranslations, useFormatter } from "next-intl";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { AlertTriangle } from "lucide-react";
+import { Wrench } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import {
   Table,
   TableBody,
@@ -14,7 +24,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { ConfirmDialog } from "@/components/tesla/confirm-dialog";
 import type {
   DriveCorrectionSerialized,
   FkLabels,
@@ -77,7 +86,12 @@ type Loaded = {
   absorbedCount: number;
 };
 
-export function DriveCorrectionPanel({
+/**
+ * Popin de correction/recalcul d'un trajet : à l'ouverture, calcule l'aperçu
+ * avant/après depuis les positions ; à l'application, écrit puis ferme et
+ * rafraîchit la page. Rend son propre bouton déclencheur (« Corriger »).
+ */
+export function DriveCorrectionDialog({
   driveId,
   reasons,
   computeAction,
@@ -96,6 +110,7 @@ export function DriveCorrectionPanel({
   const tCommon = useTranslations("common");
   const format = useFormatter();
   const router = useRouter();
+  const [open, setOpen] = useState(false);
   const [isComputing, startCompute] = useTransition();
   const [isApplying, startApply] = useTransition();
   const [result, setResult] = useState<Loaded | null>(null);
@@ -119,6 +134,18 @@ export function DriveCorrectionPanel({
     });
   }
 
+  // Auto-calcul de l'aperçu à l'ouverture (compute lance une transition async,
+  // pas de setState synchrone dans l'effet).
+  useEffect(() => {
+    if (open && result == null) handleCompute();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
+
+  function onOpenChange(next: boolean) {
+    setOpen(next);
+    if (!next) setResult(null);
+  }
+
   function handleApply() {
     if (!result) return;
     startApply(async () => {
@@ -129,6 +156,7 @@ export function DriveCorrectionPanel({
       }
       toast.success(t("applied"));
       setResult(null);
+      setOpen(false);
       router.refresh();
     });
   }
@@ -156,109 +184,92 @@ export function DriveCorrectionPanel({
   }
 
   const noPositions = result != null && result.positionCount === 0;
-  const hasReasons = reasons.length > 0;
 
   return (
-    <div
-      className={
-        hasReasons
-          ? "space-y-3 rounded-xl border border-warn/40 bg-warn/10 p-4"
-          : "space-y-3 rounded-xl border bg-card p-4 shadow-sm"
-      }
-    >
-      {hasReasons ? (
-        <div className="flex items-start gap-2">
-          <AlertTriangle className="mt-0.5 size-5 shrink-0 text-warn" aria-hidden />
-          <div className="space-y-1">
-            <h3 className="text-sm font-semibold text-warn">{t("banner")}</h3>
-            <ul className="list-inside list-disc text-sm text-foreground/80">
-              {reasons.map((r) => (
-                <li key={r}>{t(`reasons.${r}`)}</li>
-              ))}
-            </ul>
-          </div>
-        </div>
-      ) : (
-        <div>
-          <h3 className="text-base font-semibold">{t("recomputeTitle")}</h3>
-          <p className="mt-1 text-sm text-muted-foreground">{t("recomputeDescription")}</p>
-        </div>
-      )}
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogTrigger
+        render={
+          <Button type="button" variant="outline">
+            <Wrench className="size-4" aria-hidden />
+            {t("correct")}
+          </Button>
+        }
+      />
+      <DialogContent className="sm:max-w-2xl">
+        <DialogHeader>
+          <DialogTitle>{t("recomputeTitle")}</DialogTitle>
+          <DialogDescription>{t("recomputeDescription")}</DialogDescription>
+        </DialogHeader>
 
-      <div className="flex flex-wrap items-center gap-2">
-        <Button type="button" onClick={handleCompute} disabled={isComputing}>
-          {isComputing ? t("computing") : t("correct")}
-        </Button>
-        {result && !noPositions ? (
-          <>
-            <ConfirmDialog
-              destructive
-              title={t("applyConfirm.title")}
-              description={t("applyConfirm.description")}
-              confirmLabel={t("applyConfirm.confirm")}
-              cancelLabel={tCommon("cancel")}
-              onConfirm={handleApply}
-              trigger={
-                <Button type="button" disabled={isApplying}>
-                  {t("apply")}
-                </Button>
-              }
-            />
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setResult(null)}
-              disabled={isApplying}
-            >
-              {t("discard")}
-            </Button>
-          </>
+        {reasons.length > 0 ? (
+          <ul className="list-inside list-disc text-sm text-warn">
+            {reasons.map((r) => (
+              <li key={r}>{t(`reasons.${r}`)}</li>
+            ))}
+          </ul>
         ) : null}
-      </div>
 
-      {noPositions ? (
-        <p className="text-sm text-muted-foreground">{t("noPositions")}</p>
-      ) : null}
+        {isComputing && result == null ? (
+          <p className="text-sm text-muted-foreground">{t("computing")}</p>
+        ) : null}
 
-      {result && !noPositions && result.absorbedCount > 0 ? (
-        <p className="text-sm font-medium text-foreground">
-          {t("absorbed", { count: result.absorbedCount })}
-        </p>
-      ) : null}
+        {noPositions ? (
+          <p className="text-sm text-muted-foreground">{t("noPositions")}</p>
+        ) : null}
 
-      {result && !noPositions ? (
-        <div className="overflow-x-auto rounded-md border bg-card">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>{t("diff.field")}</TableHead>
-                <TableHead>{t("diff.before")}</TableHead>
-                <TableHead>{t("diff.after")}</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {FIELD_KEYS.map((key) => {
-                const isChanged = changed(key);
-                return (
-                  <TableRow key={key}>
-                    <TableCell className="font-medium">{t(`fields.${key}`)}</TableCell>
-                    <TableCell className={isChanged ? "" : "text-muted-foreground"}>
-                      {fmt(key, result.before[key], result.beforeLabels)}
-                    </TableCell>
-                    <TableCell
-                      className={
-                        isChanged ? "font-semibold text-foreground" : "text-muted-foreground"
-                      }
-                    >
-                      {fmt(key, result.after[key], result.afterLabels)}
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
-        </div>
-      ) : null}
-    </div>
+        {result && !noPositions && result.absorbedCount > 0 ? (
+          <p className="text-sm font-medium text-foreground">
+            {t("absorbed", { count: result.absorbedCount })}
+          </p>
+        ) : null}
+
+        {result && !noPositions ? (
+          <div className="max-h-[55vh] overflow-auto rounded-md border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>{t("diff.field")}</TableHead>
+                  <TableHead>{t("diff.before")}</TableHead>
+                  <TableHead>{t("diff.after")}</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {FIELD_KEYS.map((key) => {
+                  const isChanged = changed(key);
+                  return (
+                    <TableRow key={key}>
+                      <TableCell className="font-medium">{t(`fields.${key}`)}</TableCell>
+                      <TableCell className={isChanged ? "" : "text-muted-foreground"}>
+                        {fmt(key, result.before[key], result.beforeLabels)}
+                      </TableCell>
+                      <TableCell
+                        className={
+                          isChanged ? "font-semibold text-foreground" : "text-muted-foreground"
+                        }
+                      >
+                        {fmt(key, result.after[key], result.afterLabels)}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </div>
+        ) : null}
+
+        <DialogFooter>
+          <DialogClose
+            render={<Button type="button" variant="outline">{tCommon("cancel")}</Button>}
+          />
+          <Button
+            type="button"
+            onClick={handleApply}
+            disabled={!result || noPositions || isApplying}
+          >
+            {isApplying ? tCommon("saving") : t("apply")}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }

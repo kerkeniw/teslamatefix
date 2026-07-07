@@ -135,7 +135,7 @@ export function DriveTrackMap({
   const end = points[points.length - 1];
 
   return (
-    <div className="h-[360px] w-full overflow-hidden rounded-lg ring-1 ring-foreground/10">
+    <div className="isolate h-[360px] w-full overflow-hidden rounded-lg ring-1 ring-foreground/10">
       <MapContainer
         center={start ?? [0, 0]}
         zoom={13}
