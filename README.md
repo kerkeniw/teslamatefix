@@ -9,19 +9,27 @@ TeslaMate, se connecte à sa base PostgreSQL et expose une UI sécurisée pour
 réparer chaque entité (`drives`, `charges`, `positions`, `addresses`,
 `geofences`, `states`, `updates`, `cars`, `settings`).
 
-> **Statut v0.6.0** — les modules de **création et de modification des charges**
-> ainsi que le nouvel **assistant de création de trajet** (géocodage + itinéraire)
-> sont les flux d'écriture couverts. Les autres entités (positions, adresses,
-> géofences, états, mises à jour de firmware, voitures, paramètres) restent
-> accessibles en **consultation** ; leurs flux d'édition n'ont pas tous été
-> validés. À utiliser avec précaution et **toujours sur une base sauvegardée**
-> (`pg_dump` recommandé avant la première utilisation).
+> **Statut v0.7.0** — les modules de **création et de modification des charges et
+> des trajets** (dont l'**assistant de création de trajet** avec géocodage +
+> itinéraire, et l'**édition de trajet avec carte**) sont les flux d'écriture
+> couverts. La page **Positions** est un outil d'exploration cartographique en
+> lecture. Les autres entités (adresses, géofences, états, mises à jour de
+> firmware, voitures, paramètres) restent accessibles en **consultation** ; leurs
+> flux d'édition n'ont pas tous été validés. À utiliser avec précaution et
+> **toujours sur une base sauvegardée** (`pg_dump` recommandé avant la première
+> utilisation).
 
-## Nouveautés v0.6.0
+## Nouveautés v0.7.0
 
-**Assistant de création de trajet.** L'écran `/drives/new` devient un assistant
-guidé : on saisit l'adresse de départ et d'arrivée (**autocomplétion géocodée**
-avec numéros de rue), la date/heure de départ, puis on clique **Calculer**.
+Cette release regroupe **trois évolutions** livrées ensemble : l'assistant de
+création de trajet, l'édition de trajet avec carte, et la refonte cartographique
+de la page Positions.
+
+### Assistant de création de trajet (`/drives/new`)
+
+L'écran devient un assistant guidé : on saisit l'adresse de départ et d'arrivée
+(**autocomplétion géocodée** avec numéros de rue), la date/heure de départ, puis on
+clique **Calculer**.
 
 - **Adresses obligatoires** via un combobox géocodé (Nominatim). Si la recherche
   ne renvoie rien, un lien ouvre une **boîte de dialogue de création d'adresse**
@@ -37,9 +45,27 @@ avec numéros de rue), la date/heure de départ, puis on clique **Calculer**.
 
 Configuration (géocodeur/routeur, modèle de consommation) : voir la section
 *Assistant de création de trajet* de [`.env.example`](.env.example).
-Détails et checklist : [`docs/RELEASE_v0.6.0.md`](docs/RELEASE_v0.6.0.md).
 
-## Nouveautés v0.7.0
+### Édition d'un trajet : layout large + carte
+
+L'écran d'édition d'un trajet adopte la mise en page large de l'édition de charge
+et gagne une **carte du trajet parcouru** :
+
+- **Layout deux colonnes** (1/3 – 2/3) : à gauche les sections *Temps*,
+  *Énergie / Autonomie*, *Performances* et *Météo* ; à droite la localisation
+  (adresses + géofences départ/arrivée), l'odomètre (départ / arrivée / distance)
+  et la carte.
+- **Énergie consommée estimée** affichée en direct, dérivée du delta d'autonomie
+  *rated* (à défaut *ideal*) × `cars.efficiency` (kWh/km).
+- **Carte Leaflet du trajet** : marqueurs départ (vert) et arrivée (rouge), tracé
+  de toutes les positions GPS, cadrage automatique.
+- **Colorisation du tracé** via boutons radio : *Trajet* (bleu), *Puissance*
+  (dégradé vert foncé → rouge foncé selon `power_min`/`power_max`) et *Vitesse*
+  (dégradé vert → jaune → rouge).
+
+Détails et checklist de cette partie : [`docs/RELEASE_v0.6.0.md`](docs/RELEASE_v0.6.0.md).
+
+### Positions : carte géographique + filtres
 
 La page **Positions** devient un véritable outil d'exploration géographique, dans
 l'esprit du tableau de bord Grafana de TeslaMate :
@@ -64,26 +90,6 @@ l'esprit du tableau de bord Grafana de TeslaMate :
 
 Détails techniques et checklist de release :
 [`docs/RELEASE_v0.7.0.md`](docs/RELEASE_v0.7.0.md).
-
-## Nouveautés v0.6.0
-
-L'écran d'**édition d'un trajet** adopte la mise en page large de l'édition de
-charge et gagne une **carte du trajet parcouru** :
-
-- **Layout deux colonnes** (1/3 – 2/3) : à gauche les sections *Temps*,
-  *Énergie / Autonomie*, *Performances* et *Météo* ; à droite la localisation
-  (adresses + géofences départ/arrivée), l'odomètre (départ / arrivée / distance)
-  et la carte.
-- **Énergie consommée estimée** affichée en direct, dérivée du delta d'autonomie
-  *rated* (à défaut *ideal*) × `cars.efficiency` (kWh/km).
-- **Carte Leaflet du trajet** : marqueurs départ (vert) et arrivée (rouge), tracé
-  de toutes les positions GPS, cadrage automatique.
-- **Colorisation du tracé** via boutons radio : *Trajet* (bleu), *Puissance*
-  (dégradé vert foncé → rouge foncé selon `power_min`/`power_max`) et *Vitesse*
-  (dégradé vert → jaune → rouge).
-
-Détails techniques et checklist de release :
-[`docs/RELEASE_v0.6.0.md`](docs/RELEASE_v0.6.0.md).
 
 ## Nouveautés v0.5.2
 
