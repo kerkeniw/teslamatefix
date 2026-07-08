@@ -98,6 +98,29 @@ export const env = {
     "https://fleet-api.prd.eu.vn.cloud.tesla.com",
   ),
   TESLA_VEHICLE_OPTIONS: optional("TESLA_VEHICLE_OPTIONS", ""),
+  /**
+   * Assistant de création de trajet (depuis v0.6.0). Tout optionnel :
+   *   - GEOCODER_BASE_URL : instance Nominatim (search + reverse) pour
+   *     l'autocomplétion d'adresses avec numéros de rue. Défaut = instance
+   *     publique OSM (soumise à une policy de quota : ~1 req/s, User-Agent requis).
+   *   - ROUTER_BASE_URL : instance OSRM pour le calcul d'itinéraire.
+   *   - GEO_USER_AGENT : User-Agent envoyé à Nominatim (policy). Mettre un
+   *     contact réel si l'instance publique est utilisée en volume.
+   *   - DRIVE_CONSUMPTION_WH_KM : conso réelle estimée (Wh/km) pour décrémenter
+   *     l'autonomie/batterie le long du trajet généré.
+   *   - DRIVE_RATED_WH_KM : conso de référence de l'autonomie estimée (rated).
+   */
+  GEOCODER_BASE_URL: optional(
+    "GEOCODER_BASE_URL",
+    "https://nominatim.openstreetmap.org",
+  ),
+  ROUTER_BASE_URL: optional("ROUTER_BASE_URL", "https://router.project-osrm.org"),
+  GEO_USER_AGENT: optional(
+    "GEO_USER_AGENT",
+    "TeslaMateFix/0.6.0 (+https://github.com/kerkeniw/TeslaMateFix)",
+  ),
+  DRIVE_CONSUMPTION_WH_KM: parseFloat(optional("DRIVE_CONSUMPTION_WH_KM", "170")),
+  DRIVE_RATED_WH_KM: parseFloat(optional("DRIVE_RATED_WH_KM", "150")),
 } as const;
 
 export type Env = typeof env;

@@ -8,6 +8,7 @@ import { prisma } from "@/lib/db";
 import { requireSession } from "@/lib/auth";
 import { env } from "@/lib/env";
 import { logger } from "@/lib/logger";
+import { insertAddress } from "@/lib/addresses/insert";
 import type { AddressFormState } from "@/components/entities/addresses/AddressForm";
 
 type AddressFieldErrors = NonNullable<AddressFormState["fieldErrors"]>;
@@ -104,32 +105,27 @@ export async function createAddressAction(
   }
 
   const data = parsed.data;
-  const now = new Date();
 
   let createdId: number;
   try {
-    const created = await prisma.addresses.create({
-      data: {
-        display_name: data.display_name ?? null,
-        name: data.name ?? null,
-        house_number: data.house_number ?? null,
-        road: data.road ?? null,
-        neighbourhood: data.neighbourhood ?? null,
-        city: data.city ?? null,
-        county: data.county ?? null,
-        postcode: data.postcode ?? null,
-        state: data.state ?? null,
-        state_district: data.state_district ?? null,
-        country: data.country ?? null,
-        latitude: data.latitude ? new Prisma.Decimal(data.latitude) : null,
-        longitude: data.longitude ? new Prisma.Decimal(data.longitude) : null,
-        raw: rawJson.value === null ? Prisma.DbNull : rawJson.value,
-        inserted_at: now,
-        updated_at: now,
-      },
-      select: { id: true },
+    createdId = await insertAddress({
+      display_name: data.display_name ?? null,
+      name: data.name ?? null,
+      house_number: data.house_number ?? null,
+      road: data.road ?? null,
+      neighbourhood: data.neighbourhood ?? null,
+      city: data.city ?? null,
+      county: data.county ?? null,
+      postcode: data.postcode ?? null,
+      state: data.state ?? null,
+      state_district: data.state_district ?? null,
+      country: data.country ?? null,
+      latitude: data.latitude ?? null,
+      longitude: data.longitude ?? null,
+      osm_id: null,
+      osm_type: null,
+      raw: rawJson.value,
     });
-    createdId = created.id;
   } catch (e) {
     if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002") {
       return { ok: false, error: "Une autre adresse utilise déjà ce couple (osm_id, osm_type)." };

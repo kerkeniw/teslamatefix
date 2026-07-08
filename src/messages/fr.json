@@ -194,6 +194,12 @@
       "create": "Créer l'adresse",
       "save": "Enregistrer",
       "delete": "Supprimer"
+    },
+    "geoDialog": {
+      "title": "Créer une adresse",
+      "description": "Choisissez l'adresse la plus proche parmi les propositions du géocodeur. Les champs sont remplis automatiquement.",
+      "searchPlaceholder": "Rechercher une adresse (n° rue, ville…)",
+      "noResults": "Aucune adresse trouvée pour cette recherche."
     }
   },
   "geofences": {
@@ -452,11 +458,44 @@
       "recalc": "Recalcul"
     },
     "sections": {
+      "itinerary": "Itinéraire",
       "time": "Temps",
       "distance": "Distance & énergie",
       "location": "Localisation",
       "weather": "Météo",
       "performance": "Performances"
+    },
+    "compute": {
+      "action": "Calculer",
+      "running": "Calcul…",
+      "hint": "Renseignez l'adresse de départ, d'arrivée et la date/heure de départ pour activer le calcul.",
+      "resultTitle": "Résultat du calcul"
+    },
+    "startState": {
+      "title": "État de départ",
+      "description": "Aucune position n'a été trouvée avant cette date/heure. Renseignez l'état de départ pour calculer le trajet.",
+      "needed": "Aucune position antérieure : renseignez l'état de départ puis relancez le calcul.",
+      "odometer": "Odomètre départ (km)",
+      "odometerRequired": "L'odomètre de départ est obligatoire.",
+      "batteryLevel": "Niveau batterie départ (%)",
+      "idealRange": "Autonomie idéale départ (km)",
+      "ratedRange": "Autonomie rated départ (km)",
+      "outsideTemp": "Temp. extérieure (°C)",
+      "insideTemp": "Temp. intérieure (°C)"
+    },
+    "positionsPreview": {
+      "count": "{count} position(s) générée(s).",
+      "truncated": "Affichage des {shown} premières positions.",
+      "date": "Date",
+      "odometer": "Odomètre (km)",
+      "speed": "Vitesse (km/h)",
+      "battery": "Batterie (%)",
+      "ratedRange": "Autonomie rated (km)"
+    },
+    "geo": {
+      "searchPlaceholder": "Rechercher une adresse (n° rue, ville…)",
+      "noResults": "Aucune adresse trouvée.",
+      "createAddress": "Créer une nouvelle adresse"
     },
     "fields": {
       "carId": "Véhicule",
@@ -507,6 +546,7 @@
     "errors": {
       "endBeforeStart": "La date de fin ne peut pas être antérieure à la date de début.",
       "carRequired": "Sélectionner un véhicule.",
+      "addressRequired": "Les adresses de départ et d'arrivée sont obligatoires.",
       "noCar": "Aucun véhicule disponible. Importer une voiture avant de créer un trajet."
     },
     "positionsTab": {

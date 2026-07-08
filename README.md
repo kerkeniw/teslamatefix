@@ -9,12 +9,35 @@ TeslaMate, se connecte à sa base PostgreSQL et expose une UI sécurisée pour
 réparer chaque entité (`drives`, `charges`, `positions`, `addresses`,
 `geofences`, `states`, `updates`, `cars`, `settings`).
 
-> **Statut v0.5.2** — seuls les modules de **création et de modification
-> des charges** ont été testés et validés. Les autres entités (trajets,
-> positions, adresses, géofences, états, mises à jour de firmware, voitures,
-> paramètres) sont accessibles en **consultation** mais leurs flux d'édition
-> n'ont pas encore été validés. À utiliser avec précaution et **toujours sur
-> une base sauvegardée** (`pg_dump` recommandé avant la première utilisation).
+> **Statut v0.6.0** — les modules de **création et de modification des charges**
+> ainsi que le nouvel **assistant de création de trajet** (géocodage + itinéraire)
+> sont les flux d'écriture couverts. Les autres entités (positions, adresses,
+> géofences, états, mises à jour de firmware, voitures, paramètres) restent
+> accessibles en **consultation** ; leurs flux d'édition n'ont pas tous été
+> validés. À utiliser avec précaution et **toujours sur une base sauvegardée**
+> (`pg_dump` recommandé avant la première utilisation).
+
+## Nouveautés v0.6.0
+
+**Assistant de création de trajet.** L'écran `/drives/new` devient un assistant
+guidé : on saisit l'adresse de départ et d'arrivée (**autocomplétion géocodée**
+avec numéros de rue), la date/heure de départ, puis on clique **Calculer**.
+
+- **Adresses obligatoires** via un combobox géocodé (Nominatim). Si la recherche
+  ne renvoie rien, un lien ouvre une **boîte de dialogue de création d'adresse**
+  pré-remplie ; à la sélection d'une proposition, tous les champs sont remplis et
+  l'adresse est créée (dédup `osm_id/osm_type`).
+- **Géofence auto-sélectionnée** si l'adresse tombe dans une zone existante.
+- **Calculer** récupère l'état de départ (dernière position avant la date, sinon
+  saisie manuelle : odomètre, batterie, autonomie, température), calcule
+  l'**itinéraire** (OSRM) et **génère les positions** (~1 / 30 s) + les infos
+  d'arrivée.
+- La **sauvegarde** n'est active qu'après calcul et persiste le trajet **et toutes
+  ses positions** en une transaction.
+
+Configuration (géocodeur/routeur, modèle de consommation) : voir la section
+*Assistant de création de trajet* de [`.env.example`](.env.example).
+Détails et checklist : [`docs/RELEASE_v0.6.0.md`](docs/RELEASE_v0.6.0.md).
 
 ## Nouveautés v0.5.2
 

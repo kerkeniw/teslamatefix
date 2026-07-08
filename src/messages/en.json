@@ -194,6 +194,12 @@
       "create": "Create address",
       "save": "Save",
       "delete": "Delete"
+    },
+    "geoDialog": {
+      "title": "Create an address",
+      "description": "Pick the closest address from the geocoder suggestions. Fields are filled automatically.",
+      "searchPlaceholder": "Search an address (street no., city…)",
+      "noResults": "No address found for this search."
     }
   },
   "geofences": {
@@ -452,11 +458,44 @@
       "recalc": "Recompute"
     },
     "sections": {
+      "itinerary": "Itinerary",
       "time": "Time",
       "distance": "Distance & energy",
       "location": "Location",
       "weather": "Weather",
       "performance": "Performance"
+    },
+    "compute": {
+      "action": "Compute",
+      "running": "Computing…",
+      "hint": "Fill the start address, end address and start date/time to enable the calculation.",
+      "resultTitle": "Calculation result"
+    },
+    "startState": {
+      "title": "Start state",
+      "description": "No position was found before this date/time. Enter the start state to compute the drive.",
+      "needed": "No prior position: enter the start state, then run the calculation again.",
+      "odometer": "Start odometer (km)",
+      "odometerRequired": "The start odometer is required.",
+      "batteryLevel": "Start battery level (%)",
+      "idealRange": "Start ideal range (km)",
+      "ratedRange": "Start rated range (km)",
+      "outsideTemp": "Outside temp (°C)",
+      "insideTemp": "Inside temp (°C)"
+    },
+    "positionsPreview": {
+      "count": "{count} position(s) generated.",
+      "truncated": "Showing the first {shown} positions.",
+      "date": "Date",
+      "odometer": "Odometer (km)",
+      "speed": "Speed (km/h)",
+      "battery": "Battery (%)",
+      "ratedRange": "Rated range (km)"
+    },
+    "geo": {
+      "searchPlaceholder": "Search an address (street no., city…)",
+      "noResults": "No address found.",
+      "createAddress": "Create a new address"
     },
     "fields": {
       "carId": "Vehicle",
@@ -507,6 +546,7 @@
     "errors": {
       "endBeforeStart": "End date cannot be earlier than start date.",
       "carRequired": "Select a vehicle.",
+      "addressRequired": "Start and end addresses are required.",
       "noCar": "No vehicle available. Import a car before creating a drive."
     },
     "positionsTab": {
