@@ -21,6 +21,7 @@ import {
   synthesizeDrive,
   type DriveStartState,
 } from "@/lib/integrity/drive-synth";
+import { pickNearestByDate } from "@/lib/integrity/nearest-by-date";
 
 export type DriveActionState = {
   ok: boolean;
@@ -409,61 +410,82 @@ function num(v: unknown): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
+function fullRange(level: number | null | undefined, range: number | null): number | null {
+  if (level == null || level <= 0 || range == null) return null;
+  return range / (level / 100);
+}
+
+/**
+ * Récupère, pour une mesure (`positions` ou `charges`), l'échantillon dont la
+ * date est la plus proche de `refDate` : plus proche mesure ≤ refDate et plus
+ * proche mesure > refDate, puis on garde le plus proche dans le temps.
+ */
+async function nearestSample<T extends { date: Date }>(
+  refDate: Date,
+  find: (dateWhere: Prisma.DateTimeFilter, order: Prisma.SortOrder) => Promise<T | null>,
+): Promise<T | null> {
+  const [before, after] = await Promise.all([
+    find({ lte: refDate }, "desc"),
+    find({ gt: refDate }, "asc"),
+  ]);
+  return pickNearestByDate(before, after, refDate.getTime());
+}
+
 /**
  * Estime l'autonomie idéale/rated à 100 % pour un véhicule à partir de son
- * historique : dernier point (position, sinon charge) ayant à la fois un %
- * batterie > 0 et l'autonomie correspondante, d'où `max = autonomie / (%/100)`.
- * Les deux autonomies sont cherchées séparément (un point peut n'avoir que l'une).
- * Renvoie `null` par champ si rien d'exploitable.
+ * historique, **relatif à `refDate`** (la date de départ du trajet) : on prend
+ * la mesure (position, sinon charge) la plus proche dans le temps ayant à la
+ * fois un % batterie > 0 et l'autonomie correspondante, d'où
+ * `max = autonomie / (%/100)`. Cela reflète la capacité/dégradation de la
+ * batterie à cette période plutôt que la plus récente. Les deux autonomies sont
+ * cherchées séparément (un point peut n'avoir que l'une). Renvoie `null` par
+ * champ si rien d'exploitable.
  */
 async function estimateFullRange(
   carId: number,
+  refDate: Date,
 ): Promise<{ maxIdealRangeKm: number | null; maxRatedRangeKm: number | null }> {
-  function full(level: number | null | undefined, range: number | null): number | null {
-    if (level == null || level <= 0 || range == null) return null;
-    return range / (level / 100);
-  }
-
   const [posIdeal, posRated] = await Promise.all([
-    prisma.positions.findFirst({
-      where: { car_id: carId, battery_level: { gt: 0 }, ideal_battery_range_km: { not: null } },
-      orderBy: { date: "desc" },
-      select: { battery_level: true, ideal_battery_range_km: true },
-    }),
-    prisma.positions.findFirst({
-      where: { car_id: carId, battery_level: { gt: 0 }, rated_battery_range_km: { not: null } },
-      orderBy: { date: "desc" },
-      select: { battery_level: true, rated_battery_range_km: true },
-    }),
+    nearestSample(refDate, (date, orderBy) =>
+      prisma.positions.findFirst({
+        where: { car_id: carId, battery_level: { gt: 0 }, ideal_battery_range_km: { not: null }, date },
+        orderBy: { date: orderBy },
+        select: { date: true, battery_level: true, ideal_battery_range_km: true },
+      }),
+    ),
+    nearestSample(refDate, (date, orderBy) =>
+      prisma.positions.findFirst({
+        where: { car_id: carId, battery_level: { gt: 0 }, rated_battery_range_km: { not: null }, date },
+        orderBy: { date: orderBy },
+        select: { date: true, battery_level: true, rated_battery_range_km: true },
+      }),
+    ),
   ]);
 
-  let maxIdealRangeKm = full(posIdeal?.battery_level, num(posIdeal?.ideal_battery_range_km));
-  let maxRatedRangeKm = full(posRated?.battery_level, num(posRated?.rated_battery_range_km));
+  let maxIdealRangeKm = fullRange(posIdeal?.battery_level, num(posIdeal?.ideal_battery_range_km));
+  let maxRatedRangeKm = fullRange(posRated?.battery_level, num(posRated?.rated_battery_range_km));
 
   // Repli sur les charges (pas de car_id → via la relation charging_processes).
   if (maxIdealRangeKm == null) {
-    const chg = await prisma.charges.findFirst({
-      // charges.ideal_battery_range_km est NOT NULL : pas de filtre `not null`.
-      where: {
-        charging_processes: { car_id: carId },
-        battery_level: { gt: 0 },
-      },
-      orderBy: { date: "desc" },
-      select: { battery_level: true, ideal_battery_range_km: true },
-    });
-    maxIdealRangeKm = full(chg?.battery_level, num(chg?.ideal_battery_range_km));
+    const chg = await nearestSample(refDate, (date, orderBy) =>
+      prisma.charges.findFirst({
+        // charges.ideal_battery_range_km est NOT NULL : pas de filtre `not null`.
+        where: { charging_processes: { car_id: carId }, battery_level: { gt: 0 }, date },
+        orderBy: { date: orderBy },
+        select: { date: true, battery_level: true, ideal_battery_range_km: true },
+      }),
+    );
+    maxIdealRangeKm = fullRange(chg?.battery_level, num(chg?.ideal_battery_range_km));
   }
   if (maxRatedRangeKm == null) {
-    const chg = await prisma.charges.findFirst({
-      where: {
-        charging_processes: { car_id: carId },
-        battery_level: { gt: 0 },
-        rated_battery_range_km: { not: null },
-      },
-      orderBy: { date: "desc" },
-      select: { battery_level: true, rated_battery_range_km: true },
-    });
-    maxRatedRangeKm = full(chg?.battery_level, num(chg?.rated_battery_range_km));
+    const chg = await nearestSample(refDate, (date, orderBy) =>
+      prisma.charges.findFirst({
+        where: { charging_processes: { car_id: carId }, battery_level: { gt: 0 }, rated_battery_range_km: { not: null }, date },
+        orderBy: { date: orderBy },
+        select: { date: true, battery_level: true, rated_battery_range_km: true },
+      }),
+    );
+    maxRatedRangeKm = fullRange(chg?.battery_level, num(chg?.rated_battery_range_km));
   }
 
   return { maxIdealRangeKm, maxRatedRangeKm };
@@ -536,7 +558,10 @@ export async function computeDriveAction(
     startState.batteryLevel > 0 &&
     (startState.idealRangeKm == null || startState.ratedRangeKm == null)
   ) {
-    const { maxIdealRangeKm, maxRatedRangeKm } = await estimateFullRange(input.carId);
+    const { maxIdealRangeKm, maxRatedRangeKm } = await estimateFullRange(
+      input.carId,
+      startDate,
+    );
     if (startState.idealRangeKm == null && maxIdealRangeKm != null) {
       startState.idealRangeKm = round2((maxIdealRangeKm * startState.batteryLevel) / 100);
     }

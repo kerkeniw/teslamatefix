@@ -13,25 +13,23 @@ import {
 } from "@/components/ui/combobox";
 import { Button } from "@/components/ui/button";
 import { AddressCreateDialog } from "@/components/entities/addresses/AddressCreateDialog";
-import { geocodeAddressAction } from "@/app/actions/geocode-address";
-import { createAddressFromGeoAction } from "@/app/actions/create-address-from-geo";
-import type { GeoSuggestion } from "@/lib/geo/types";
+import { searchAddressOptionsWithCoords } from "@/app/actions/search-addresses";
 import type { FKOption } from "@/components/form/fk-combobox";
 
 type GeoItem = {
   key: string;
   label: string;
-  suggestion: GeoSuggestion | null;
   addressId: number | null;
   lat: number;
   lon: number;
 };
 
 /**
- * Combobox d'adresse géocodée (Nominatim). À la sélection, crée/associe
- * l'adresse en base et poste son id (input caché, `required`) — compatible avec
- * un `<form action={…}>` natif. Quand la recherche ne renvoie rien, propose un
- * lien ouvrant une boîte de dialogue de création d'adresse pré-remplie.
+ * Combobox de sélection d'une adresse **déjà présente en base** (recherche
+ * ILIKE sur la table `addresses`). À la sélection, poste l'id de l'adresse
+ * (input caché, `required`) — compatible avec un `<form action={…}>` natif.
+ * Quand la recherche ne renvoie aucune adresse, propose un lien ouvrant une
+ * boîte de dialogue de création d'adresse pré-remplie (géocodage).
  *
  * `onAddressSelected(lat, lon)` permet au parent (assistant de trajet) de
  * déclencher l'auto-sélection de géofence et l'activation du bouton Calculer.
@@ -64,27 +62,22 @@ export function AddressGeoCombobox({
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   function fetchResults(q: string) {
-    if (q.trim() === "") {
-      setItems([]);
-      return;
-    }
     startTransition(async () => {
-      const res = await geocodeAddressAction(q);
-      if (!res.ok) {
-        toast.error(res.error);
+      try {
+        const rows = await searchAddressOptionsWithCoords(q);
+        setItems(
+          rows.map((r) => ({
+            key: `addr:${r.id}`,
+            label: r.label,
+            addressId: r.id,
+            lat: r.lat,
+            lon: r.lon,
+          })),
+        );
+      } catch {
+        toast.error(tCommon("errorOccurred"));
         setItems([]);
-        return;
       }
-      setItems(
-        res.suggestions.map((s) => ({
-          key: s.key,
-          label: s.label,
-          suggestion: s,
-          addressId: null,
-          lat: s.lat,
-          lon: s.lon,
-        })),
-      );
     });
   }
 
@@ -98,7 +91,6 @@ export function AddressGeoCombobox({
     const item: GeoItem = {
       key: `addr:${option.id}`,
       label: option.label,
-      suggestion: null,
       addressId: option.id,
       lat,
       lon,
@@ -113,25 +105,10 @@ export function AddressGeoCombobox({
       onCleared?.();
       return;
     }
+    setSelected(next);
     if (next.addressId != null) {
-      setSelected(next);
       onAddressSelected?.(next.lat, next.lon);
-      return;
     }
-    if (!next.suggestion) return;
-    // Sélection d'un candidat géocodé → création/association de l'adresse.
-    const suggestion = next.suggestion;
-    setSelected({ ...next }); // optimiste : affiche le libellé immédiatement
-    startTransition(async () => {
-      const res = await createAddressFromGeoAction(suggestion.values);
-      if (!res.ok) {
-        toast.error(res.error);
-        setSelected(null);
-        onCleared?.();
-        return;
-      }
-      selectCreatedAddress(res.option, res.lat, res.lon);
-    });
   }
 
   const itemsForList: GeoItem[] = useMemo(() => {

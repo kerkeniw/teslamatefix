@@ -1,6 +1,13 @@
 "use client";
 
-import { useActionState, useEffect, useRef, useState, useTransition } from "react";
+import {
+  useActionState,
+  useEffect,
+  useRef,
+  useState,
+  useTransition,
+  type ChangeEvent,
+} from "react";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -151,8 +158,19 @@ export function DriveCreateClient({
 
   const d = computed?.drive;
   const previewPositions = computed?.positions.slice(0, PREVIEW_ROWS) ?? [];
-  const numberFmt = (n: number | null, digits = 2) =>
-    n == null ? "—" : n.toFixed(digits);
+
+  // Édition libre des champs calculés : on écrit directement dans `computed.drive`
+  // (relu à la sauvegarde via le champ caché `payload`). Le tableau des positions
+  // n'est pas régénéré — re-cliquer « Calculer » pour cela.
+  function patchDrive(patch: Record<string, number | string | null>) {
+    setComputed((c) =>
+      c ? { ...c, drive: { ...c.drive, ...patch } as ComputedDrive["drive"] } : c,
+    );
+  }
+  function onDriveNumberChange(field: string) {
+    return (e: ChangeEvent<HTMLInputElement>) =>
+      patchDrive({ [field]: num((e.target as HTMLInputElement).value) });
+  }
 
   return (
     <form action={formAction} className="space-y-8">
@@ -327,37 +345,136 @@ export function DriveCreateClient({
         <>
           <Separator />
           <section className="space-y-4">
-            <h2 className="text-base font-semibold">{t("compute.resultTitle")}</h2>
-            <div className="grid gap-3 rounded-lg border bg-muted/30 p-4 text-sm sm:grid-cols-3">
-              <div>
-                <span className="text-muted-foreground">{t("fields.distance")}</span>
-                <div className="font-medium">{numberFmt(d.distance, 2)} km</div>
-              </div>
-              <div>
-                <span className="text-muted-foreground">{t("fields.durationMin")}</span>
-                <div className="font-medium">{d.duration_min} min</div>
-              </div>
-              <div>
-                <span className="text-muted-foreground">{t("fields.speedMax")}</span>
-                <div className="font-medium">{d.speed_max ?? "—"} km/h</div>
-              </div>
-              <div>
-                <span className="text-muted-foreground">{t("fields.startKm")}</span>
-                <div className="font-medium">{numberFmt(d.start_km, 1)}</div>
-              </div>
-              <div>
-                <span className="text-muted-foreground">{t("fields.endKm")}</span>
-                <div className="font-medium">{numberFmt(d.end_km, 1)}</div>
-              </div>
-              <div>
-                <span className="text-muted-foreground">{t("fields.endRatedRangeKm")}</span>
-                <div className="font-medium">{numberFmt(d.end_rated_range_km)}</div>
-              </div>
+            <div className="space-y-1">
+              <h2 className="text-base font-semibold">{t("compute.resultTitle")}</h2>
+              <p className="text-xs text-muted-foreground">{t("compute.editHint")}</p>
+            </div>
+            <div className="grid gap-4 rounded-lg border bg-muted/30 p-4 sm:grid-cols-2 lg:grid-cols-3">
+              <FormField id="dr_distance" label={t("fields.distance")}>
+                <NumberInput
+                  id="dr_distance"
+                  value={d.distance}
+                  onChange={onDriveNumberChange("distance")}
+                  step="0.01"
+                  min={0}
+                  disabled={readOnly}
+                />
+              </FormField>
+              <FormField id="dr_duration" label={t("fields.durationMin")}>
+                <NumberInput
+                  id="dr_duration"
+                  value={d.duration_min}
+                  onChange={onDriveNumberChange("duration_min")}
+                  step="1"
+                  min={0}
+                  disabled={readOnly}
+                />
+              </FormField>
+              <FormField id="dr_speed_max" label={t("fields.speedMax")}>
+                <NumberInput
+                  id="dr_speed_max"
+                  value={d.speed_max}
+                  onChange={onDriveNumberChange("speed_max")}
+                  step="1"
+                  min={0}
+                  disabled={readOnly}
+                />
+              </FormField>
+              <FormField id="dr_start_km" label={t("fields.startKm")}>
+                <NumberInput
+                  id="dr_start_km"
+                  value={d.start_km}
+                  onChange={onDriveNumberChange("start_km")}
+                  step="0.001"
+                  min={0}
+                  disabled={readOnly}
+                />
+              </FormField>
+              <FormField id="dr_end_km" label={t("fields.endKm")}>
+                <NumberInput
+                  id="dr_end_km"
+                  value={d.end_km}
+                  onChange={onDriveNumberChange("end_km")}
+                  step="0.001"
+                  min={0}
+                  disabled={readOnly}
+                />
+              </FormField>
+              <FormField id="dr_end_date" label={t("fields.endDate")}>
+                <DateTimeInput
+                  id="dr_end_date"
+                  value={d.end_date}
+                  onChange={(e) =>
+                    patchDrive({ end_date: (e.target as HTMLInputElement).value })
+                  }
+                  disabled={readOnly}
+                />
+              </FormField>
+              <FormField id="dr_start_rated" label={t("fields.startRatedRangeKm")}>
+                <NumberInput
+                  id="dr_start_rated"
+                  value={d.start_rated_range_km}
+                  onChange={onDriveNumberChange("start_rated_range_km")}
+                  step="0.01"
+                  min={0}
+                  disabled={readOnly}
+                />
+              </FormField>
+              <FormField id="dr_end_rated" label={t("fields.endRatedRangeKm")}>
+                <NumberInput
+                  id="dr_end_rated"
+                  value={d.end_rated_range_km}
+                  onChange={onDriveNumberChange("end_rated_range_km")}
+                  step="0.01"
+                  min={0}
+                  disabled={readOnly}
+                />
+              </FormField>
+              <FormField id="dr_start_ideal" label={t("fields.startIdealRangeKm")}>
+                <NumberInput
+                  id="dr_start_ideal"
+                  value={d.start_ideal_range_km}
+                  onChange={onDriveNumberChange("start_ideal_range_km")}
+                  step="0.01"
+                  min={0}
+                  disabled={readOnly}
+                />
+              </FormField>
+              <FormField id="dr_end_ideal" label={t("fields.endIdealRangeKm")}>
+                <NumberInput
+                  id="dr_end_ideal"
+                  value={d.end_ideal_range_km}
+                  onChange={onDriveNumberChange("end_ideal_range_km")}
+                  step="0.01"
+                  min={0}
+                  disabled={readOnly}
+                />
+              </FormField>
+              <FormField id="dr_outside_temp" label={t("fields.outsideTempAvg")}>
+                <NumberInput
+                  id="dr_outside_temp"
+                  value={d.outside_temp_avg}
+                  onChange={onDriveNumberChange("outside_temp_avg")}
+                  step="0.1"
+                  disabled={readOnly}
+                />
+              </FormField>
+              <FormField id="dr_inside_temp" label={t("fields.insideTempAvg")}>
+                <NumberInput
+                  id="dr_inside_temp"
+                  value={d.inside_temp_avg}
+                  onChange={onDriveNumberChange("inside_temp_avg")}
+                  step="0.1"
+                  disabled={readOnly}
+                />
+              </FormField>
             </div>
 
             <div>
               <p className="mb-2 text-sm text-muted-foreground">
                 {t("positionsPreview.count", { count: computed!.positions.length })}
+                {" · "}
+                {t("compute.positionsHint")}
               </p>
               <div className="overflow-x-auto rounded-lg border">
                 <Table>
