@@ -16,6 +16,32 @@ réparer chaque entité (`drives`, `charges`, `positions`, `addresses`,
 > n'ont pas encore été validés. À utiliser avec précaution et **toujours sur
 > une base sauvegardée** (`pg_dump` recommandé avant la première utilisation).
 
+## Nouveautés v0.7.0
+
+La page **Positions** devient un véritable outil d'exploration géographique, dans
+l'esprit du tableau de bord Grafana de TeslaMate :
+
+- **Layout carte + filtres** : bloc filtres à gauche (1/4), **carte interactive**
+  Leaflet à droite (3/4), puis **tableau pleine largeur** en dessous affichant
+  **tous les champs** de la table (scroll horizontal).
+- **Ouverture par défaut sur les 7 derniers jours**, avec un **menu déroulant de
+  plages rapides façon Grafana** (relatives jusqu'à 5 ans, journée, période en cours
+  « … jusqu'à présent », périodes précédentes ; plages fiscales omises).
+- **Carte multi-trajets** : une polyline colorée par trajet (`drive_id`) avec
+  marqueurs départ/arrivée, plus des points pour les positions hors trajet ; popup
+  par point avec lien vers l'édition. Cadrage automatique sur l'ensemble.
+- **Chargement AJAX incrémental** : les points sont chargés par lots et affichés
+  au fur et à mesure (la page ne bloque plus sur une grosse requête). La **carte
+  n'a plus de plafond de plage** (sécurité = plafond de points + bouton « charger
+  plus ») ; le **tableau garde son garde-fou 31 jours**.
+- **Filtre de trajets** : liste de cases à cocher (une par trajet + « hors trajet »,
+  « tout / aucun »), alignée sur la hauteur de la carte (scroll interne), pour afficher
+  instantanément un ou plusieurs trajets. La liste se remplit **au fil du chargement des
+  positions**, dans l'**ordre chronologique**.
+
+Détails techniques et checklist de release :
+[`docs/RELEASE_v0.7.0.md`](docs/RELEASE_v0.7.0.md).
+
 ## Nouveautés v0.6.0
 
 L'écran d'**édition d'un trajet** adopte la mise en page large de l'édition de
