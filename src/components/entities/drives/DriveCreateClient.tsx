@@ -28,6 +28,7 @@ import type { DriveActionState } from "./DriveTabs";
 import {
   computeDriveAction,
   createDriveWithPositionsAction,
+  estimateStartRangesAction,
   type ComputedDrive,
   type ComputeStartState,
 } from "@/app/[locale]/drives/actions";
@@ -100,6 +101,27 @@ export function DriveCreateClient({
     if (s === "") return null;
     const n = Number(s);
     return Number.isFinite(n) ? n : null;
+  }
+
+  // Auto-remplissage des autonomies de départ à partir du % batterie (debounce).
+  const batteryDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const batteryReqRef = useRef(0);
+  function autoFillStartRanges(levelStr: string) {
+    if (batteryDebounceRef.current) clearTimeout(batteryDebounceRef.current);
+    const level = num(levelStr);
+    if (carId == null || startDate.trim() === "" || level == null || level <= 0 || level > 100) {
+      return;
+    }
+    const seq = ++batteryReqRef.current;
+    batteryDebounceRef.current = setTimeout(async () => {
+      const res = await estimateStartRangesAction({ carId, startDate, batteryLevel: level });
+      if (seq !== batteryReqRef.current) return; // réponse obsolète (% modifié entre-temps)
+      setSs((prev) => ({
+        ...prev,
+        idealRangeKm: res.idealRangeKm != null ? String(res.idealRangeKm) : prev.idealRangeKm,
+        ratedRangeKm: res.ratedRangeKm != null ? String(res.ratedRangeKm) : prev.ratedRangeKm,
+      }));
+    }, 300);
   }
 
   function buildOverride(): ComputeStartState | null {
@@ -291,7 +313,11 @@ export function DriveCreateClient({
                 <NumberInput
                   id="ss_battery"
                   value={ss.batteryLevel}
-                  onChange={(e) => setSs({ ...ss, batteryLevel: (e.target as HTMLInputElement).value })}
+                  onChange={(e) => {
+                    const v = (e.target as HTMLInputElement).value;
+                    setSs((prev) => ({ ...prev, batteryLevel: v }));
+                    autoFillStartRanges(v);
+                  }}
                   step="1"
                   min={0}
                   max={100}
@@ -336,6 +362,22 @@ export function DriveCreateClient({
                   disabled={readOnly}
                 />
               </FormField>
+            </div>
+            <div className="flex flex-wrap items-center gap-3">
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={handleCompute}
+                disabled={readOnly || computing || num(ss.odometerKm) == null}
+              >
+                <Calculator className="size-4" aria-hidden />
+                {computing ? t("compute.running") : t("compute.action")}
+              </Button>
+              {num(ss.odometerKm) == null ? (
+                <span className="text-xs text-muted-foreground">
+                  {t("startState.odometerRequired")}
+                </span>
+              ) : null}
             </div>
           </section>
         </>
@@ -514,13 +556,16 @@ export function DriveCreateClient({
 
       <Separator />
 
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         <Button type="submit" disabled={pending || readOnly || !hasCar || !computed}>
           {pending ? tCommon("saving") : t("actions.create")}
         </Button>
         <Button type="button" variant="outline" onClick={() => router.push("/drives")} disabled={pending}>
           {tCommon("cancel")}
         </Button>
+        {!computed && hasCar && !readOnly ? (
+          <span className="text-xs text-muted-foreground">{t("compute.createHint")}</span>
+        ) : null}
       </div>
     </form>
   );

@@ -496,6 +496,36 @@ function round2(n: number): number {
 }
 
 /**
+ * Estime les autonomies idéale/rated **de départ** (km) à partir d'un % batterie
+ * et de l'historique du véhicule relatif à la date de départ. Utilisé par
+ * l'assistant de création pour pré-remplir automatiquement ces champs dans le
+ * formulaire d'état de départ (cas « aucune position avant la date »).
+ * Renvoie `null` par champ si l'historique ne permet pas l'estimation.
+ */
+export async function estimateStartRangesAction(input: {
+  carId: number;
+  startDate: string;
+  batteryLevel: number;
+}): Promise<{ idealRangeKm: number | null; ratedRangeKm: number | null }> {
+  await requireSession();
+
+  const startDate = new Date(input.startDate);
+  if (Number.isNaN(startDate.getTime()) || !(input.batteryLevel > 0)) {
+    return { idealRangeKm: null, ratedRangeKm: null };
+  }
+
+  const { maxIdealRangeKm, maxRatedRangeKm } = await estimateFullRange(
+    input.carId,
+    startDate,
+  );
+  const factor = input.batteryLevel / 100;
+  return {
+    idealRangeKm: maxIdealRangeKm == null ? null : round2(maxIdealRangeKm * factor),
+    ratedRangeKm: maxRatedRangeKm == null ? null : round2(maxRatedRangeKm * factor),
+  };
+}
+
+/**
  * Calcule un trajet : récupère l'état de départ (dernière position avant la date,
  * sinon `startStateOverride`), calcule l'itinéraire OSRM et génère les positions.
  * Ne persiste RIEN — renvoie tout au client pour prévisualisation.

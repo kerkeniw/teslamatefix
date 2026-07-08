@@ -482,7 +482,8 @@
       "hint": "Fill the start address, end address and start date/time to enable the calculation.",
       "resultTitle": "Calculation result",
       "editHint": "Computed values are indicative: adjust them freely if the actual drive differs from the theoretical one.",
-      "positionsHint": "Positions are regenerated on each “Compute” click (not affected by your edits above)."
+      "positionsHint": "Positions are regenerated on each “Compute” click (not affected by your edits above).",
+      "createHint": "Click “Compute” to enable drive creation."
     },
     "startState": {
       "title": "Start state",

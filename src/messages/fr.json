@@ -482,7 +482,8 @@
       "hint": "Renseignez l'adresse de départ, d'arrivée et la date/heure de départ pour activer le calcul.",
       "resultTitle": "Résultat du calcul",
       "editHint": "Valeurs calculées à titre indicatif : ajustez-les librement si le trajet réel diffère du théorique.",
-      "positionsHint": "Positions régénérées à chaque clic sur « Calculer » (non affectées par vos modifications ci-dessus)."
+      "positionsHint": "Positions régénérées à chaque clic sur « Calculer » (non affectées par vos modifications ci-dessus).",
+      "createHint": "Cliquez sur « Calculer » pour activer la création du trajet."
     },
     "startState": {
       "title": "État de départ",
