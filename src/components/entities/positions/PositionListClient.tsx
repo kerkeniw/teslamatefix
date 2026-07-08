@@ -26,11 +26,80 @@ export type PositionRow = {
   date: string;
   latitude: string;
   longitude: string;
-  speed: number | null;
-  battery_level: number | null;
   car_id: number;
   drive_id: number | null;
+  // Scalaires (Decimal → string, entiers/float → number, booléens → boolean)
+  speed: number | null;
+  power: number | null;
+  odometer: number | null;
+  elevation: number | null;
+  outside_temp: string | null;
+  inside_temp: string | null;
+  battery_level: number | null;
+  usable_battery_level: number | null;
+  ideal_battery_range_km: string | null;
+  rated_battery_range_km: string | null;
+  est_battery_range_km: string | null;
+  fan_status: number | null;
+  driver_temp_setting: string | null;
+  passenger_temp_setting: string | null;
+  is_climate_on: boolean | null;
+  is_rear_defroster_on: boolean | null;
+  is_front_defroster_on: boolean | null;
+  battery_heater: boolean | null;
+  battery_heater_on: boolean | null;
+  battery_heater_no_power: boolean | null;
+  tpms_pressure_fl: string | null;
+  tpms_pressure_fr: string | null;
+  tpms_pressure_rl: string | null;
+  tpms_pressure_rr: string | null;
 };
+
+type ScalarKey = Exclude<
+  keyof PositionRow,
+  "id" | "date" | "latitude" | "longitude" | "car_id" | "drive_id"
+>;
+
+// Colonnes scalaires générées : clé de champ + clé de traduction + type de rendu.
+const SCALAR_COLUMNS: { key: ScalarKey; labelKey: string; kind: "value" | "bool" }[] = [
+  { key: "speed", labelKey: "speed", kind: "value" },
+  { key: "power", labelKey: "power", kind: "value" },
+  { key: "odometer", labelKey: "odometer", kind: "value" },
+  { key: "elevation", labelKey: "elevation", kind: "value" },
+  { key: "outside_temp", labelKey: "outsideTemp", kind: "value" },
+  { key: "inside_temp", labelKey: "insideTemp", kind: "value" },
+  { key: "battery_level", labelKey: "batteryLevel", kind: "value" },
+  { key: "usable_battery_level", labelKey: "usableBatteryLevel", kind: "value" },
+  { key: "ideal_battery_range_km", labelKey: "idealBatteryRangeKm", kind: "value" },
+  { key: "rated_battery_range_km", labelKey: "ratedBatteryRangeKm", kind: "value" },
+  { key: "est_battery_range_km", labelKey: "estBatteryRangeKm", kind: "value" },
+  { key: "fan_status", labelKey: "fanStatus", kind: "value" },
+  { key: "driver_temp_setting", labelKey: "driverTempSetting", kind: "value" },
+  { key: "passenger_temp_setting", labelKey: "passengerTempSetting", kind: "value" },
+  { key: "is_climate_on", labelKey: "isClimateOn", kind: "bool" },
+  { key: "is_rear_defroster_on", labelKey: "isRearDefrosterOn", kind: "bool" },
+  { key: "is_front_defroster_on", labelKey: "isFrontDefrosterOn", kind: "bool" },
+  { key: "battery_heater", labelKey: "batteryHeater", kind: "bool" },
+  { key: "battery_heater_on", labelKey: "batteryHeaterOn", kind: "bool" },
+  { key: "battery_heater_no_power", labelKey: "batteryHeaterNoPower", kind: "bool" },
+  { key: "tpms_pressure_fl", labelKey: "tpmsFl", kind: "value" },
+  { key: "tpms_pressure_fr", labelKey: "tpmsFr", kind: "value" },
+  { key: "tpms_pressure_rl", labelKey: "tpmsRl", kind: "value" },
+  { key: "tpms_pressure_rr", labelKey: "tpmsRr", kind: "value" },
+];
+
+// Nb de colonnes total (checkbox + id + date + lat + lon + scalaires + drive + actions)
+const TOTAL_COLS = 6 + SCALAR_COLUMNS.length + 1;
+
+function renderScalar(
+  row: PositionRow,
+  col: { key: ScalarKey; kind: "value" | "bool" },
+) {
+  const v = row[col.key];
+  if (v == null) return "—";
+  if (col.kind === "bool") return v ? "✓" : "✗";
+  return String(v);
+}
 
 export function PositionListClient({
   data,
@@ -40,6 +109,7 @@ export function PositionListClient({
   hasPrev,
   pageSize,
   filtersActive,
+  inactiveNotice,
   deleteAction,
 }: {
   data: PositionRow[];
@@ -49,6 +119,7 @@ export function PositionListClient({
   hasPrev: boolean;
   pageSize: number;
   filtersActive: boolean;
+  inactiveNotice?: string;
   deleteAction: (
     ids: number[],
   ) => Promise<{ ok: boolean; error?: string; refused?: number[] }>;
@@ -91,7 +162,7 @@ export function PositionListClient({
   if (!filtersActive) {
     return (
       <div className="rounded-xl border bg-card p-6 text-center text-sm text-muted-foreground shadow-sm">
-        {t("filtersRequired")}
+        {inactiveNotice ?? t("filtersRequired")}
       </div>
     );
   }
@@ -128,90 +199,101 @@ export function PositionListClient({
         </div>
       </div>
 
-      <div className="hidden overflow-hidden rounded-xl border bg-card shadow-sm md:block">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-10">
-                <input
-                  type="checkbox"
-                  checked={allChecked}
-                  onChange={toggleAll}
-                  className="size-4 cursor-pointer accent-tesla-red"
-                  aria-label="select all"
-                />
-              </TableHead>
-              <TableHead className="font-mono text-xs">id</TableHead>
-              <TableHead>{t("fields.date")}</TableHead>
-              <TableHead>{t("fields.latitude")}</TableHead>
-              <TableHead>{t("fields.longitude")}</TableHead>
-              <TableHead>{t("fields.speed")}</TableHead>
-              <TableHead>{t("fields.batteryLevel")}</TableHead>
-              <TableHead>{t("fields.driveId")}</TableHead>
-              <TableHead></TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {data.length === 0 ? (
+      {/* Tableau desktop : tous les champs, scroll horizontal. */}
+      <div className="hidden rounded-xl border bg-card shadow-sm md:block">
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
               <TableRow>
-                <TableCell colSpan={9} className="h-24 text-center text-sm text-muted-foreground">
-                  {t("empty")}
-                </TableCell>
+                <TableHead className="w-10">
+                  <input
+                    type="checkbox"
+                    checked={allChecked}
+                    onChange={toggleAll}
+                    className="size-4 cursor-pointer accent-tesla-red"
+                    aria-label="select all"
+                  />
+                </TableHead>
+                <TableHead className="font-mono text-xs">id</TableHead>
+                <TableHead className="whitespace-nowrap">{t("fields.date")}</TableHead>
+                <TableHead className="whitespace-nowrap">{t("fields.latitude")}</TableHead>
+                <TableHead className="whitespace-nowrap">{t("fields.longitude")}</TableHead>
+                {SCALAR_COLUMNS.map((col) => (
+                  <TableHead key={col.key} className="whitespace-nowrap">
+                    {t(`fields.${col.labelKey}`)}
+                  </TableHead>
+                ))}
+                <TableHead className="whitespace-nowrap">{t("fields.driveId")}</TableHead>
+                <TableHead></TableHead>
               </TableRow>
-            ) : (
-              data.map((row) => (
-                <TableRow key={row.id} data-state={selected.has(row.id) ? "selected" : undefined}>
-                  <TableCell>
-                    <input
-                      type="checkbox"
-                      checked={selected.has(row.id)}
-                      onChange={() => toggle(row.id)}
-                      className="size-4 cursor-pointer accent-tesla-red"
-                      aria-label={`select ${row.id}`}
-                    />
-                  </TableCell>
-                  <TableCell className="font-mono text-xs tabular-nums">{row.id}</TableCell>
-                  <TableCell className="font-mono text-xs tabular-nums">
-                    {format.dateTime(new Date(row.date), "short")}
-                  </TableCell>
-                  <TableCell className="font-mono text-xs tabular-nums">
-                    <span className="mr-2">{row.latitude}</span>
-                    <OsmLink latitude={row.latitude} longitude={row.longitude} />
-                  </TableCell>
-                  <TableCell className="font-mono text-xs tabular-nums">{row.longitude}</TableCell>
-                  <TableCell className="font-mono tabular-nums">{row.speed ?? "—"}</TableCell>
-                  <TableCell className="font-mono tabular-nums">
-                    {row.battery_level != null ? `${row.battery_level}%` : "—"}
-                  </TableCell>
-                  <TableCell>
-                    {row.drive_id != null ? (
-                      <Link
-                        href={`/drives/${row.drive_id}`}
-                        className="font-mono text-xs underline-offset-2 hover:underline"
-                      >
-                        #{row.drive_id}
-                      </Link>
-                    ) : (
-                      "—"
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    <ButtonLink
-                      variant="ghost"
-                      size="icon-sm"
-                      href={`/positions/${row.id}`}
-                      aria-label={tCommon("edit")}
-                    >
-                      <Pencil className="size-3.5" aria-hidden />
-                    </ButtonLink>
+            </TableHeader>
+            <TableBody>
+              {data.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={TOTAL_COLS} className="h-24 text-center text-sm text-muted-foreground">
+                    {t("empty")}
                   </TableCell>
                 </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
+              ) : (
+                data.map((row) => (
+                  <TableRow key={row.id} data-state={selected.has(row.id) ? "selected" : undefined}>
+                    <TableCell>
+                      <input
+                        type="checkbox"
+                        checked={selected.has(row.id)}
+                        onChange={() => toggle(row.id)}
+                        className="size-4 cursor-pointer accent-tesla-red"
+                        aria-label={`select ${row.id}`}
+                      />
+                    </TableCell>
+                    <TableCell className="font-mono text-xs tabular-nums">{row.id}</TableCell>
+                    <TableCell className="whitespace-nowrap font-mono text-xs tabular-nums">
+                      {format.dateTime(new Date(row.date), "short")}
+                    </TableCell>
+                    <TableCell className="whitespace-nowrap font-mono text-xs tabular-nums">
+                      <span className="mr-2">{row.latitude}</span>
+                      <OsmLink latitude={row.latitude} longitude={row.longitude} />
+                    </TableCell>
+                    <TableCell className="font-mono text-xs tabular-nums">{row.longitude}</TableCell>
+                    {SCALAR_COLUMNS.map((col) => (
+                      <TableCell
+                        key={col.key}
+                        className="whitespace-nowrap font-mono text-xs tabular-nums"
+                      >
+                        {renderScalar(row, col)}
+                      </TableCell>
+                    ))}
+                    <TableCell>
+                      {row.drive_id != null ? (
+                        <Link
+                          href={`/drives/${row.drive_id}`}
+                          className="font-mono text-xs underline-offset-2 hover:underline"
+                        >
+                          #{row.drive_id}
+                        </Link>
+                      ) : (
+                        "—"
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <ButtonLink
+                        variant="ghost"
+                        size="icon-sm"
+                        href={`/positions/${row.id}`}
+                        aria-label={tCommon("edit")}
+                      >
+                        <Pencil className="size-3.5" aria-hidden />
+                      </ButtonLink>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </div>
       </div>
 
+      {/* Cartes mobiles : champs principaux uniquement. */}
       <div className="grid gap-3 md:hidden">
         {data.length === 0 ? (
           <p className="rounded-xl border bg-card p-6 text-center text-sm text-muted-foreground">
