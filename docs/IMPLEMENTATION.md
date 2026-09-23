@@ -232,13 +232,27 @@ Délégué à un sub-agent en background, en parallèle de l'étape 11 — inter
 
 ---
 
+## Étape 13 — v0.7.0 : trajets (listing, correction, assistant) & positions (carte)
+
+**Branche** : `release/v0.7.0` — fusion de `feat/drive-edit-map`, `worktree-feat+drive-create-wizard` et `feat/positions-map` (chacune développée dans un worktree dédié depuis v0.5.2). Détail complet : [`RELEASE_v0.7.0.md`](RELEASE_v0.7.0.md).
+
+Les étapes 1 à 12 couvrent le socle initial (v0.1.0). Les versions v0.2.0 → v0.5.2 sont décrites dans leurs `RELEASE_v*.md` respectifs ; cette étape résume la v0.7.0.
+
+- **Listing `/drives`** : requête SQL brute calquée sur le dashboard Grafana « Drives » (`src/lib/drives/list-query.ts`), unités issues des `settings` (`src/lib/units.ts`), `DataTable` enrichi (visibilité des colonnes pilotée par le parent, `scrollX`, `dense`).
+- **Édition `/drives/[id]`** : layout deux colonnes, carte Leaflet colorisée (`DriveTrackMap`), détection d'anomalies et correction unifiée depuis les positions (`correctDriveFromPositions` / `applyDriveCorrection` dans `src/lib/integrity/drives.ts`, popin `DriveCorrectionDialog`), barre d'actions flottante. La correction contourne `READ_ONLY`.
+- **Création `/drives/new`** : assistant — couche géo `src/lib/geo/` (Nominatim, OSRM, géofence contenante), synthèse pure des positions `src/lib/integrity/drive-synth.ts`, capacité datée `nearest-by-date.ts`, insertion trajet + positions en transaction.
+- **Positions** : carte multi-trajets avec chargement par lots (`map-actions.ts`, `PositionsMapPanel`, `src/lib/positions/map-points.ts`), quick-ranges Grafana (`src/lib/positions/quick-ranges.ts`), filtre de trajets, tableau complet.
+- **Tests** : 115 tests Vitest (ajouts : `drive-synth`, `nearest-by-date`, correction dans `drives.test.ts`).
+
+---
+
 ## Synthèse — état final
 
 | Critère | Statut |
 |---|---|
 | Build (`npm run build`) | ✅ |
 | Typecheck (`npm run typecheck`) | ✅ |
-| Tests unit (`npm run test`) | ✅ 20/20 |
+| Tests unit (`npm run test`) | ✅ 20/20 (v0.1.0) → 115/115 (v0.7.0) |
 | 9 entités CRUD livrées | ✅ |
 | 4 règles d'intégrité dans `lib/integrity/` | ✅ |
 | Dashboard avec firmware + anomalies | ✅ |
@@ -249,3 +263,5 @@ Délégué à un sub-agent en background, en parallèle de l'étape 11 — inter
 **Architecture par entité métier confirmée** : aucune route `tables/[table]` générique. Chaque entité a son dossier `app/[locale]/<entity>/` + `components/entities/<entity>/` + (le cas échéant) `lib/integrity/<entity>.ts`.
 
 **Sécurité au design** : auth obligatoire (cookie chiffré iron-session), rate limit login, mode `READ_ONLY`, recommandation user PG dédié sans grant sur tokens/schema_migrations.
+
+> Suite : [`ROADMAP.md`](ROADMAP.md) (prochains lots) et [`TEST_PLAN.md`](TEST_PLAN.md) (recette).

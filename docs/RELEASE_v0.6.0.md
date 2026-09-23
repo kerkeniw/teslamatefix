@@ -1,5 +1,9 @@
 # Release v0.6.0 — checklist
 
+> ⚠️ **Jamais publiée.** Ce lot a été intégré à la release
+> [v0.7.0](RELEASE_v0.7.0.md) avec les autres chantiers trajets/positions. Le
+> document est conservé comme historique ; sa checklist n'est pas à exécuter.
+
 > Document de suivi pour la mise en production de **TeslaMateFix v0.6.0**
 > (« Édition d'un trajet : layout large + carte du trajet parcouru »).
 

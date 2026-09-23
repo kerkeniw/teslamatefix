@@ -4,7 +4,8 @@
 > Cette release **regroupe trois évolutions** développées en parallèle et livrées
 > ensemble :
 > 1. **Assistant de création de trajet** — géocodage d'adresses + calcul d'itinéraire.
-> 2. **Édition d'un trajet** — layout large + carte du trajet parcouru.
+> 2. **Trajets** — édition en layout large + carte du trajet, listing façon Grafana
+>    « Drives », détection et correction d'anomalies depuis les positions.
 > 3. **Positions** — carte géographique + filtres quick-range + chargement AJAX incrémental.
 
 ## État
@@ -17,7 +18,12 @@
 - `package.json` version : `0.7.0`.
 - Nature : **évolution de code** (nouvelle couche géo, nouvelles server actions,
   refonte des écrans trajet/positions). Rebuild de l'image Docker requis.
-- Tests : `npm test` (vitest) — **109 tests OK** (dont `drive-synth.test.ts`).
+- Tests : `npm test` (vitest) — **115 tests OK** au 2026-09-23 (dont `drive-synth`,
+  `drives` — correction —, `nearest-by-date`).
+- Commits ajoutés après la consolidation initiale (documentés ci-dessous) :
+  `bd4a7b4`, `76eed11` (raffinements de l'assistant). Les commits `91d9f9b`,
+  `125f489`, `f4d8a79`, `981aada` venus de `feat/drive-edit-map` (listing +
+  correction) sont désormais décrits en Partie 2 bis.
 - Typecheck : propre (`npm run typecheck`).
 - Lint : 3 issues **pré-existantes** inchangées (data-table TanStack `useReactTable`,
   `ChargeCreateWizard:585`, `_ignored` dans `charges/actions.ts`). Aucune dans les
@@ -29,9 +35,12 @@
 
 - **Trajets — création (`/drives/new`)** : réécriture en assistant, **nouvelles**
   server actions de lecture/calcul et **écriture** (insertion trajet + positions).
-- **Trajets — édition (`/drives/[id]`)** : évolution **UI/lecture** (layout + carte),
-  schéma de validation et server actions d'écriture **inchangés**. Détail dans
-  [`RELEASE_v0.6.0.md`](RELEASE_v0.6.0.md).
+- **Trajets — édition (`/drives/[id]`)** : layout + carte (UI/lecture, détail dans
+  [`RELEASE_v0.6.0.md`](RELEASE_v0.6.0.md)) **et nouvelle écriture** : correction
+  d'anomalies (`applyCorrectDriveAction`, écrit `drives` + `positions.drive_id`,
+  contourne `READ_ONLY`). Schéma de validation du formulaire inchangé.
+- **Trajets — listing (`/drives`)** : lecture seule, nouvelle requête SQL brute
+  (`list-query.ts`).
 - **Positions (`/positions`)** : évolution **UI/lecture** ; une seule server action
   de **lecture** ajoutée (lots carte). Schéma Zod, actions d'écriture et
   `/positions/[id]` **inchangés**. Tableau borné à 31 j maintenu ; carte sans plafond.
@@ -44,7 +53,7 @@
 
 L'écran de création de trajet n'était qu'un formulaire vide qui n'enregistrait que
 la ligne `drives`. Il devient un **assistant** : on saisit l'adresse de départ et
-d'arrivée (autocomplétion géocodée avec numéros de rue), la date/heure de départ,
+d'arrivée (recherche dans les adresses connues), la date/heure de départ,
 puis on clique **Calculer**. L'app récupère l'état de départ (dernière position
 connue avant cette date, sinon saisie manuelle), calcule l'itinéraire, en déduit les
 infos d'arrivée et **génère les positions** (~1 toutes les 30 s). La sauvegarde
@@ -53,12 +62,13 @@ persiste le trajet **et toutes ses positions** en une transaction, avec
 
 ### Nouveautés
 
-- Adresses de départ/arrivée **obligatoires**, via un **combobox géocodé**
-  (Nominatim, `addressdetails=1` → numéros de rue).
+- Adresses de départ/arrivée **obligatoires**, recherchées **dans la table
+  `addresses`** (`searchAddressOptionsWithCoords`, `src/app/actions/search-addresses.ts`).
 - Si la recherche ne renvoie rien : lien **« Créer une nouvelle adresse »** ouvrant
-  une **boîte de dialogue** pré-remplie, listant les adresses les plus proches. À la
-  sélection, tous les champs `addresses` sont remplis ; « Sauvegarder » crée l'adresse
-  (dédup `osm_id/osm_type`) et la sélectionne.
+  une **boîte de dialogue** qui interroge Nominatim (`addressdetails=1` → numéros de
+  rue) et liste les adresses les plus proches. À la sélection, tous les champs
+  `addresses` sont remplis ; « Sauvegarder » crée l'adresse (dédup
+  `osm_id/osm_type`) et la sélectionne.
 - À la validation d'une adresse, si le point tombe dans une **géofence** existante,
   elle est **auto-sélectionnée** (départ/arrivée).
 - La **date de départ** n'est plus pré-remplie avec l'heure courante, mais reste
@@ -69,6 +79,19 @@ persiste le trajet **et toutes ses positions** en une transaction, avec
   **génère les positions** + infos d'arrivée. Aperçu du **tableau des positions**.
 - **Sauvegarder** n'est actif qu'après calcul ; enregistre le trajet **et toutes les
   positions** (`prisma.$transaction`).
+
+### Raffinements (`bd4a7b4`, `76eed11`)
+
+- **Capacité datée** : `estimateFullRange` utilise la mesure de capacité la plus
+  proche de la date de départ (helper pur `pickNearestByDate`,
+  `src/lib/integrity/nearest-by-date.ts`, testé).
+- **Résumé calculé éditable** : inputs contrôlés liés à `computed.drive` ; la
+  sauvegarde persiste les valeurs saisies. Les positions se régénèrent via
+  « Calculer ».
+- **État de départ manuel** : nouvelle action `estimateStartRangesAction` qui déduit
+  les autonomies ideal/rated du % batterie (remplissage automatique avec délai,
+  champs éditables) + bouton **Calculer** dans la section, qui active « Créer le
+  trajet ».
 
 ### Nouvelle couche géo (`src/lib/geo/`)
 
@@ -94,6 +117,49 @@ gagne une **carte du trajet parcouru** :
 
 Détail complet et checklist de cette partie : [`RELEASE_v0.6.0.md`](RELEASE_v0.6.0.md)
 (conservé comme historique).
+
+---
+
+## Partie 2 bis — Listing des trajets + correction d'anomalies
+
+Commits `91d9f9b`, `125f489`, `f4d8a79`, `981aada` (branche `feat/drive-edit-map`).
+
+### Listing `/drives` façon Grafana « Drives »
+
+- Requête SQL brute `src/lib/drives/list-query.ts` reprenant la CTE Grafana :
+  adresses/géofences fusionnées, % batterie départ/arrivée, vitesse moyenne,
+  `range_diff` selon `preferred_range`, ❄ autonomie réduite (limitée à la page).
+- Filtres Grafana : distance min, vitesse moyenne min (colonne calculée), géofence
+  départ **ou** arrivée (`GeofenceMultiSelect`), texte de localisation, dates,
+  `open_only`. Pagination offset + `COUNT` exact conservés.
+- Unités lues dans les `settings` TeslaMate (`src/lib/units.ts`) ; efficacité/conso
+  avec bascule *slope-adjusted* / *by-distance* ; `formatDuration` partagé
+  (`src/lib/format/duration.ts`).
+- `DataTable` : visibilité des colonnes pilotée par le parent (menu « Colonnes »
+  mémorisé en localStorage), `scrollX`, mode `dense` ; `/charges` inchangé.
+- Date, départ, arrivée = liens (trajet, géofence ou adresse) ; page pleine largeur.
+
+### Détection + correction d'anomalies
+
+- Anomalies détectées : trajet non fermé, odomètre/autonomie d'arrivée manquants,
+  positions au-delà de `end_date`, distance/durée nulle → bandeau compact.
+- Moteur unifié `correctDriveFromPositions` / `applyDriveCorrection`
+  (`src/lib/integrity/drives.ts`) : recalcule **tous** les champs depuis les
+  positions (dates, `*_position_id`, odomètre, autonomies via 1re/dernière valeur
+  non nulle, distance, durée, dénivelés, vitesse max, `power_max/min`, températures
+  moyennes, adresse ≤ 50 m, géofence contenante).
+- **Absorption des positions orphelines** de fin (`drive_id` NULL jusqu'au premier
+  `speed = 0`) et réaffectation de leur `drive_id`, en transaction.
+- UI : `DriveCorrectionDialog` (popin, calcul à l'ouverture, aperçu avant/après,
+  Appliquer ferme + rafraîchit) ; l'onglet Recalcul et `RecalcPanel` sont supprimés.
+- Barre d'actions flottante (Enregistrer / Annuler / Corriger / Supprimer), en-tête
+  façon charge, espacement resserré sur tous les écrans d'édition, `isolate` sur
+  les cartes Leaflet (les dialogues passent au-dessus).
+- Tests purs : `computeDriveCorrection`, `selectTrailingToAbsorb`
+  (`tests/unit/drives.test.ts`).
+- ⚠️ `applyCorrectDriveAction` **contourne volontairement `READ_ONLY`** et accepte
+  le payload `after` calculé côté client sans le revalider (cf.
+  [`SECURITY_REVIEW.md`](SECURITY_REVIEW.md), addendum v0.7.0).
 
 ---
 
@@ -172,7 +238,7 @@ Voir la section *Assistant de création de trajet* de [`.env.example`](../.env.e
 |---|---|---|
 | `GEOCODER_BASE_URL` | `https://nominatim.openstreetmap.org` | Instance Nominatim (search + reverse) |
 | `ROUTER_BASE_URL` | `https://router.project-osrm.org` | Instance OSRM (itinéraire) |
-| `GEO_USER_AGENT` | `TeslaMateFix/0.6.0 (…)` | User-Agent envoyé à Nominatim (policy) |
+| `GEO_USER_AGENT` | `TeslaMateFix/0.7.0 (…)` | User-Agent envoyé à Nominatim (policy) |
 | `DRIVE_CONSUMPTION_WH_KM` | `170` | Conso réelle estimée (Wh/km) |
 | `DRIVE_RATED_WH_KM` | `150` | Conso de référence de l'autonomie estimée |
 
@@ -181,12 +247,12 @@ Voir la section *Assistant de création de trajet* de [`.env.example`](../.env.e
 
 ## Commit + tag + push
 
-- [ ] `npm run build` OK
-- [ ] `git add` ciblé (sans les PNG Playwright)
-- [ ] Merge `release/v0.7.0` → `main`
-- [ ] `git tag -a v0.7.0 -m "v0.7.0 — trajets (assistant + carte) & positions (carte)"`
-- [ ] `git push origin main`
-- [ ] `git push origin v0.7.0` ← déclenche `docker-publish`
+- [x] `npm run build` OK (2026-09-23 — 115 tests, typecheck propre, lint : 3 pré-existants)
+- [x] `git add` ciblé (sans les PNG Playwright)
+- [x] Merge `release/v0.7.0` → `main` (fast-forward, en local — 2026-09-23)
+- [x] `git tag -a v0.7.0 -m "v0.7.0 — trajets (listing, correction, assistant) & positions (carte)"` (en local)
+- [ ] `git push origin main` ← **à faire manuellement**
+- [ ] `git push origin v0.7.0` ← **à faire manuellement**, déclenche `docker-publish`
 
 ## Post-push GitHub Actions
 
@@ -219,6 +285,14 @@ Voir la section *Assistant de création de trajet* de [`.env.example`](../.env.e
 
 - [ ] Layout large deux colonnes ; carte du trajet ; colorisation Trajet/Puissance/Vitesse.
 
+### Listing + correction des trajets
+
+- [ ] `/drives` : colonnes Grafana, filtres (distance, vitesse, géofence, texte,
+      dates, non fermés), menu « Colonnes » mémorisé, liens des cellules.
+- [ ] Trajet en anomalie : bandeau affiché ; « Corriger » → aperçu avant/après ;
+      Appliquer met à jour le trajet et rattache les positions orphelines.
+- [ ] Barre d'actions flottante visible en bas sur desktop et mobile.
+
 ### Positions (`/positions`)
 
 - [ ] Sans paramètre : ouvre sur **7 derniers jours**, points **par lots** (compteur).
@@ -238,3 +312,6 @@ Voir la section *Assistant de création de trajet* de [`.env.example`](../.env.e
 - **Dénivelé** (`ascent`/`descent`) non calculé par l'assistant (pas d'API d'élévation
   dans ce lot) — laissé à `NULL`.
 - La qualité des adresses/itinéraires dépend du géocodeur/routeur configuré.
+- La **correction de trajet** contourne `READ_ONLY` (choix assumé, à réévaluer en
+  v0.8.0 — cf. [`ROADMAP.md`](ROADMAP.md)).
+- Plan de recette complet : [`TEST_PLAN.md`](TEST_PLAN.md).

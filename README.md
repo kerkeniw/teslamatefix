@@ -11,9 +11,9 @@ réparer chaque entité (`drives`, `charges`, `positions`, `addresses`,
 
 > **Statut v0.7.0** — les modules de **création et de modification des charges et
 > des trajets** (dont l'**assistant de création de trajet** avec géocodage +
-> itinéraire, et l'**édition de trajet avec carte**) sont les flux d'écriture
-> couverts. La page **Positions** est un outil d'exploration cartographique en
-> lecture. Les autres entités (adresses, géofences, états, mises à jour de
+> itinéraire, l'**édition de trajet avec carte** et la **correction d'anomalies
+> depuis les positions**) sont les flux d'écriture couverts. La page
+> **Positions** est un outil d'exploration cartographique en lecture. Les autres entités (adresses, géofences, états, mises à jour de
 > firmware, voitures, paramètres) restent accessibles en **consultation** ; leurs
 > flux d'édition n'ont pas tous été validés. À utiliser avec précaution et
 > **toujours sur une base sauvegardée** (`pg_dump` recommandé avant la première
@@ -21,25 +21,31 @@ réparer chaque entité (`drives`, `charges`, `positions`, `addresses`,
 
 ## Nouveautés v0.7.0
 
-Cette release regroupe **trois évolutions** livrées ensemble : l'assistant de
-création de trajet, l'édition de trajet avec carte, et la refonte cartographique
-de la page Positions.
+Cette release regroupe **trois chantiers** livrés ensemble : l'assistant de
+création de trajet, la refonte des trajets (édition avec carte, listing façon
+Grafana, correction d'anomalies) et la refonte cartographique de la page
+Positions.
 
 ### Assistant de création de trajet (`/drives/new`)
 
-L'écran devient un assistant guidé : on saisit l'adresse de départ et d'arrivée
-(**autocomplétion géocodée** avec numéros de rue), la date/heure de départ, puis on
-clique **Calculer**.
+L'écran devient un assistant guidé : on choisit l'adresse de départ et d'arrivée,
+la date/heure de départ, puis on clique **Calculer**.
 
-- **Adresses obligatoires** via un combobox géocodé (Nominatim). Si la recherche
-  ne renvoie rien, un lien ouvre une **boîte de dialogue de création d'adresse**
-  pré-remplie ; à la sélection d'une proposition, tous les champs sont remplis et
-  l'adresse est créée (dédup `osm_id/osm_type`).
+- **Adresses obligatoires**, recherchées dans les **adresses déjà connues de
+  TeslaMate** (table `addresses`). Si la recherche ne renvoie rien, un lien ouvre
+  une **boîte de dialogue de création d'adresse** qui interroge le géocodeur
+  (Nominatim, numéros de rue) ; à la sélection d'une proposition, tous les champs
+  sont remplis et l'adresse est créée (dédup `osm_id/osm_type`).
 - **Géofence auto-sélectionnée** si l'adresse tombe dans une zone existante.
-- **Calculer** récupère l'état de départ (dernière position avant la date, sinon
-  saisie manuelle : odomètre, batterie, autonomie, température), calcule
-  l'**itinéraire** (OSRM) et **génère les positions** (~1 / 30 s) + les infos
-  d'arrivée.
+- **Calculer** récupère l'état de départ (dernière position avant la date). À
+  défaut, saisie manuelle (odomètre, batterie, température) : les **autonomies
+  de départ sont déduites du % batterie** et de la capacité historique, avec un
+  bouton **Calculer** directement dans cette section.
+- La capacité batterie utilisée est celle **mesurée au plus près de la date du
+  trajet** (reflète la dégradation à cette période).
+- L'app calcule l'**itinéraire** (OSRM), **génère les positions** (~1 / 30 s) et
+  les infos d'arrivée ; les **champs du résumé calculé restent éditables** avant
+  enregistrement.
 - La **sauvegarde** n'est active qu'après calcul et persiste le trajet **et toutes
   ses positions** en une transaction.
 
@@ -64,6 +70,31 @@ et gagne une **carte du trajet parcouru** :
   (dégradé vert → jaune → rouge).
 
 Détails et checklist de cette partie : [`docs/RELEASE_v0.6.0.md`](docs/RELEASE_v0.6.0.md).
+
+### Trajets : listing façon Grafana + correction d'anomalies
+
+- **Listing `/drives` calqué sur le dashboard Grafana « Drives »** : adresses et
+  géofences fusionnées, % batterie départ/arrivée, vitesse moyenne, écart
+  d'autonomie, ❄ autonomie réduite, efficacité / conso. Filtres identiques à
+  Grafana (distance min, vitesse moyenne min, géofence départ ou arrivée, texte
+  de localisation, dates, trajets non fermés). Unités lues dans les paramètres
+  TeslaMate (km/mi, °C/°F, ideal/rated).
+- Menu **« Colonnes »** (choix mémorisé dans le navigateur), toutes les colonnes
+  brutes disponibles, affichage dense en pleine largeur ; date, départ et arrivée
+  sont des liens vers le trajet, l'adresse ou la géofence.
+- **Détection d'anomalie** sur la page d'édition (trajet non fermé, odomètre ou
+  autonomie d'arrivée manquants, positions au-delà de la fin, distance/durée
+  nulle) → bandeau d'une ligne au-dessus du formulaire.
+- Bouton **« Corriger »** : popin avec aperçu avant/après qui **recalcule tous
+  les champs depuis les positions** (dates, odomètre, autonomies, distance,
+  durée, dénivelés, vitesse/puissance, températures, adresse et géofence) et
+  **rattache les positions orphelines** de fin de trajet. Il remplace l'ancien
+  onglet « Recalcul ».
+- **Barre d'actions flottante** (Enregistrer / Annuler / Corriger / Supprimer) et
+  espacement resserré sur tous les écrans d'édition.
+
+> ⚠️ La correction **contourne volontairement le mode `READ_ONLY`** (elle écrit
+> dans `drives` et `positions`). Faire un `pg_dump` avant usage.
 
 ### Positions : carte géographique + filtres
 
@@ -90,6 +121,13 @@ l'esprit du tableau de bord Grafana de TeslaMate :
 
 Détails techniques et checklist de release :
 [`docs/RELEASE_v0.7.0.md`](docs/RELEASE_v0.7.0.md).
+
+### Roadmap et plan de tests
+
+- [`docs/ROADMAP.md`](docs/ROADMAP.md) — versions livrées et prochains lots
+  (hygiène, durcissement sécurité, tests, évolutions).
+- [`docs/TEST_PLAN.md`](docs/TEST_PLAN.md) — couverture automatisée actuelle,
+  scénarios de recette par écran, trous de couverture priorisés.
 
 ## Nouveautés v0.5.2
 

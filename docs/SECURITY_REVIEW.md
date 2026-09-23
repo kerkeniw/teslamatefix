@@ -120,3 +120,34 @@ Aucun.
 - **Logs** : le `docker logs` peut contenir IDs métier et IP. Restreindre l'accès au socket Docker.
 - **Mises à jour** : surveiller Next 16.3 (corrige `postcss`), iron-session, Prisma.
 - **Pas de mécanisme global de revoke** : si un cookie iron-session est compromis, seule la rotation `AUTH_SECRET` invalide toutes les sessions.
+
+---
+
+## Addendum v0.7.0 (2026-09-23)
+
+Relecture ciblée des surfaces ajoutées par la v0.7.0 (pas une nouvelle revue complète).
+
+- **Nouvelles écritures** :
+  - Assistant `/drives/new` : insertion d'un trajet + de toutes ses positions
+    générées (transaction), création d'adresse. Respecte `READ_ONLY`.
+  - **Correction de trajet** (`applyCorrectDriveAction`) : met à jour `drives` et
+    réaffecte `positions.drive_id`. **Contourne volontairement `READ_ONLY`**
+    (commentaire dans `src/app/[locale]/drives/actions.ts`). Même défaut que le
+    Low #17 : le payload `after` calculé côté client est appliqué **sans
+    revalidation serveur** des bornes.
+    *Fix recommandé* : recalculer côté serveur depuis `driveId` (ou revalider avec
+    Zod sur des bornes plausibles), limiter `absorbedPositionIds` (taille +
+    appartenance au car/à la fenêtre temporelle), et décider si `READ_ONLY` doit
+    s'appliquer.
+- **Appels sortants** vers Nominatim (création d'adresse) et OSRM (itinéraire),
+  instances publiques par défaut : quotas (~1 req/s), User-Agent obligatoire
+  (`GEO_USER_AGENT`), fuite de coordonnées/adresses vers un tiers → à documenter,
+  recommander une instance auto-hébergée pour un usage régulier.
+- **Lecture par lots des positions** (`fetchPositionMapBatchAction`) : pas de
+  plafond de plage côté carte, mais un plafond de points (`SAFETY_CAP = 60000`) et
+  des lots de 2000 ; périmètre limité au `car_id`.
+- **Requête SQL brute du listing** (`src/lib/drives/list-query.ts`) : vérifiée —
+  filtres en `Prisma.sql` paramétré ; seul `Prisma.raw` = nom de colonne issu d'une
+  liste blanche (`ideal`/`rated`). OK.
+- **Medium #5 à #10 toujours ouverts** — planifiés en v0.8.0, cf.
+  [`ROADMAP.md`](ROADMAP.md).
