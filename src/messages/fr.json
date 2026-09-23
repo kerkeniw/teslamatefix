@@ -931,6 +931,14 @@
         "acLimitedTo11kW": "La voiture plafonne généralement à 11 kW en AC, même sur une borne 22 kW."
       }
     },
+    "costHint": {
+      "formula": "{quantity} {unit} × {price}{hasFee, select, yes { + {fee} de frais} other {}} — {geofence} = {cost}",
+      "noTariff": "Pas de tarif sur la géofence « {geofence} » : coût à saisir manuellement.",
+      "noGeofence": "Aucune géofence : coût à saisir manuellement."
+    },
+    "rangesFromSoc": {
+      "unavailable": "Autonomies non calculables : pas d'historique exploitable autour de cette date."
+    },
     "estimateToast": {
       "success": "Valeurs de fin estimées.",
       "partial": "Estimation partielle (capacité ou autonomie indisponible).",

@@ -32,6 +32,12 @@ import {
 } from "@/lib/integrity/charger-specs";
 import { deriveChargeEndsAction } from "@/app/actions/derive-charge-ends";
 import { computeDurationMin } from "@/lib/format/duration";
+import {
+  getGeofenceBillingAction,
+  type GeofenceBillingResult,
+} from "@/app/actions/geofence-billing";
+import { estimateChargeRangesAction } from "@/app/actions/estimate-charge-ranges";
+import { computeChargeCost } from "@/lib/integrity/charge-cost";
 
 export type ChargeProcessFormValues = {
   car_id: string;
@@ -96,6 +102,7 @@ export function ChargeProcessForm({
   readOnly = false,
   onClientValidityChange,
   locationPanel,
+  geofenceId,
 }: {
   initial: ChargeProcessFormValues;
   initialOptions: ChargeProcessFormInitialOptions;
@@ -106,6 +113,11 @@ export function ChargeProcessForm({
   onClientValidityChange?: (valid: boolean) => void;
   /** Cellule droite de la grille supérieure (carte + météo + localisation). */
   locationPanel?: React.ReactNode;
+  /**
+   * Géofence sélectionnée (hissée par le parent). Active le calcul automatique
+   * du coût depuis son tarif. `undefined` = fonctionnalité désactivée.
+   */
+  geofenceId?: number | null;
 }) {
   const t = useTranslations("charges");
   const format = useFormatter();
@@ -127,6 +139,8 @@ export function ChargeProcessForm({
   );
 
   const [chargeEnergyAdded, setChargeEnergyAdded] = useState(initial.charge_energy_added);
+  const [chargeEnergyUsed, setChargeEnergyUsed] = useState(initial.charge_energy_used);
+  const [cost, setCost] = useState(initial.cost);
   const [startBatteryLevel, setStartBatteryLevel] = useState(initial.start_battery_level);
   const [endBatteryLevel, setEndBatteryLevel] = useState(initial.end_battery_level);
   const [startIdealRangeKm, setStartIdealRangeKm] = useState(initial.start_ideal_range_km);
@@ -341,6 +355,163 @@ export function ChargeProcessForm({
     });
   }
 
+  // -------------------------------------------------------------------------
+  // Coût automatique depuis le tarif de la géofence (règle TeslaMate, cf.
+  // `computeChargeCost`). Recalculé uniquement sur action de l'utilisateur
+  // (énergie, dates, géofence) : rien n'est écrasé au chargement.
+  // -------------------------------------------------------------------------
+  const [billing, setBilling] = useState<GeofenceBillingResult | null>(null);
+  const initialGeofenceIdRef = useRef(geofenceId);
+
+  function costFor(
+    b: GeofenceBillingResult | null,
+    values: { used: string; added: string; start: string; end: string },
+  ) {
+    if (!b) return null;
+    return computeChargeCost(b, {
+      energyUsed: parseNumberOrNull(values.used),
+      energyAdded: parseNumberOrNull(values.added),
+      durationMin: computeDurationMin(values.start, values.end),
+    });
+  }
+
+  function recomputeCost(
+    patch: Partial<{ used: string; added: string; start: string; end: string }>,
+    b: GeofenceBillingResult | null = billing,
+  ) {
+    const r = costFor(b, {
+      used: chargeEnergyUsed,
+      added: chargeEnergyAdded,
+      start: startDate,
+      end: endDate,
+      ...patch,
+    });
+    if (r) setCost(r.cost.toFixed(2));
+  }
+
+  // Valeurs courantes lues par l'effet de tarif ci-dessous sans le relancer à chaque frappe.
+  const chargeEnergyUsedRef = useRef(chargeEnergyUsed);
+  const chargeEnergyAddedRef = useRef(chargeEnergyAdded);
+  const startDateRef = useRef(startDate);
+  const endDateRef = useRef(endDate);
+  useEffect(() => {
+    chargeEnergyUsedRef.current = chargeEnergyUsed;
+    chargeEnergyAddedRef.current = chargeEnergyAdded;
+    startDateRef.current = startDate;
+    endDateRef.current = endDate;
+  });
+
+  useEffect(() => {
+    if (geofenceId === undefined) return;
+    let cancelled = false;
+    const load = geofenceId == null ? Promise.resolve(null) : getGeofenceBillingAction(geofenceId);
+    load.then((b) => {
+      if (cancelled) return;
+      setBilling(b);
+      // Changement de géofence par l'utilisateur → recalcul avec le nouveau tarif.
+      if (geofenceId !== initialGeofenceIdRef.current) {
+        initialGeofenceIdRef.current = geofenceId;
+        const r = b
+          ? computeChargeCost(b, {
+              energyUsed: parseNumberOrNull(chargeEnergyUsedRef.current),
+              energyAdded: parseNumberOrNull(chargeEnergyAddedRef.current),
+              durationMin: computeDurationMin(startDateRef.current, endDateRef.current),
+            })
+          : null;
+        if (r) setCost(r.cost.toFixed(2));
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [geofenceId]);
+
+  const costPreview = costFor(billing, {
+    used: chargeEnergyUsed,
+    added: chargeEnergyAdded,
+    start: startDate,
+    end: endDate,
+  });
+  let costHint: string | null = null;
+  if (geofenceId !== undefined && geofenceId != null && billing) {
+    if (billing.cost_per_unit == null && billing.session_fee == null) {
+      costHint = t("costHint.noTariff", { geofence: billing.name });
+    } else if (costPreview) {
+      const unit = billing.billing_type === "per_minute" ? "min" : "kWh";
+      const qty = billing.billing_type === "per_minute"
+        ? String(costPreview.quantity)
+        : costPreview.quantity.toFixed(2);
+      costHint = t("costHint.formula", {
+        quantity: qty,
+        unit,
+        price: billing.cost_per_unit ?? 0,
+        fee: billing.session_fee ?? 0,
+        hasFee: billing.session_fee ? "yes" : "no",
+        geofence: billing.name,
+        cost: costPreview.cost.toFixed(2),
+      });
+    }
+  } else if (geofenceId !== undefined && geofenceId == null) {
+    costHint = t("costHint.noGeofence");
+  }
+
+  function handleStartDateChange(v: string) {
+    setStartDate(v);
+    if (billing?.billing_type === "per_minute") recomputeCost({ start: v });
+  }
+  function handleEndDateChange(v: string) {
+    setEndDate(v);
+    if (billing?.billing_type === "per_minute") recomputeCost({ end: v });
+  }
+  function handleEnergyAddedChange(v: string) {
+    setChargeEnergyAdded(v);
+    recomputeCost({ added: v });
+  }
+  function handleEnergyUsedChange(v: string) {
+    setChargeEnergyUsed(v);
+    recomputeCost({ used: v });
+  }
+
+  // -------------------------------------------------------------------------
+  // Autonomies déduites du SOC saisi (autonomie à 100 % mesurée au plus près
+  // de la date de début / fin). Debounce pour ne pas appeler à chaque frappe.
+  // -------------------------------------------------------------------------
+  const socTimers = useRef<{ start?: ReturnType<typeof setTimeout>; end?: ReturnType<typeof setTimeout> }>({});
+
+  function scheduleRangesFromSoc(side: "start" | "end", level: string) {
+    const timers = socTimers.current;
+    if (timers[side]) clearTimeout(timers[side]);
+    const n = parseNumberOrNull(level);
+    const date = side === "start" ? startDate : endDate || startDate;
+    if (n == null || n < 1 || n > 100 || !Number.isInteger(n) || !date) return;
+    timers[side] = setTimeout(async () => {
+      const r = await estimateChargeRangesAction({
+        carId: initialOptions.car.id,
+        date,
+        batteryLevel: n,
+      });
+      if (side === "start") {
+        if (r.idealRangeKm != null) setStartIdealRangeKm(String(r.idealRangeKm));
+        if (r.ratedRangeKm != null) setStartRatedRangeKm(String(r.ratedRangeKm));
+      } else {
+        if (r.idealRangeKm != null) setEndIdealRangeKm(String(r.idealRangeKm));
+        if (r.ratedRangeKm != null) setEndRatedRangeKm(String(r.ratedRangeKm));
+      }
+      if (r.idealRangeKm == null && r.ratedRangeKm == null) {
+        toast.warning(t("rangesFromSoc.unavailable"));
+      }
+    }, 400);
+  }
+
+  function handleStartBatteryLevelChange(v: string) {
+    setStartBatteryLevel(v);
+    scheduleRangesFromSoc("start", v);
+  }
+  function handleEndBatteryLevelChange(v: string) {
+    setEndBatteryLevel(v);
+    scheduleRangesFromSoc("end", v);
+  }
+
   const firstTick = tickContext?.firstTick ?? null;
   const lastTick = tickContext?.lastTick ?? null;
   const chargerTypeChanged =
@@ -365,7 +536,7 @@ export function ChargeProcessForm({
             name="start_date"
             label={t("fields.startDate")}
             value={startDate}
-            onChange={setStartDate}
+            onChange={handleStartDateChange}
             tickValue={firstTick?.date ?? null}
             formatTick={formatLocalDateTime}
             tolerance={1000}
@@ -379,7 +550,7 @@ export function ChargeProcessForm({
             name="end_date"
             label={t("fields.endDate")}
             value={endDate}
-            onChange={setEndDate}
+            onChange={handleEndDateChange}
             tickValue={lastTick?.date ?? null}
             formatTick={formatLocalDateTime}
             tolerance={1000}
@@ -410,7 +581,7 @@ export function ChargeProcessForm({
             name="charge_energy_added"
             label={t("fields.chargeEnergyAdded")}
             value={chargeEnergyAdded}
-            onChange={setChargeEnergyAdded}
+            onChange={handleEnergyAddedChange}
             tickValue={null}
             tolerance={0.01}
             step="0.01"
@@ -427,18 +598,20 @@ export function ChargeProcessForm({
             <NumberInput
               id="charge_energy_used"
               name="charge_energy_used"
-              defaultValue={initial.charge_energy_used}
+              value={chargeEnergyUsed}
+              onChange={(e) => handleEnergyUsedChange(e.target.value)}
               step="0.01"
               min={0}
               max={999999.99}
               disabled={readOnly}
             />
           </FormField>
-          <FormField id="cost" label={t("fields.cost")} error={fe.cost}>
+          <FormField id="cost" label={t("fields.cost")} error={fe.cost} hint={costHint}>
             <NumberInput
               id="cost"
               name="cost"
-              defaultValue={initial.cost}
+              value={cost}
+              onChange={(e) => setCost(e.target.value)}
               step="0.01"
               min={0}
               max={9999.99}
@@ -765,7 +938,7 @@ export function ChargeProcessForm({
             name="start_battery_level"
             label={t("fields.startBatteryLevel")}
             value={startBatteryLevel}
-            onChange={setStartBatteryLevel}
+            onChange={handleStartBatteryLevelChange}
             tickValue={firstTick?.battery_level != null ? String(firstTick.battery_level) : null}
             tolerance={0}
             step="1"
@@ -780,7 +953,7 @@ export function ChargeProcessForm({
             name="end_battery_level"
             label={t("fields.endBatteryLevel")}
             value={endBatteryLevel}
-            onChange={setEndBatteryLevel}
+            onChange={handleEndBatteryLevelChange}
             tickValue={lastTick?.battery_level != null ? String(lastTick.battery_level) : null}
             tolerance={0}
             step="1"

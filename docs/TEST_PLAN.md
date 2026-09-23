@@ -10,13 +10,14 @@ d'écriture se fait **toujours sur une base sauvegardée ou une copie jetable**.
 
 ## 1. Couverture automatisée actuelle
 
-### Tests unitaires — Vitest (`tests/unit/`, 115 tests)
+### Tests unitaires — Vitest (`tests/unit/`, 129 tests)
 
 | Fichier | Tests | Cible |
 |---|---|---|
-| `charges.test.ts` | 44 | Règles d'intégrité charges (`src/lib/integrity/charges.ts`) : recalcul depuis les ticks, énergie, SOC, « appliquer à tous les ticks » |
+| `charges.test.ts` | 49 | Règles d'intégrité charges (`src/lib/integrity/charges.ts`) : recalcul depuis les ticks, énergie, SOC, « appliquer à tous les ticks » |
 | `datetime.test.ts` | 21 | Conversions UTC ↔ fuseau affiché |
 | `drives.test.ts` | 19 | Haversine, dénivelés, recalcul, **correction v0.7.0** (`computeDriveCorrection`, `selectTrailingToAbsorb`) |
+| `charge-cost.test.ts` | 9 | Coût depuis le tarif de géofence (`per_kwh`, `per_minute`, frais, arrondi) |
 | `auth.test.ts` | 12 | Vérification login, bcrypt, comparaison à temps constant |
 | `drive-synth.test.ts` | 6 | Synthèse des positions de l'assistant de création de trajet |
 | `nearest-by-date.test.ts` | 6 | `pickNearestByDate` (capacité batterie datée) |
@@ -93,6 +94,17 @@ npm run test:e2e         # nécessite un build + une base accessible
       courant laissés vides).
 - [ ] Carte de localisation + géofence.
 - [ ] Mode `READ_ONLY=true` : toute écriture refusée avec un message.
+- [ ] Listing : la date de début ouvre l'édition ; pas de colonne d'actions.
+- [ ] Session ouverte antérieure (ex. 248/251) : n'empêche plus de modifier les
+      dates d'une charge postérieure ; un vrai chevauchement affiche la session en
+      conflit (#id + bornes).
+- [ ] Coût : modifier l'énergie consommée ou ajoutée → coût recalculé avec le
+      tarif de la géofence (aide affichée sous le champ) ; changer de géofence →
+      nouveau tarif ; géofence sans tarif ou absente → aide « saisie manuelle » ;
+      tarif à la minute → recalcul quand les dates changent.
+- [ ] SOC : modifier le % de départ / d'arrivée → autonomies idéale et rated
+      remplies ; historique insuffisant → avertissement.
+- [ ] Ouvrir une charge sans rien toucher → aucune valeur écrasée.
 
 ### 3.4 Trajets — listing (`/drives`)
 

@@ -2,9 +2,8 @@
 
 import type { ColumnDef } from "@tanstack/react-table";
 import { useTranslations, useFormatter } from "next-intl";
-import { Pencil } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { ButtonLink } from "@/components/ui/button-link";
+import { Link } from "@/i18n/navigation";
 
 export type ChargeRow = {
   id: number;
@@ -46,9 +45,12 @@ export function useChargeColumns(): ColumnDef<ChargeRow>[] {
       accessorKey: "start_date",
       header: t("fields.startDate"),
       cell: ({ row }) => (
-        <span className="font-mono text-xs tabular-nums">
+        <Link
+          href={`/charges/${row.original.id}`}
+          className="font-mono text-xs tabular-nums text-primary underline-offset-4 hover:underline"
+        >
           {format.dateTime(new Date(row.original.start_date), "short")}
-        </span>
+        </Link>
       ),
     },
     {
@@ -102,22 +104,6 @@ export function useChargeColumns(): ColumnDef<ChargeRow>[] {
       header: "",
       cell: ({ row }) =>
         !row.original.end_date ? <Badge variant="secondary">{t("ongoing")}</Badge> : null,
-    },
-    {
-      id: "actions",
-      header: () => <span className="sr-only">{tCommon("actions")}</span>,
-      cell: ({ row }) => (
-        <div className="flex justify-end">
-          <ButtonLink
-            variant="ghost"
-            size="icon-sm"
-            href={`/charges/${row.original.id}`}
-            aria-label={tCommon("edit")}
-          >
-            <Pencil className="size-3.5" aria-hidden />
-          </ButtonLink>
-        </div>
-      ),
     },
   ];
 }

@@ -21,10 +21,10 @@ réparer chaque entité (`drives`, `charges`, `positions`, `addresses`,
 
 ## Nouveautés v0.7.0
 
-Cette release regroupe **trois chantiers** livrés ensemble : l'assistant de
+Cette release regroupe **quatre chantiers** livrés ensemble : l'assistant de
 création de trajet, la refonte des trajets (édition avec carte, listing façon
-Grafana, correction d'anomalies) et la refonte cartographique de la page
-Positions.
+Grafana, correction d'anomalies), la refonte cartographique de la page Positions
+et la stabilisation de l'édition des charges.
 
 ### Assistant de création de trajet (`/drives/new`)
 
@@ -121,6 +121,20 @@ l'esprit du tableau de bord Grafana de TeslaMate :
 
 Détails techniques et checklist de release :
 [`docs/RELEASE_v0.7.0.md`](docs/RELEASE_v0.7.0.md).
+
+### Charges : stabilisation
+
+- **Listing des charges** aligné sur les trajets : la date est cliquable, plus de
+  colonne « stylo ».
+- **Plus de faux « chevauchement »** : une session de charge interrompue que
+  TeslaMate n'a jamais fermée bloquait la modification de toutes les charges
+  suivantes. Elle est maintenant bornée à son dernier tick, et le message
+  d'erreur indique la session en conflit.
+- **Coût calculé automatiquement** depuis le tarif de la géofence (au kWh ou à la
+  minute, + frais de session) quand on corrige l'énergie, la géofence ou les
+  dates.
+- **Autonomies déduites du SOC** : saisir le % de départ ou d'arrivée remplit les
+  autonomies idéale et rated.
 
 ### Roadmap et plan de tests
 

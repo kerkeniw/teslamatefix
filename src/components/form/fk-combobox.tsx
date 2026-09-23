@@ -38,6 +38,7 @@ export function FKCombobox({
   id,
   required = false,
   form,
+  onChange,
 }: {
   name: string;
   initial: FKOption | null;
@@ -50,6 +51,8 @@ export function FKCombobox({
   required?: boolean;
   /** Rattache l'input hidden à un `<form id="...">` distant (HTML5 form attr). */
   form?: string;
+  /** Notifié à chaque sélection / effacement par l'utilisateur. */
+  onChange?: (option: FKOption | null) => void;
 }) {
   const t = useTranslations("combobox");
   const [selected, setSelected] = useState<FKOption | null>(initial);
@@ -101,12 +104,14 @@ export function FKCombobox({
   function onValueChange(next: FKItem | null) {
     if (!next) {
       setSelected(null);
+      onChange?.(null);
       return;
     }
     const id = Number.parseInt(next.value, 10);
     if (!Number.isFinite(id)) return;
     const label = labelCache.current.get(id) ?? next.label;
     setSelected({ id, label });
+    onChange?.({ id, label });
   }
 
   return (

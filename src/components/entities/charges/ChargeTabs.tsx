@@ -76,6 +76,9 @@ export function ChargeTabs({
   }, [state, tCommon]);
 
   const [clientValid, setClientValid] = useState(true);
+  const [geofenceId, setGeofenceId] = useState<number | null>(
+    initialOptions.geofence?.id ?? null,
+  );
   const handleValidityChange = useCallback((v: boolean) => setClientValid(v), []);
 
   const rawFe = (state?.fieldErrors ?? {}) as Record<string, string>;
@@ -145,6 +148,7 @@ export function ChargeTabs({
               readOnly={readOnly}
               mode="edit"
               onClientValidityChange={handleValidityChange}
+              geofenceId={geofenceId}
               locationPanel={
                 <ChargeLocationPanel
                   position={positionMap}
@@ -154,6 +158,7 @@ export function ChargeTabs({
                   addressOption={initialOptions.address}
                   geofenceOption={initialOptions.geofence}
                   readOnly={readOnly}
+                  onGeofenceChange={(opt) => setGeofenceId(opt?.id ?? null)}
                 />
               }
             />

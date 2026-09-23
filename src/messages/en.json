@@ -931,6 +931,14 @@
         "acLimitedTo11kW": "Tesla cars typically cap AC charging at 11 kW, even on a 22 kW station."
       }
     },
+    "costHint": {
+      "formula": "{quantity} {unit} × {price}{hasFee, select, yes { + {fee} fee} other {}} — {geofence} = {cost}",
+      "noTariff": "No tariff on geofence “{geofence}”: enter the cost manually.",
+      "noGeofence": "No geofence: enter the cost manually."
+    },
+    "rangesFromSoc": {
+      "unavailable": "Ranges can't be computed: no usable history around this date."
+    },
     "estimateToast": {
       "success": "End values estimated.",
       "partial": "Partial estimate (capacity or range unavailable).",

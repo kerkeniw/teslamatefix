@@ -1,12 +1,13 @@
 # Release v0.7.0 — checklist
 
 > Document de suivi pour la mise en production de **TeslaMateFix v0.7.0**.
-> Cette release **regroupe trois évolutions** développées en parallèle et livrées
-> ensemble :
+> Cette release **regroupe quatre chantiers** livrés ensemble :
 > 1. **Assistant de création de trajet** — géocodage d'adresses + calcul d'itinéraire.
 > 2. **Trajets** — édition en layout large + carte du trajet, listing façon Grafana
 >    « Drives », détection et correction d'anomalies depuis les positions.
 > 3. **Positions** — carte géographique + filtres quick-range + chargement AJAX incrémental.
+> 4. **Charges (stabilisation)** — faux chevauchement des sessions ouvertes, coût
+>    calculé depuis la géofence, autonomies depuis le SOC, listing aligné.
 
 ## État
 
@@ -18,8 +19,8 @@
 - `package.json` version : `0.7.0`.
 - Nature : **évolution de code** (nouvelle couche géo, nouvelles server actions,
   refonte des écrans trajet/positions). Rebuild de l'image Docker requis.
-- Tests : `npm test` (vitest) — **115 tests OK** au 2026-09-23 (dont `drive-synth`,
-  `drives` — correction —, `nearest-by-date`).
+- Tests : `npm test` (vitest) — **129 tests OK** au 2026-09-23 (dont `drive-synth`,
+  `drives` — correction —, `nearest-by-date`, `charge-cost`, chevauchement).
 - Commits ajoutés après la consolidation initiale (documentés ci-dessous) :
   `bd4a7b4`, `76eed11` (raffinements de l'assistant). Les commits `91d9f9b`,
   `125f489`, `f4d8a79`, `981aada` venus de `feat/drive-edit-map` (listing +
@@ -230,6 +231,59 @@ ce qui lève le plafond de plage côté carte et permet un **filtre de trajets**
 
 ---
 
+## Partie 4 — Stabilisation des charges
+
+Retours d'usage du 2026-09-23 sur l'édition des charges, corrigés directement sur
+`main` avant publication.
+
+### 1. Listing des charges aligné sur les trajets
+
+- La **date de début** est un lien vers l'édition de la charge (même style que
+  `/drives`) ; la colonne « stylo » est supprimée
+  (`ChargeDataTableColumns.tsx`).
+
+### 2. « Chevauche une autre session » à tort (cas charge 297)
+
+- **Cause** : TeslaMate laisse parfois une session interrompue **ouverte**
+  (`end_date` NULL). Ici les sessions **248** (30/07) et **251** (31/07).
+  `findOverlappingSession` la considérait sans fin → elle chevauchait **toute**
+  charge postérieure : impossible de modifier les dates d'une charge après le 30/07.
+- **Correctif** (`src/lib/integrity/charges.ts`) : une session ouverte a désormais
+  une **fin effective** = date de son dernier tick (ou `start_date` sans tick).
+  Helper pur `overlapsEffective`, testé.
+- Le message d'erreur **nomme la session en conflit** : « Chevauche la session de
+  charge #248 (30/07/2026 02:58 → non terminée). »
+
+### 3. Coût calculé depuis le tarif de la géofence
+
+- Helper pur `computeChargeCost` (`src/lib/integrity/charge-cost.ts`), règle
+  TeslaMate : `per_kwh` → tarif × max(énergie consommée, ajoutée) ; `per_minute` →
+  tarif × durée ; + frais de session.
+- Écran d'édition : quand l'utilisateur modifie l'énergie consommée ou ajoutée, la
+  géofence ou les dates (tarif à la minute), **le coût est recalculé
+  automatiquement**. Une aide sous le champ montre le calcul (ex. « 11.17 kWh ×
+  0.16 — Domicile Corbeil = 1.79 ») ou signale l'absence de tarif. Le coût reste
+  modifiable ; rien n'est écrasé à l'ouverture.
+- Plomberie : action `getGeofenceBillingAction` (`src/app/actions/geofence-billing.ts`),
+  `onChange` optionnel sur `FKCombobox`, géofence hissée dans `ChargeTabs`.
+
+### 4. Autonomies déduites du SOC
+
+- Quand l'utilisateur modifie le **SOC de départ** (resp. **d'arrivée**), les
+  autonomies idéale et rated correspondantes sont remplies automatiquement :
+  autonomie à 100 % mesurée au plus près de la date de début (resp. de fin) × SOC.
+- `estimateFullRange` est extrait des trajets vers `src/lib/integrity/full-range.ts`
+  (+ `estimateRangesAtLevel`), partagé avec l'assistant de création de trajet
+  (comportement inchangé). Action `estimateChargeRangesAction`
+  (`src/app/actions/estimate-charge-ranges.ts`).
+
+### Divers
+
+- `eslint.config.mjs` : `.claude/**` ignoré — `npm run lint` scannait les worktrees
+  (copies complètes du repo) et ne se terminait plus.
+
+---
+
 ## Configuration (nouvelles variables d'env, toutes optionnelles)
 
 Voir la section *Assistant de création de trajet* de [`.env.example`](../.env.example).
@@ -247,10 +301,11 @@ Voir la section *Assistant de création de trajet* de [`.env.example`](../.env.e
 
 ## Commit + tag + push
 
-- [x] `npm run build` OK (2026-09-23 — 115 tests, typecheck propre, lint : 3 pré-existants)
+- [x] `npm run build` OK (2026-09-23 — 129 tests, typecheck propre, lint : 3 pré-existants)
 - [x] `git add` ciblé (sans les PNG Playwright)
 - [x] Merge `release/v0.7.0` → `main` (fast-forward, en local — 2026-09-23)
-- [x] `git tag -a v0.7.0 -m "v0.7.0 — trajets (listing, correction, assistant) & positions (carte)"` (en local)
+- [x] Commit des corrections charges sur `main`
+- [x] `git tag -fa v0.7.0 -m "v0.7.0 — trajets (listing, correction, assistant), positions (carte) & stabilisation charges"` (en local, tag déplacé sur ce commit)
 - [ ] `git push origin main` ← **à faire manuellement**
 - [ ] `git push origin v0.7.0` ← **à faire manuellement**, déclenche `docker-publish`
 
@@ -306,6 +361,17 @@ Voir la section *Assistant de création de trajet* de [`.env.example`](../.env.e
 - [ ] `SAFETY_CAP` atteint : bouton **« charger plus »**.
 - [ ] Plage > 31 j : carte complète, tableau affiche `map.tableLimited`.
 - [ ] Responsive mobile + **dark mode**.
+
+### Charges (stabilisation)
+
+- [ ] `/charges` : date cliquable, plus de colonne stylo.
+- [ ] `/charges/297` : début ramené à 00:00 (heure locale) → enregistrement OK.
+- [ ] `/charges/248` puis `/charges/251` : onglet Recalcul → sessions fermées
+      (`end_date` renseignée).
+- [ ] 297 : modifier l'énergie consommée → coût = énergie × 0.16 ; changer de géofence
+      → coût recalculé avec le nouveau tarif ; géofence sans tarif → aide explicite.
+- [ ] Modifier le SOC de départ / d'arrivée → autonomies remplies (modifiables).
+- [ ] Ouvrir une charge sans rien toucher → coût et autonomies inchangés.
 
 ## Limitations connues
 

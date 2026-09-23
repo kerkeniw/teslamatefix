@@ -22,7 +22,7 @@ Légende statut : ✅ fait · 🟡 en cours / partiel · ⬜ à faire.
 | v0.5.0 | 2026-06-14 | Fleet API : TeslaMateFix sert la clé publique Tesla + guide de migration | [RELEASE](RELEASE_v0.5.0.md) |
 | v0.5.1 | 2026-06-23 | Outillage Fleet API (collection Postman, scope `vehicle_location`) — *doc only, jamais taggée* | [RELEASE](RELEASE_v0.5.1.md) |
 | v0.5.2 | 2026-07-02 | Photo officielle du véhicule (compositor), onglet Options, `/cars` en lecture seule | [RELEASE](RELEASE_v0.5.2.md) |
-| **v0.7.0** | 2026-09-23 | Trajets (assistant de création, édition + carte, listing Grafana, correction d'anomalies) + Positions (carte, lots, quick-ranges). *Mergée et taggée en local, push à faire* | [RELEASE](RELEASE_v0.7.0.md) |
+| **v0.7.0** | 2026-09-23 | Trajets (assistant de création, édition + carte, listing Grafana, correction d'anomalies) + Positions (carte, lots, quick-ranges) + stabilisation des charges (chevauchement, coût auto, autonomies depuis SOC). *Mergée et taggée en local, push à faire* | [RELEASE](RELEASE_v0.7.0.md) |
 
 > La v0.6.0 n'a jamais été publiée : son contenu est intégré à la v0.7.0.
 
@@ -35,10 +35,17 @@ Légende statut : ✅ fait · 🟡 en cours / partiel · ⬜ à faire.
 | Tests, typecheck, build verts sur `release/v0.7.0` | P1 | ✅ |
 | Documentation consolidée (README, RELEASE, IMPLEMENTATION, SECURITY addendum) | P1 | ✅ |
 | Merge fast-forward sur `main` + tag `v0.7.0` (en local) | P1 | ✅ |
+| Commit des corrections charges + tag `v0.7.0` déplacé (local) | P1 | ✅ |
 | `git push origin main` puis `git push origin v0.7.0` (publication Docker Hub) | P1 | ⬜ |
 | Vérifier GitHub Actions + `docker manifest inspect wkerkeni/teslamatefix:0.7.0` (amd64 + arm64) | P1 | ⬜ |
 | Recette manuelle v0.7.0 ([TEST_PLAN §3](TEST_PLAN.md)) sur une base sauvegardée | P1 | ⬜ |
 | Vérifier l'overview Docker Hub (mention v0.7.0) | P2 | ⬜ |
+| Listing charges : date cliquable, suppression de la colonne stylo | P1 | ✅ |
+| Faux chevauchement causé par les sessions ouvertes (248, 251) : fin effective = dernier tick | P1 | ✅ |
+| Coût calculé depuis le tarif de la géofence | P1 | ✅ |
+| Autonomies déduites du SOC de départ / d'arrivée | P1 | ✅ |
+| Fermer les sessions 248 et 251 via l'onglet Recalcul (données) | P1 | ⬜ |
+| Même calcul coût / autonomies dans l'assistant de création de charge | P2 | ⬜ |
 
 ## v0.7.1 — hygiène (P1/P2)
 

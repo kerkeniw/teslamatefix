@@ -34,6 +34,8 @@ type Props = {
   addressOption: FKOption | null;
   geofenceOption: FKOption | null;
   readOnly: boolean;
+  /** Notifié quand l'utilisateur change de géofence (recalcul du coût). */
+  onGeofenceChange?: (option: FKOption | null) => void;
 };
 
 export function ChargeLocationPanel({
@@ -44,6 +46,7 @@ export function ChargeLocationPanel({
   addressOption,
   geofenceOption,
   readOnly,
+  onGeofenceChange,
 }: Props) {
   const t = useTranslations("charges");
   const format = useFormatter();
@@ -151,6 +154,7 @@ export function ChargeLocationPanel({
               disabled={readOnly}
               allowClear
               form={formId}
+              onChange={onGeofenceChange}
             />
           </FormField>
         </div>

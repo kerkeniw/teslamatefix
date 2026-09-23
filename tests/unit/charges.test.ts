@@ -57,6 +57,7 @@ vi.mock("@prisma/client", () => {
 import {
   recalcFromTicks,
   findOverlappingSession,
+  overlapsEffective,
   deriveChargerTypeFromTicks,
   validateDateBoundsAgainstTicks,
   deriveChargerTicksContext,
@@ -259,11 +260,13 @@ describe("integrity/charges-derive — deriveEndFields", () => {
 
 describe("integrity/charges — findOverlappingSession", () => {
   it("détecte un chevauchement strict", async () => {
-    mocks.charging_processes.findFirst.mockResolvedValue({
-      id: 99,
-      start_date: new Date("2024-01-01T10:00:00Z"),
-      end_date: new Date("2024-01-01T11:00:00Z"),
-    });
+    mocks.charging_processes.findMany.mockResolvedValue([
+      {
+        id: 99,
+        start_date: new Date("2024-01-01T10:00:00Z"),
+        end_date: new Date("2024-01-01T11:00:00Z"),
+      },
+    ]);
     const overlap = await findOverlappingSession(
       1,
       new Date("2024-01-01T10:30:00Z"),
@@ -271,38 +274,109 @@ describe("integrity/charges — findOverlappingSession", () => {
       null,
     );
     expect(overlap?.id).toBe(99);
-    const args = mocks.charging_processes.findFirst.mock.calls[0][0];
+    const args = mocks.charging_processes.findMany.mock.calls[0][0];
     expect(args.where.car_id).toBe(1);
     expect(args.where.start_date).toEqual({ lt: new Date("2024-01-01T11:30:00Z") });
+    // Aucune session ouverte → pas de lecture des ticks.
+    expect(mocks.charges.groupBy).not.toHaveBeenCalled();
   });
 
   it("exclut self via excludeId pour l'édition", async () => {
-    mocks.charging_processes.findFirst.mockResolvedValue(null);
-    await findOverlappingSession(
+    mocks.charging_processes.findMany.mockResolvedValue([]);
+    const overlap = await findOverlappingSession(
       1,
       new Date("2024-01-01T10:00:00Z"),
       new Date("2024-01-01T11:00:00Z"),
       42,
     );
-    const args = mocks.charging_processes.findFirst.mock.calls[0][0];
+    expect(overlap).toBeNull();
+    const args = mocks.charging_processes.findMany.mock.calls[0][0];
     expect(args.where.id).toEqual({ not: 42 });
   });
 
-  it("cas open-ended : refus si une session ouverte existe", async () => {
-    mocks.charging_processes.findFirst.mockResolvedValue({
-      id: 7,
-      start_date: new Date("2024-01-01T08:00:00Z"),
-      end_date: null,
-    });
+  it("session ouverte dont les ticks couvrent la période → chevauchement", async () => {
+    mocks.charging_processes.findMany.mockResolvedValue([
+      { id: 7, start_date: new Date("2024-01-01T08:00:00Z"), end_date: null },
+    ]);
+    mocks.charges.groupBy.mockResolvedValue([
+      { charging_process_id: 7, _max: { date: new Date("2024-01-01T12:30:00Z") } },
+    ]);
+    const overlap = await findOverlappingSession(
+      1,
+      new Date("2024-01-01T12:00:00Z"),
+      new Date("2024-01-01T13:00:00Z"),
+      null,
+    );
+    expect(overlap?.id).toBe(7);
+  });
+
+  it("session ouverte terminée (dernier tick avant) → pas de chevauchement", async () => {
+    // Cas réel : session interrompue jamais fermée par TeslaMate, qui bloquait
+    // toute édition de charge postérieure.
+    mocks.charging_processes.findMany.mockResolvedValue([
+      { id: 248, start_date: new Date("2026-07-30T00:58:28Z"), end_date: null },
+    ]);
+    mocks.charges.groupBy.mockResolvedValue([
+      { charging_process_id: 248, _max: { date: new Date("2026-07-30T02:09:41Z") } },
+    ]);
+    const overlap = await findOverlappingSession(
+      1,
+      new Date("2026-09-02T22:00:00Z"),
+      new Date("2026-09-03T01:40:19Z"),
+      297,
+    );
+    expect(overlap).toBeNull();
+  });
+
+  it("session ouverte sans tick : fin effective = start_date", async () => {
+    mocks.charging_processes.findMany.mockResolvedValue([
+      { id: 8, start_date: new Date("2024-01-01T08:00:00Z"), end_date: null },
+    ]);
+    mocks.charges.groupBy.mockResolvedValue([]);
+    const overlap = await findOverlappingSession(
+      1,
+      new Date("2024-01-01T09:00:00Z"),
+      new Date("2024-01-01T10:00:00Z"),
+      null,
+    );
+    expect(overlap).toBeNull();
+  });
+
+  it("nouvelle session ouverte (end NULL) après une session fermée antérieure → OK", async () => {
+    mocks.charging_processes.findMany.mockResolvedValue([]);
     const overlap = await findOverlappingSession(
       1,
       new Date("2024-01-01T12:00:00Z"),
       null,
       null,
     );
-    expect(overlap?.id).toBe(7);
-    const args = mocks.charging_processes.findFirst.mock.calls[0][0];
+    expect(overlap).toBeNull();
+    const args = mocks.charging_processes.findMany.mock.calls[0][0];
     expect(args.where.OR).toBeDefined();
+  });
+});
+
+describe("integrity/charges — overlapsEffective", () => {
+  const s = (iso: string) => new Date(iso);
+  it("intervalles adjacents ne se chevauchent pas", () => {
+    expect(
+      overlapsEffective(
+        { id: 1, start_date: s("2024-01-01T08:00:00Z"), end_date: s("2024-01-01T10:00:00Z") },
+        s("2024-01-01T10:00:00Z"),
+        s("2024-01-01T10:00:00Z"),
+        s("2024-01-01T11:00:00Z"),
+      ),
+    ).toBe(false);
+  });
+  it("nouvelle session sans fin : chevauche si la fin effective est après le début", () => {
+    expect(
+      overlapsEffective(
+        { id: 1, start_date: s("2024-01-01T08:00:00Z"), end_date: null },
+        s("2024-01-01T12:00:00Z"),
+        s("2024-01-01T11:00:00Z"),
+        null,
+      ),
+    ).toBe(true);
   });
 });
 

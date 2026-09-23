@@ -8,6 +8,7 @@ import { prisma } from "@/lib/db";
 import { requireSession } from "@/lib/auth";
 import { env } from "@/lib/env";
 import { logger } from "@/lib/logger";
+import { getSelectedTimezone } from "@/lib/timezone";
 import {
   recalcFromTicks,
   applyRecalc as applyChargeRecalc,
@@ -17,6 +18,7 @@ import {
   CHARGER_TICK_FIELDS,
   type ChargerTickField,
   type ProcessRecalc,
+  type OverlapCandidate,
 } from "@/lib/integrity/charges";
 import {
   AC_POWERS_KW,
@@ -90,6 +92,24 @@ function toData(d: z.infer<typeof ChargeSchema>) {
   } satisfies Prisma.charging_processesUncheckedCreateInput;
 }
 
+/**
+ * Erreur de chevauchement qui nomme la session en conflit (id + bornes dans le
+ * fuseau choisi), pour que l'utilisateur sache laquelle corriger.
+ */
+async function overlapError(overlap: OverlapCandidate): Promise<ChargeActionState> {
+  const fmt = new Intl.DateTimeFormat("fr-FR", {
+    timeZone: await getSelectedTimezone(),
+    dateStyle: "short",
+    timeStyle: "short",
+  });
+  const end = overlap.end_date ? fmt.format(overlap.end_date) : "non terminée";
+  return {
+    ok: false,
+    error: `Chevauche la session de charge #${overlap.id} (${fmt.format(overlap.start_date)} → ${end}).`,
+    fieldErrors: { start_date: "overlapsSession", end_date: "overlapsSession" },
+  };
+}
+
 const CLOCK_TOLERANCE_MS = 5 * 60 * 1000;
 
 function isStartInFuture(startDate: Date): boolean {
@@ -125,13 +145,7 @@ export async function createChargeAction(
     data.end_date,
     null,
   );
-  if (overlap) {
-    return {
-      ok: false,
-      error: "Données invalides.",
-      fieldErrors: { start_date: "overlapsSession", end_date: "overlapsSession" },
-    };
-  }
+  if (overlap) return overlapError(overlap);
 
   let createdId: number;
   try {
@@ -179,13 +193,7 @@ export async function updateChargeAction(
     data.end_date,
     id,
   );
-  if (overlap) {
-    return {
-      ok: false,
-      error: "Données invalides.",
-      fieldErrors: { start_date: "overlapsSession", end_date: "overlapsSession" },
-    };
-  }
+  if (overlap) return overlapError(overlap);
 
   // Garde-fou métier : les ticks intermédiaires (second .. avant-dernier)
   // doivent rester dans l'intervalle [start_date, end_date]. Si la session a
@@ -772,13 +780,7 @@ export async function createChargeWithTicksAction(
   }
 
   const overlap = await findOverlappingSession(carId, startDate, endDate, null);
-  if (overlap) {
-    return {
-      ok: false,
-      error: "Données invalides.",
-      fieldErrors: { start_date: "overlapsSession", end_date: "overlapsSession" },
-    };
-  }
+  if (overlap) return overlapError(overlap);
 
   const editBefore = readPositionEdit(raw, "position_before");
   if (!editBefore) {

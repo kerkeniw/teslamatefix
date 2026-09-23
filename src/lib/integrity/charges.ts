@@ -1,13 +1,38 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
 
+export type OverlapCandidate = { id: number; start_date: Date; end_date: Date | null };
+
+/**
+ * Chevauchement réel entre une session existante et l'intervalle [start, end].
+ * Une session **ouverte** (`end_date` NULL) n'est pas considérée comme infinie :
+ * on utilise sa fin effective (dernier tick, sinon `start_date`). Sans ça, une
+ * session interrompue que TeslaMate n'a jamais fermée bloquerait toute charge
+ * postérieure du véhicule. `end` NULL = nouvelle session ouverte (sans fin).
+ */
+export function overlapsEffective(
+  candidate: OverlapCandidate,
+  effectiveEnd: Date,
+  start: Date,
+  end: Date | null,
+): boolean {
+  const candEnd = candidate.end_date ?? effectiveEnd;
+  if (end == null) return candEnd.getTime() >= start.getTime();
+  return (
+    candidate.start_date.getTime() < end.getTime() &&
+    candEnd.getTime() > start.getTime()
+  );
+}
+
 export async function findOverlappingSession(
   carId: number,
   startDate: Date,
   endDate: Date | null,
   excludeId: number | null = null,
-): Promise<{ id: number; start_date: Date; end_date: Date | null } | null> {
+): Promise<OverlapCandidate | null> {
   const idFilter = excludeId == null ? {} : { id: { not: excludeId } };
+  // Pré-filtre SQL : les sessions ouvertes passent toujours (fin inconnue),
+  // elles sont départagées ci-dessous avec leur dernier tick.
   const range: Prisma.charging_processesWhereInput =
     endDate == null
       ? {
@@ -24,11 +49,31 @@ export async function findOverlappingSession(
           ],
         };
 
-  return prisma.charging_processes.findFirst({
+  const candidates: OverlapCandidate[] = await prisma.charging_processes.findMany({
     where: { car_id: carId, ...idFilter, ...range },
     select: { id: true, start_date: true, end_date: true },
     orderBy: { start_date: "asc" },
   });
+  if (candidates.length === 0) return null;
+
+  const openIds = candidates.filter((c) => c.end_date == null).map((c) => c.id);
+  const lastTickById = new Map<number, Date>();
+  if (openIds.length > 0) {
+    const groups = await prisma.charges.groupBy({
+      by: ["charging_process_id"],
+      where: { charging_process_id: { in: openIds } },
+      _max: { date: true },
+    });
+    for (const g of groups) {
+      if (g._max.date) lastTickById.set(g.charging_process_id, g._max.date);
+    }
+  }
+
+  return (
+    candidates.find((c) =>
+      overlapsEffective(c, lastTickById.get(c.id) ?? c.start_date, startDate, endDate),
+    ) ?? null
+  );
 }
 
 export type ProcessRecalc = {
