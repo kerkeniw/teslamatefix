@@ -97,7 +97,7 @@ cat <<EOF
    Compose dir : $(pwd)
    Service DB  : $PG_SERVICE  (user=$DB_USER, db=$DB_NAME)
    Dump        : $DUMP_FILE  ($SIZE)
-   Le schéma 'public' et 'private' de la base $DB_NAME seront DROP CASCADE.
+   Les schémas 'public', 'private' et 'telemetry' de la base $DB_NAME seront DROP CASCADE.
 
 EOF
 
@@ -116,13 +116,16 @@ else
   echo "  ($TM_SERVICE absent du compose — skip)"
 fi
 
-echo "→ [2/4] Reset schémas public/private…"
+echo "→ [2/4] Reset schémas public/private/telemetry…"
 # IF EXISTS pour rester idempotent si 'private' n'a pas encore été créé
 # (cas d'une base fraîchement initialisée). Sinon strictement conforme à
 # la doc TeslaMate.
 docker compose exec -T "$PG_SERVICE" psql -U "$DB_USER" -d "$DB_NAME" <<SQL
 DROP SCHEMA IF EXISTS public CASCADE;
 DROP SCHEMA IF EXISTS private CASCADE;
+-- Schéma ajouté par le relay Fleet Telemetry (TeslaMateAPI) : présent dans
+-- le dump, il doit être recréé à neuf sinon COPY s'ajoute à l'existant.
+DROP SCHEMA IF EXISTS telemetry CASCADE;
 CREATE SCHEMA public;
 CREATE EXTENSION cube WITH SCHEMA public;
 CREATE EXTENSION earthdistance WITH SCHEMA public;
