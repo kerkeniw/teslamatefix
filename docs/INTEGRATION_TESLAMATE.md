@@ -25,6 +25,43 @@ cat teslamate-YYYYMMDD-HHMM.pgdump | \
   pg_restore -U teslamate -d teslamate --clean --if-exists
 ```
 
+## Env de dev : rapatrier la base du NAS
+
+Pour analyser/tester sur une copie locale de la prod, sans toucher au serveur
+principal. Pré-requis : un compose TeslaMate local avec le service `database`
+(TeslaMate lui-même désactivé pour ne rien pousser), et les scripts
+`scripts/teslamate-pull-from-nas.sh` + `scripts/teslamate-restore.sh`
+accessibles depuis ce répertoire (symlink conseillé).
+
+```bash
+cd ../TeslaMate                       # répertoire du compose local
+./teslamate-pull-from-nas.sh          # dump NAS → scp → restore (confirmation)
+./teslamate-pull-from-nas.sh --no-restore   # récupère le dump seulement
+```
+
+Le script :
+
+1. ouvre une connexion SSH maître vers `NAS_HOST` (mot de passe SSH demandé
+   une seule fois) ;
+2. lance `sudo /usr/local/bin/docker-compose exec -T database pg_dump …` dans
+   `NAS_COMPOSE_DIR` et écrit `teslamate-YYYYMMDD-HHMM.bck` dans
+   `NAS_DUMP_DIR` (la copie reste sur le NAS) ; sudo peut demander son mot de
+   passe ;
+3. vérifie le dump (marqueur de fin), le télécharge dans `LOCAL_DUMP_DIR`
+   (`./data`) et contrôle la taille ;
+4. enchaîne `teslamate-restore.sh` (destructif : DROP des schémas locaux).
+
+Variables (env ou `.env` local) : `NAS_HOST` (`mynassrv`), `NAS_COMPOSE_DIR`
+(`/var/services/homes/Wicem/TeslaMate`), `NAS_DUMP_DIR` (`$NAS_COMPOSE_DIR/backups`),
+`LOCAL_DUMP_DIR` (`./data`), `DATABASE_USER` / `DATABASE_NAME` (`teslamate`).
+Le nom du service Postgres du NAS est en dur (`NAS_PG_SERVICE="database"`).
+Spécificités Synology DSM : `docker-compose` est appelé par son chemin absolu
+(le `secure_path` de sudo ne contient pas `/usr/local/bin`) et le
+téléchargement utilise `scp -O` (protocole scp legacy, pas de SFTP côté NAS).
+
+Astuces : `ssh-copy-id mynassrv` évite le mot de passe SSH. Les anciens dumps
+ne sont jamais supprimés (ni NAS ni local) — à purger manuellement.
+
 ## Diff du `docker-compose.yml`
 
 Avant (extrait du compose TeslaMate par défaut) :
