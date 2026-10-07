@@ -1,6 +1,6 @@
 # Roadmap — TeslaMateFix
 
-> Mise à jour : **2026-10-08** (publication v0.7.0 vérifiée, nettoyage v0.7.1).
+> Mise à jour : **2026-10-08** (publication v0.7.0 vérifiée, nettoyage v0.7.1, lot v0.7.2 charges + Privacy).
 > Document vivant : cocher / déplacer les lignes au fil des releases. Le détail de
 > chaque version livrée est dans son `RELEASE_v<version>.md`, la recette dans
 > [`TEST_PLAN.md`](TEST_PLAN.md).
@@ -61,6 +61,19 @@ Légende statut : ✅ fait · 🟡 en cours / partiel · ⬜ à faire.
 | Purger les captures Playwright locales à la racine (ignorées par git) | P3 | ⬜ |
 | Scripts NAS (`teslamate-pull-from-nas.sh`, restore avec DROP `telemetry`) : en attente sur la branche `chore/nas-pull-scripts`, à adapter à une installation sans TeslaMateAPI avant merge | P3 | ⬜ |
 
+## v0.7.2 — listing charges + contrôle Privacy Tesla (P1)
+
+Détail : [`RELEASE_v0.7.2.md`](RELEASE_v0.7.2.md).
+
+| Tâche | Prio | Statut |
+|---|---|---|
+| Listing charges façon Grafana : colonnes, menu de colonnes, filtres (dont énergie ≥ et efficience ≤), récapitulatif | P1 | ✅ |
+| Import de `Charging Data.csv` (export Privacy Tesla) et rapport de comparaison avec actions guidées | P1 | ✅ |
+| Assistant de création de charge pré-remplissable par l'URL | P1 | ✅ |
+| Recette sur la base locale restaurée + export réel | P1 | ⬜ |
+| Merge `feat/charges-listing-privacy` → `main`, tag `v0.7.2`, publication Docker | P1 | ⬜ |
+| Corrections en lot depuis le rapport (créer toutes les manquantes, fusionner les fragments) | P3 | ⬜ |
+
 ## v0.8.0 — durcissement sécurité (P2)
 
 Source : [`SECURITY_REVIEW.md`](SECURITY_REVIEW.md) (revue du 2026-05-01 + addendum v0.7.0).
@@ -100,5 +113,5 @@ Priorités détaillées dans [`TEST_PLAN.md` §5](TEST_PLAN.md).
 | Assistant trajet : calcul du dénivelé (`ascent`/`descent`) via une API d'élévation | P3 | ⬜ |
 | Doc : héberger soi-même Nominatim / OSRM (quotas des instances publiques) | P3 | ⬜ |
 | Valider et fiabiliser les flux d'édition des autres entités (adresses, géofences, états, mises à jour, paramètres) — aujourd'hui « non tous validés » | P3 | 🟡 |
-| Détection d'anomalies étendue aux charges (même principe que les trajets) | P3 | ⬜ |
+| Détection d'anomalies étendue aux charges (même principe que les trajets) — v0.7.2 : filtres énergie/efficience + comparaison Privacy Tesla | P3 | 🟡 |
 | Dashboard : aligner sa liste d'anomalies sur les règles de détection de l'édition de trajet, avec accès direct à « Corriger » | P3 | ⬜ |

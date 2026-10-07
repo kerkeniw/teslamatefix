@@ -9,7 +9,7 @@ TeslaMate, se connecte à sa base PostgreSQL et expose une UI sécurisée pour
 réparer chaque entité (`drives`, `charges`, `positions`, `addresses`,
 `geofences`, `states`, `updates`, `cars`, `settings`).
 
-> **Statut v0.7.0** — les modules de **création et de modification des charges et
+> **Statut v0.7.2** — les modules de **création et de modification des charges et
 > des trajets** (dont l'**assistant de création de trajet** avec géocodage +
 > itinéraire, l'**édition de trajet avec carte** et la **correction d'anomalies
 > depuis les positions**) sont les flux d'écriture couverts. La page
@@ -18,6 +18,46 @@ réparer chaque entité (`drives`, `charges`, `positions`, `addresses`,
 > flux d'édition n'ont pas tous été validés. À utiliser avec précaution et
 > **toujours sur une base sauvegardée** (`pg_dump` recommandé avant la première
 > utilisation).
+
+## Nouveautés v0.7.2
+
+Détail et étapes manuelles : [`docs/RELEASE_v0.7.2.md`](docs/RELEASE_v0.7.2.md).
+
+### Listing des charges façon Grafana (`/charges`)
+
+- **Colonnes du dashboard Grafana « Charges »** : date, lieu, type AC/DC (déduit
+  des mesures), durée, coût, coût/kWh, énergie ajoutée et consommée,
+  **efficience**, température, puissance moyenne, vitesse de charge, autonomie
+  gagnée, % de départ et d'arrivée, odomètre. Colonnes brutes masquées par défaut.
+- **Menu « Colonnes »** : affichage personnalisable, mémorisé dans le navigateur.
+- **Filtres** : plages rapides (comme Positions), dates, type, lieu, géofences,
+  **énergie ajoutée ≥**, **énergie consommée ≥**, **efficience ≤**, coût ≥,
+  durée ≥, sessions ouvertes.
+- **Récapitulatif de la période filtrée** : nombre de sessions, énergies, coût
+  total, durée moyenne.
+- Les valeurs aberrantes (efficience < 70 %, énergie > 100 kWh) sont mises en
+  évidence. Exemple : `?min_used=100` isole les sessions dont l'énergie
+  consommée est irréaliste.
+
+### Contrôle avec l'export Privacy Tesla (`/privacy`)
+
+Tesla fournit sur demande un export de vos données personnelles. Son fichier
+`Charging Data/Charging Data.csv` liste chaque session de charge vue par la
+voiture (dates UTC, énergie ajoutée, type de borne, lieu Home/Away).
+
+- **Import** depuis la page d'accueil (carte « Contrôle avec l'export Tesla ») :
+  dézipper l'archive avec le mot de passe reçu, puis choisir ce CSV. Les imports
+  successifs se cumulent dans le volume `/data` (`privacy-charging.json`) ; la
+  base TeslaMate n'est jamais modifiée par l'import.
+- **Rapport** recalculé à chaque visite, par groupes de sessions qui se
+  chevauchent (Tesla et TeslaMate ne découpent pas les recharges de la même
+  façon) :
+  - *manquantes* : bouton **Créer la charge**, qui ouvre l'assistant pré-rempli ;
+  - *fragmentées* : une recharge Tesla enregistrée en plusieurs sessions ;
+  - *écart d'énergie* : valeur Tesla attendue affichée ;
+  - *inconnues de Tesla* : les sessions vides sont signalées comme à supprimer.
+- Aucune correction automatique : chaque action ouvre l'écran d'édition ou de
+  création habituel.
 
 ## Nouveautés v0.7.0
 

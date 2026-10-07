@@ -138,7 +138,12 @@
     "summary": "Summary",
     "drivesThisMonth": "Drives this month",
     "chargesThisMonth": "Charges this month",
-    "openSince": "open {time}"
+    "openSince": "open {time}",
+    "privacyCheck": "Check against the Tesla export",
+    "privacyCheckHint": "Import “Charging Data.csv” from the Tesla Privacy export",
+    "privacyCheckStatus": "{n, plural, =0 {No discrepancy} one {# discrepancy to fix} other {# discrepancies to fix}} · imported {date}",
+    "privacyCheckAction": "Check",
+    "privacyCheckNone": "No export imported"
   },
   "addresses": {
     "title": "Addresses",
@@ -713,7 +718,29 @@
     "subtitle": "Charging sessions and per-tick measurements.",
     "new": "New charge",
     "edit": "Edit charge",
-    "create": "Create charging session",
+    "create": {
+      "title": "Create charging session",
+      "step1": {
+        "title": "Session details"
+      },
+      "step2": {
+        "title": "Verification and enrichment"
+      },
+      "actions": {
+        "validateStep1": "Validate",
+        "confirmCreate": "Create session",
+        "backToStep1": "Back to details"
+      },
+      "positions": {
+        "before": "Position before start",
+        "after": "Position after end",
+        "afterMissing": "No position found after the end date: the start position will be used for the end tick.",
+        "editedHint": "values edited (new position will be created)"
+      },
+      "warnings": {
+        "acLimitedTo11kW": "Tesla cars typically cap AC charging at 11 kW, even on a 22 kW station."
+      }
+    },
     "empty": "No charging session.",
     "ongoing": "Ongoing",
     "tabs": {
@@ -799,7 +826,17 @@
       "to": "To",
       "all": "All",
       "apply": "Apply",
-      "reset": "Reset"
+      "reset": "Reset",
+      "type": "Type",
+      "location": "Location",
+      "locationPlaceholder": "Geofence, address, city…",
+      "geofence": "Geofences",
+      "minAdded": "Energy added ≥",
+      "minUsed": "Energy used ≥",
+      "maxEfficiency": "Efficiency ≤",
+      "minCost": "Cost ≥",
+      "minDuration": "Duration ≥",
+      "openOnly": "Open sessions only"
     },
     "type": {
       "ac": "AC",
@@ -908,29 +945,6 @@
       "hideChargerDetails": "Hide details",
       "toggleBatteryUnit": "Toggle % / km"
     },
-    "create": {
-      "title": "Create charging session",
-      "step1": {
-        "title": "Session details"
-      },
-      "step2": {
-        "title": "Verification and enrichment"
-      },
-      "actions": {
-        "validateStep1": "Validate",
-        "confirmCreate": "Create session",
-        "backToStep1": "Back to details"
-      },
-      "positions": {
-        "before": "Position before start",
-        "after": "Position after end",
-        "afterMissing": "No position found after the end date: the start position will be used for the end tick.",
-        "editedHint": "values edited (new position will be created)"
-      },
-      "warnings": {
-        "acLimitedTo11kW": "Tesla cars typically cap AC charging at 11 kW, even on a 22 kW station."
-      }
-    },
     "costHint": {
       "formula": "{quantity} {unit} × {price}{hasFee, select, yes { + {fee} fee} other {}} — {geofence} = {cost}",
       "noTariff": "No tariff on geofence “{geofence}”: enter the cost manually.",
@@ -945,6 +959,41 @@
       "failed": "Estimation failed.",
       "missingEnergy": "Fill in added energy before estimating.",
       "estimating": "Estimating…"
+    },
+    "columnsMenu": "Columns",
+    "compareWithTesla": "Compare with Tesla",
+    "columns": {
+      "date": "Date",
+      "place": "Location",
+      "type": "Type",
+      "duration": "Duration",
+      "cost": "Cost",
+      "costPerKwh": "Cost / kWh",
+      "energyAdded": "Energy added",
+      "energyUsed": "Energy used",
+      "efficiency": "Efficiency",
+      "outsideTemp": "Temp.",
+      "avgPower": "Ø Power",
+      "chargeRate": "Ø Charge rate",
+      "rangeAdded": "Range gained",
+      "batteryStart": "% start",
+      "batteryEnd": "% end",
+      "odometer": "Odometer",
+      "endDate": "End",
+      "startIdealRange": "Ideal range start",
+      "endIdealRange": "Ideal range end",
+      "startRatedRange": "Rated range start",
+      "endRatedRange": "Rated range end",
+      "addressId": "Address ID",
+      "geofenceId": "Geofence ID",
+      "positionId": "Position ID"
+    },
+    "summary": {
+      "count": "Sessions",
+      "energyAdded": "Energy added",
+      "energyUsed": "Energy used",
+      "cost": "Total cost",
+      "avgDuration": "Average duration"
     }
   },
   "positions": {
@@ -1075,6 +1124,62 @@
       "create": "Create position",
       "save": "Save",
       "delete": "Delete"
+    }
+  },
+  "privacy": {
+    "title": "Check against the Tesla export",
+    "subtitle": "Compares the charging sessions seen by the car (Tesla Privacy export) with those recorded by TeslaMate.",
+    "import": {
+      "title": "Import “Charging Data.csv”",
+      "help": "Request your data from Tesla (data privacy section of your tesla.com account), unzip the archive with the password sent by Tesla, then pick “Charging Data/Charging Data.csv”. Successive imports are merged.",
+      "file": "CSV file",
+      "submit": "Import",
+      "pending": "Importing…",
+      "done": "{n} sessions read, {added} new.",
+      "entry": "{date} — {file}: {n} sessions ({added} new), from {from} to {to}"
+    },
+    "clear": {
+      "button": "Clear imports",
+      "title": "Clear Tesla imports?",
+      "description": "Imported sessions are removed from /data. The TeslaMate database is not modified.",
+      "confirm": "Clear",
+      "done": "Imports cleared."
+    },
+    "empty": "No export imported yet.",
+    "readOnly": "Read-only mode: the report is available but corrections are disabled.",
+    "unknownVins": "Vehicles in the export unknown to TeslaMate (ignored): {vins}",
+    "toFix": "{n, plural, one {# discrepancy to fix} other {# discrepancies to fix}}.",
+    "allGood": "Nothing to fix: TeslaMate matches Tesla over the imported period.",
+    "tesla": "Tesla",
+    "teslamate": "TeslaMate",
+    "open": "open",
+    "minor": "minor",
+    "sessions": "{n, plural, one {# session} other {# sessions}}",
+    "dateShift": "{min} min shift",
+    "kinds": {
+      "missing": "Missing",
+      "fragmented": "Fragmented",
+      "energy_mismatch": "Energy mismatch",
+      "extra": "Unknown to Tesla",
+      "ok": "Matching"
+    },
+    "kindsHelp": {
+      "missing": "Charges seen by Tesla but missing in TeslaMate (network loss, TeslaMate stopped…). “Minor” charges are below 0.5 kWh.",
+      "fragmented": "One Tesla charge recorded as several TeslaMate sessions.",
+      "energy_mismatch": "Same charge on both sides but different energy added (beyond 0.5 kWh and 5%).",
+      "extra": "TeslaMate sessions with no match in the Tesla export.",
+      "ok": "Energy added matches within 0.5 kWh or 5%."
+    },
+    "advice": {
+      "missing": "Create the session with the wizard, prefilled with Tesla's dates and {tesla}.",
+      "fragmented": "Close sessions left open (Recalc tab), delete empty fragments and check the energy (difference {diff}).",
+      "energy_mismatch": "Open the session and check the energy added: Tesla reports {tesla} (difference {diff}).",
+      "extra": "To check: session missing from the Tesla export.",
+      "extraEmpty": "Empty session (0 kWh, under 2 min): delete it."
+    },
+    "actions": {
+      "create": "Create charge",
+      "open": "Open #{id}"
     }
   }
 }

@@ -1,6 +1,9 @@
 import { prisma } from "./db";
 import { getSelectedCarId } from "./vehicle";
 import { getVehicleImages, type VehicleImageSet } from "./tesla/vehicle-image";
+import { logger } from "./logger";
+import { readPrivacyStore } from "./privacy/store";
+import { buildChargeReport } from "./privacy/report";
 
 export type DashboardData = {
   car: {
@@ -39,6 +42,8 @@ export type DashboardData = {
     drives: number;
     charges: number;
   };
+  /** Dernier import de l'export Privacy Tesla et nombre d'écarts restant à traiter. */
+  privacyCheck: { importedAtIso: string; toFix: number } | null;
   anomalies: Array<{
     kind: "openDrive" | "openChargingProcess" | "openState";
     id: number;
@@ -265,6 +270,20 @@ export async function getDashboardData(): Promise<DashboardData> {
       drives: drivesCount,
       charges: chargesCount,
     },
+    privacyCheck: await getPrivacyCheck(),
     anomalies,
   };
+}
+
+async function getPrivacyCheck(): Promise<DashboardData["privacyCheck"]> {
+  const store = readPrivacyStore();
+  const last = store.imports[store.imports.length - 1];
+  if (!last || store.sessions.length === 0) return null;
+  try {
+    const report = await buildChargeReport(store.sessions);
+    return { importedAtIso: last.importedAt, toFix: report.toFix };
+  } catch (err) {
+    logger.warn({ event: "dashboard.privacy_check.error", err: (err as Error).message });
+    return null;
+  }
 }

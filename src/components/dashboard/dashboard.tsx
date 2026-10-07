@@ -4,6 +4,7 @@ import {
   BatteryCharging,
   Car as CarIcon,
   ChevronRight,
+  FileSearch,
   ImageOff,
   Plus,
 } from "lucide-react";
@@ -239,6 +240,21 @@ export async function Dashboard({ data }: { data: DashboardData }) {
               actionHref="/drives/new"
               actionLabel={t("create")}
               primaryAction
+            />
+            <QuickCard
+              icon={<FileSearch className="size-4 text-accent-blue" aria-hidden />}
+              title={t("privacyCheck")}
+              primary={
+                data.privacyCheck
+                  ? t("privacyCheckStatus", {
+                      n: data.privacyCheck.toFix,
+                      date: formatShort(data.privacyCheck.importedAtIso),
+                    })
+                  : t("privacyCheckNone")
+              }
+              secondary={t("privacyCheckHint")}
+              actionHref="/privacy"
+              actionLabel={t("privacyCheckAction")}
             />
           </div>
         </div>

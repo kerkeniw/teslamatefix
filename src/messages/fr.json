@@ -138,7 +138,12 @@
     "summary": "Résumé",
     "drivesThisMonth": "Trajets ce mois",
     "chargesThisMonth": "Charges ce mois",
-    "openSince": "ouvert {time}"
+    "openSince": "ouvert {time}",
+    "privacyCheck": "Contrôle avec l'export Tesla",
+    "privacyCheckHint": "Importer « Charging Data.csv » de l'export Privacy Tesla",
+    "privacyCheckStatus": "{n, plural, =0 {Aucun écart} one {# écart à traiter} other {# écarts à traiter}} · import du {date}",
+    "privacyCheckAction": "Contrôler",
+    "privacyCheckNone": "Aucun export importé"
   },
   "addresses": {
     "title": "Adresses",
@@ -713,7 +718,29 @@
     "subtitle": "Sessions de charge et mesures associées.",
     "new": "Nouvelle charge",
     "edit": "Éditer la charge",
-    "create": "Créer une session de charge",
+    "create": {
+      "title": "Créer une session de charge",
+      "step1": {
+        "title": "Saisie de la session"
+      },
+      "step2": {
+        "title": "Vérification et enrichissement"
+      },
+      "actions": {
+        "validateStep1": "Valider",
+        "confirmCreate": "Créer la session",
+        "backToStep1": "Retour à la saisie"
+      },
+      "positions": {
+        "before": "Position avant le début",
+        "after": "Position après la fin",
+        "afterMissing": "Aucune position après la date de fin : la position de début sera utilisée pour le tick de fin.",
+        "editedHint": "valeurs modifiées (nouvelle position créée)"
+      },
+      "warnings": {
+        "acLimitedTo11kW": "La voiture plafonne généralement à 11 kW en AC, même sur une borne 22 kW."
+      }
+    },
     "empty": "Aucune session de charge.",
     "ongoing": "En cours",
     "tabs": {
@@ -799,7 +826,17 @@
       "to": "Au",
       "all": "Tous",
       "apply": "Appliquer",
-      "reset": "Réinitialiser"
+      "reset": "Réinitialiser",
+      "type": "Type",
+      "location": "Lieu",
+      "locationPlaceholder": "Géofence, adresse, ville…",
+      "geofence": "Géofences",
+      "minAdded": "Énergie ajoutée ≥",
+      "minUsed": "Énergie consommée ≥",
+      "maxEfficiency": "Efficience ≤",
+      "minCost": "Coût ≥",
+      "minDuration": "Durée ≥",
+      "openOnly": "Sessions ouvertes seulement"
     },
     "type": {
       "ac": "AC",
@@ -908,29 +945,6 @@
       "hideChargerDetails": "Masquer les détails",
       "toggleBatteryUnit": "Basculer % / km"
     },
-    "create": {
-      "title": "Créer une session de charge",
-      "step1": {
-        "title": "Saisie de la session"
-      },
-      "step2": {
-        "title": "Vérification et enrichissement"
-      },
-      "actions": {
-        "validateStep1": "Valider",
-        "confirmCreate": "Créer la session",
-        "backToStep1": "Retour à la saisie"
-      },
-      "positions": {
-        "before": "Position avant le début",
-        "after": "Position après la fin",
-        "afterMissing": "Aucune position après la date de fin : la position de début sera utilisée pour le tick de fin.",
-        "editedHint": "valeurs modifiées (nouvelle position créée)"
-      },
-      "warnings": {
-        "acLimitedTo11kW": "La voiture plafonne généralement à 11 kW en AC, même sur une borne 22 kW."
-      }
-    },
     "costHint": {
       "formula": "{quantity} {unit} × {price}{hasFee, select, yes { + {fee} de frais} other {}} — {geofence} = {cost}",
       "noTariff": "Pas de tarif sur la géofence « {geofence} » : coût à saisir manuellement.",
@@ -945,6 +959,41 @@
       "failed": "Échec de l'estimation.",
       "missingEnergy": "Renseigner l'énergie ajoutée avant d'estimer.",
       "estimating": "Estimation…"
+    },
+    "columnsMenu": "Colonnes",
+    "compareWithTesla": "Comparer avec Tesla",
+    "columns": {
+      "date": "Date",
+      "place": "Lieu",
+      "type": "Type",
+      "duration": "Durée",
+      "cost": "Coût",
+      "costPerKwh": "Coût / kWh",
+      "energyAdded": "Énergie ajoutée",
+      "energyUsed": "Énergie consommée",
+      "efficiency": "Efficience",
+      "outsideTemp": "Temp.",
+      "avgPower": "Ø Puissance",
+      "chargeRate": "Ø Vitesse de charge",
+      "rangeAdded": "Autonomie gagnée",
+      "batteryStart": "% départ",
+      "batteryEnd": "% arrivée",
+      "odometer": "Odomètre",
+      "endDate": "Fin",
+      "startIdealRange": "Autonomie idéale départ",
+      "endIdealRange": "Autonomie idéale arrivée",
+      "startRatedRange": "Autonomie rated départ",
+      "endRatedRange": "Autonomie rated arrivée",
+      "addressId": "ID adresse",
+      "geofenceId": "ID géofence",
+      "positionId": "ID position"
+    },
+    "summary": {
+      "count": "Sessions",
+      "energyAdded": "Énergie ajoutée",
+      "energyUsed": "Énergie consommée",
+      "cost": "Coût total",
+      "avgDuration": "Durée moyenne"
     }
   },
   "positions": {
@@ -1075,6 +1124,62 @@
       "create": "Créer la position",
       "save": "Enregistrer",
       "delete": "Supprimer"
+    }
+  },
+  "privacy": {
+    "title": "Contrôle avec l'export Tesla",
+    "subtitle": "Compare les sessions de charge vues par la voiture (export Privacy Tesla) avec celles enregistrées par TeslaMate.",
+    "import": {
+      "title": "Importer « Charging Data.csv »",
+      "help": "Demandez vos données à Tesla (rubrique confidentialité des données de votre compte tesla.com), dézippez l'archive reçue avec le mot de passe envoyé par Tesla, puis choisissez le fichier « Charging Data/Charging Data.csv ». Les imports successifs se cumulent.",
+      "file": "Fichier CSV",
+      "submit": "Importer",
+      "pending": "Import…",
+      "done": "{n} sessions lues, {added} nouvelles.",
+      "entry": "{date} — {file} : {n} sessions ({added} nouvelles), du {from} au {to}"
+    },
+    "clear": {
+      "button": "Effacer les imports",
+      "title": "Effacer les imports Tesla ?",
+      "description": "Les sessions importées sont supprimées de /data. La base TeslaMate n'est pas modifiée.",
+      "confirm": "Effacer",
+      "done": "Imports effacés."
+    },
+    "empty": "Aucun export importé pour l'instant.",
+    "readOnly": "Mode lecture seule : le rapport est consultable mais les corrections sont désactivées.",
+    "unknownVins": "Véhicules de l'export inconnus de TeslaMate (ignorés) : {vins}",
+    "toFix": "{n, plural, one {# écart à traiter} other {# écarts à traiter}}.",
+    "allGood": "Aucun écart à traiter : TeslaMate est cohérent avec Tesla sur la période importée.",
+    "tesla": "Tesla",
+    "teslamate": "TeslaMate",
+    "open": "ouverte",
+    "minor": "mineur",
+    "sessions": "{n, plural, one {# session} other {# sessions}}",
+    "dateShift": "décalage {min} min",
+    "kinds": {
+      "missing": "Manquantes",
+      "fragmented": "Fragmentées",
+      "energy_mismatch": "Écart d'énergie",
+      "extra": "Inconnues de Tesla",
+      "ok": "Concordantes"
+    },
+    "kindsHelp": {
+      "missing": "Recharges vues par Tesla mais absentes de TeslaMate (perte réseau, TeslaMate arrêté…). Les recharges « mineures » font moins de 0,5 kWh.",
+      "fragmented": "Une recharge Tesla enregistrée en plusieurs sessions par TeslaMate.",
+      "energy_mismatch": "Même recharge des deux côtés, mais énergie ajoutée différente (au-delà de 0,5 kWh et 5 %).",
+      "extra": "Sessions TeslaMate sans équivalent dans l'export Tesla.",
+      "ok": "Énergie ajoutée identique à 0,5 kWh ou 5 % près."
+    },
+    "advice": {
+      "missing": "Créer la session avec l'assistant, pré-rempli avec les dates et les {tesla} de Tesla.",
+      "fragmented": "Fermer les sessions restées ouvertes (onglet Recalcul), supprimer les fragments vides et vérifier l'énergie (écart {diff}).",
+      "energy_mismatch": "Ouvrir la session et vérifier l'énergie ajoutée : Tesla indique {tesla} (écart {diff}).",
+      "extra": "À vérifier : session absente de l'export Tesla.",
+      "extraEmpty": "Session vide (0 kWh, moins de 2 min) : à supprimer."
+    },
+    "actions": {
+      "create": "Créer la charge",
+      "open": "Ouvrir #{id}"
     }
   }
 }
