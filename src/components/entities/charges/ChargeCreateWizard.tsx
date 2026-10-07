@@ -581,9 +581,7 @@ function Step2({
 
   // Si l'utilisateur n'a pas touché manuellement le pilot_current, il suit
   // automatiquement le charger_actual_current (pattern observé chez TeslaMate).
-  useEffect(() => {
-    if (!pilotTouched) setChargerPilotCurrent(chargerCurrent);
-  }, [chargerCurrent, pilotTouched]);
+  const pilotCurrentValue = pilotTouched ? chargerPilotCurrent : chargerCurrent;
 
   const [state, formAction, pending] = useActionState<
     ChargeActionState | null,
@@ -851,7 +849,7 @@ function Step2({
             <NumberInput
               id="charger_pilot_current"
               name="charger_pilot_current"
-              value={chargerPilotCurrent}
+              value={pilotCurrentValue}
               onChange={(e) => {
                 setPilotTouched(true);
                 setChargerPilotCurrent((e.target as HTMLInputElement).value);

@@ -551,6 +551,7 @@ async function insertModifiedPosition(
   // On clone l'original puis on surcharge avec les valeurs éditées.
   // `id` est supprimé pour laisser autoincrement. La date d'origine est
   // conservée car elle représente l'instant GPS, pas l'instant de la session.
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { id: _ignored, ...rest } = original;
   const data: Prisma.positionsUncheckedCreateInput = {
     ...rest,
