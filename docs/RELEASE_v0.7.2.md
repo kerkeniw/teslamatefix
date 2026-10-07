@@ -5,7 +5,7 @@
 
 ## État
 
-- Branche : `feat/charges-listing-privacy` (worktree `.claude/worktrees/feat+charges-listing-privacy`).
+- Branche : `feat/charges-listing-privacy`, fusionnée en fast-forward sur `main`.
 - `package.json` version : `0.7.2`.
 - Nature : **évolution fonctionnelle**. Rebuild de l'image requis. Aucune
   migration de base ; un nouveau fichier `privacy-charging.json` apparaît dans
@@ -96,8 +96,8 @@
         `var/…/Charging Data/Charging Data.csv` : on retrouve les compteurs ci-dessus ;
   - [ ] « Créer la charge » sur une session manquante : l'assistant est pré-rempli ;
   - [ ] corriger une charge (#192), revenir sur `/privacy` : l'écart a disparu.
-- [ ] Merge `feat/charges-listing-privacy` → `main`, tag `v0.7.2`.
-- [ ] `git push origin main` + `git push origin v0.7.2` (publication Docker Hub).
+- [x] Merge `feat/charges-listing-privacy` → `main`, tag `v0.7.2` (2026-10-08).
+- [x] `git push origin main` + `git push origin v0.7.2` (publication Docker Hub).
 - [ ] Vérifier `docker manifest inspect wkerkeni/teslamatefix:0.7.2` (amd64 + arm64).
 - [ ] En production : vérifier que le volume `/data` est accessible en écriture
       (sinon l'import affiche une erreur explicite).

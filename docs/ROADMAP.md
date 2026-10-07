@@ -23,6 +23,8 @@ Légende statut : ✅ fait · 🟡 en cours / partiel · ⬜ à faire.
 | v0.5.1 | 2026-06-23 | Outillage Fleet API (collection Postman, scope `vehicle_location`) — *doc only, pas de tag (décision 2026-10-08)* | [RELEASE](RELEASE_v0.5.1.md) |
 | v0.5.2 | 2026-07-02 | Photo officielle du véhicule (compositor), onglet Options, `/cars` en lecture seule | [RELEASE](RELEASE_v0.5.2.md) |
 | **v0.7.0** | 2026-09-23 | Trajets (assistant de création, édition + carte, listing Grafana, correction d'anomalies) + Positions (carte, lots, quick-ranges) + stabilisation des charges (chevauchement, coût auto, autonomies depuis SOC). Image Docker `0.7.0` publiée (amd64 + arm64) | [RELEASE](RELEASE_v0.7.0.md) |
+| v0.7.1 | 2026-10-08 | Hygiène : worktrees/branches/tags nettoyés, lint à zéro — *pas de tag, livrée avec v0.7.2* | [RELEASE](RELEASE_v0.7.1.md) |
+| **v0.7.2** | 2026-10-08 | Listing charges façon Grafana (colonnes personnalisables, filtres énergie/efficience, récapitulatif) + contrôle par l'export Privacy Tesla (`/privacy`) | [RELEASE](RELEASE_v0.7.2.md) |
 
 > La v0.6.0 n'a jamais été publiée : son contenu est intégré à la v0.7.0.
 
@@ -71,7 +73,7 @@ Détail : [`RELEASE_v0.7.2.md`](RELEASE_v0.7.2.md).
 | Import de `Charging Data.csv` (export Privacy Tesla) et rapport de comparaison avec actions guidées | P1 | ✅ |
 | Assistant de création de charge pré-remplissable par l'URL | P1 | ✅ |
 | Recette sur la base locale restaurée + export réel | P1 | ⬜ |
-| Merge `feat/charges-listing-privacy` → `main`, tag `v0.7.2`, publication Docker | P1 | ⬜ |
+| Merge `feat/charges-listing-privacy` → `main`, tag `v0.7.2`, publication Docker | P1 | ✅ |
 | Corrections en lot depuis le rapport (créer toutes les manquantes, fusionner les fragments) | P3 | ⬜ |
 
 ## v0.8.0 — durcissement sécurité (P2)
