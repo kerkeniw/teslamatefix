@@ -84,13 +84,14 @@ Pièges :
 
 ## Pistes pour TeslaMateFix
 
-- **Schéma optionnel** : `telemetry` n'existe que si TeslaMateAPI est installé. Le détecter
-  (`to_regclass('telemetry.reconstructions')`) et retomber sur la seule signature des colonnes sinon.
-- **Accès** : Prisma ne déclare que `private` et `public` (`prisma/schema.prisma`). Utiliser une
-  requête brute (`$queryRaw`) plutôt que d'ajouter `telemetry` aux schémas introspectés, pour ne pas
-  lier le client Prisma à un schéma facultatif.
+TeslaMateFix ne dépend pas de TeslaMateAPI : la détection, les capacités et les règles (lecture seule,
+`$queryRaw`, hors client Prisma) sont décrites dans
+[INTEGRATION_TESLAMATEAPI.md](INTEGRATION_TESLAMATEAPI.md).
+
+- **Avec les capacités `reconstructions` et `fill`** : les quatre origines, par la requête ci-dessus.
+- **Sans** : seules `vehicle_data` et `flux` sont distinguables, par la signature des colonnes
+  (`ideal_battery_range_km` ou `rated_battery_range_km` remplies ou non), en le signalant à
+  l'utilisateur.
 - **Affichage** : une couleur par origine sur la carte du trajet et dans la liste des positions, et
-  la répartition par trajet (comme le tableau ci-dessus). Les positions `d13` et `flux_complete` sont
-  des données reconstruites : à signaler, notamment avant une correction manuelle.
-- **Lecture seule** : TeslaMateFix ne doit jamais écrire dans `telemetry` ; les annulations passent
-  par l'outil D13 (`./scripts/reconstruct.sh undo`), qui tient ses traces à jour.
+  la répartition par trajet (comme le tableau des mesures). Les positions `d13` et `flux_complete`
+  sont des données reconstruites : à signaler, notamment avant une correction manuelle.
