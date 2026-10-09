@@ -322,6 +322,9 @@ survivent. Détails et compatibilité TeslaMate :
 - **Intégration TeslaMate détaillée** (sauvegarde Postgres, reverse-proxy
   nginx/Caddy/Traefik) —
   [`docs/INTEGRATION_TESLAMATE.md`](docs/INTEGRATION_TESLAMATE.md).
+- **Origine des positions** (appel Fleet API, flux de télémétrie, reconstruction
+  TeslaMateAPI) : comment la reconnaître en base —
+  [`docs/ORIGINE_POSITIONS.md`](docs/ORIGINE_POSITIONS.md).
 - **Stack technique** — Next.js 16, React 19, Prisma 6 (introspection
   read-only de TeslaMate), iron-session, next-intl FR/EN, Tailwind 4 +
   shadcn/ui.
