@@ -325,6 +325,9 @@ survivent. Détails et compatibilité TeslaMate :
 - **Origine des positions** (appel Fleet API, flux de télémétrie, reconstruction
   TeslaMateAPI) : comment la reconnaître en base —
   [`docs/ORIGINE_POSITIONS.md`](docs/ORIGINE_POSITIONS.md).
+- **TeslaMateAPI (facultatif)** : TeslaMateFix fonctionne seul et détecte, s'il est installé,
+  le flux de télémétrie et l'outil de reconstruction pour proposer des fonctionnalités liées —
+  [`docs/INTEGRATION_TESLAMATEAPI.md`](docs/INTEGRATION_TESLAMATEAPI.md).
 - **Stack technique** — Next.js 16, React 19, Prisma 6 (introspection
   read-only de TeslaMate), iron-session, next-intl FR/EN, Tailwind 4 +
   shadcn/ui.
