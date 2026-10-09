@@ -4,15 +4,42 @@ import { env } from "@/lib/env";
 import { getSelectedCarOrDefault } from "@/lib/vehicle";
 import { AppHeader } from "@/components/app-shell/header";
 import { MainNav } from "@/components/app-shell/main-nav";
-import { ChargeCreateWizard } from "@/components/entities/charges/ChargeCreateWizard";
+import { z } from "zod";
+import {
+  ChargeCreateWizard,
+  type ChargeCreatePrefill,
+} from "@/components/entities/charges/ChargeCreateWizard";
 import { ButtonLink } from "@/components/ui/button-link";
 import { ArrowLeft } from "lucide-react";
 import { createChargeWithTicksAction } from "../actions";
 
+// Pré-remplissage optionnel depuis l'URL (lien « Créer la charge » du rapport Privacy).
+const PrefillSchema = z.object({
+  start: z.iso.datetime().optional(),
+  end: z.iso.datetime().optional(),
+  added: z.coerce.number().nonnegative().max(1000).optional(),
+  type: z.enum(["AC", "DC"]).optional(),
+});
+
+function parsePrefill(sp: Record<string, string | string[] | undefined>): ChargeCreatePrefill | undefined {
+  const parsed = PrefillSchema.safeParse(sp);
+  if (!parsed.success) return undefined;
+  const { start, end, added, type } = parsed.data;
+  if (!start && !end && added == null && !type) return undefined;
+  return {
+    ...(start ? { start_date: start } : {}),
+    ...(end ? { end_date: end } : {}),
+    ...(added != null ? { charge_energy_added: String(added) } : {}),
+    ...(type ? { charger_type: type } : {}),
+  };
+}
+
 export default async function NewChargePage({
   params,
+  searchParams,
 }: {
   params: Promise<{ locale: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const { locale } = await params;
   setRequestLocale(locale);
@@ -21,6 +48,7 @@ export default async function NewChargePage({
   const tCommon = await getTranslations("common");
 
   const selectedCar = await getSelectedCarOrDefault();
+  const prefill = parsePrefill(await searchParams);
 
   return (
     <>
@@ -41,6 +69,7 @@ export default async function NewChargePage({
           hasCar={selectedCar != null}
           readOnly={env.READ_ONLY}
           createAction={createChargeWithTicksAction}
+          prefill={prefill}
         />
       </main>
     </>

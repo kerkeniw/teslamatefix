@@ -89,6 +89,26 @@ type Step1Values = {
 const AC_POWERS = ["7", "11", "22"] as const;
 const DC_POWERS = ["50", "150", "250", "350"] as const;
 
+/** Valeurs initiales transmises par l'URL (ex. depuis le rapport Privacy Tesla). */
+export type ChargeCreatePrefill = {
+  start_date?: string;
+  end_date?: string;
+  charge_energy_added?: string;
+  charger_type?: ChargerType;
+};
+
+function initialStep1(prefill?: ChargeCreatePrefill): Step1Values {
+  const base = defaultStep1();
+  if (!prefill) return base;
+  const type = prefill.charger_type ?? base.charger_type;
+  return {
+    ...base,
+    ...prefill,
+    charger_type: type,
+    charger_power_kw: String(DEFAULT_POWER_KW[type]),
+  };
+}
+
 function defaultStep1(): Step1Values {
   const now = new Date();
   const iso = now.toISOString();
@@ -108,10 +128,12 @@ export function ChargeCreateWizard({
   hasCar,
   readOnly,
   createAction,
+  prefill,
 }: {
   car: FKOption | null;
   hasCar: boolean;
   readOnly: boolean;
+  prefill?: ChargeCreatePrefill;
   createAction: (
     prev: ChargeActionState | null,
     formData: FormData,
@@ -122,7 +144,7 @@ export function ChargeCreateWizard({
   const router = useRouter();
 
   const [step, setStep] = useState<1 | 2>(1);
-  const [step1, setStep1] = useState<Step1Values>(defaultStep1);
+  const [step1, setStep1] = useState<Step1Values>(() => initialStep1(prefill));
 
   if (!hasCar || !car) {
     return (
@@ -581,9 +603,7 @@ function Step2({
 
   // Si l'utilisateur n'a pas touché manuellement le pilot_current, il suit
   // automatiquement le charger_actual_current (pattern observé chez TeslaMate).
-  useEffect(() => {
-    if (!pilotTouched) setChargerPilotCurrent(chargerCurrent);
-  }, [chargerCurrent, pilotTouched]);
+  const pilotCurrentValue = pilotTouched ? chargerPilotCurrent : chargerCurrent;
 
   const [state, formAction, pending] = useActionState<
     ChargeActionState | null,
@@ -851,7 +871,7 @@ function Step2({
             <NumberInput
               id="charger_pilot_current"
               name="charger_pilot_current"
-              value={chargerPilotCurrent}
+              value={pilotCurrentValue}
               onChange={(e) => {
                 setPilotTouched(true);
                 setChargerPilotCurrent((e.target as HTMLInputElement).value);

@@ -1,6 +1,6 @@
 # Roadmap — TeslaMateFix
 
-> Mise à jour : **2026-09-23** (reprise du projet, consolidation v0.7.0).
+> Mise à jour : **2026-10-08** (publication v0.7.0 vérifiée, nettoyage v0.7.1, lot v0.7.2 charges + Privacy).
 > Document vivant : cocher / déplacer les lignes au fil des releases. Le détail de
 > chaque version livrée est dans son `RELEASE_v<version>.md`, la recette dans
 > [`TEST_PLAN.md`](TEST_PLAN.md).
@@ -20,9 +20,11 @@ Légende statut : ✅ fait · 🟡 en cours / partiel · ⬜ à faire.
 | v0.3.0 | 2026-05-25 | Fuseau horaire (UTC strict en base), 22 colonnes de ticks, règle « appliquer à tous les ticks » | [RELEASE](RELEASE_v0.3.0.md) |
 | v0.4.0 | 2026-05-26 | Refonte UI charges (carte, delta SOC, charger split), menu burger mobile | [RELEASE](RELEASE_v0.4.0.md) |
 | v0.5.0 | 2026-06-14 | Fleet API : TeslaMateFix sert la clé publique Tesla + guide de migration | [RELEASE](RELEASE_v0.5.0.md) |
-| v0.5.1 | 2026-06-23 | Outillage Fleet API (collection Postman, scope `vehicle_location`) — *doc only, jamais taggée* | [RELEASE](RELEASE_v0.5.1.md) |
+| v0.5.1 | 2026-06-23 | Outillage Fleet API (collection Postman, scope `vehicle_location`) — *doc only, pas de tag (décision 2026-10-08)* | [RELEASE](RELEASE_v0.5.1.md) |
 | v0.5.2 | 2026-07-02 | Photo officielle du véhicule (compositor), onglet Options, `/cars` en lecture seule | [RELEASE](RELEASE_v0.5.2.md) |
-| **v0.7.0** | 2026-09-23 | Trajets (assistant de création, édition + carte, listing Grafana, correction d'anomalies) + Positions (carte, lots, quick-ranges) + stabilisation des charges (chevauchement, coût auto, autonomies depuis SOC). *Mergée et taggée en local, push à faire* | [RELEASE](RELEASE_v0.7.0.md) |
+| **v0.7.0** | 2026-09-23 | Trajets (assistant de création, édition + carte, listing Grafana, correction d'anomalies) + Positions (carte, lots, quick-ranges) + stabilisation des charges (chevauchement, coût auto, autonomies depuis SOC). Image Docker `0.7.0` publiée (amd64 + arm64) | [RELEASE](RELEASE_v0.7.0.md) |
+| v0.7.1 | 2026-10-08 | Hygiène : worktrees/branches/tags nettoyés, lint à zéro — *pas de tag, livrée avec v0.7.2* | [RELEASE](RELEASE_v0.7.1.md) |
+| **v0.7.2** | 2026-10-08 | Listing charges façon Grafana (colonnes personnalisables, filtres énergie/efficience, récapitulatif) + contrôle par l'export Privacy Tesla (`/privacy`) | [RELEASE](RELEASE_v0.7.2.md) |
 
 > La v0.6.0 n'a jamais été publiée : son contenu est intégré à la v0.7.0.
 
@@ -36,8 +38,8 @@ Légende statut : ✅ fait · 🟡 en cours / partiel · ⬜ à faire.
 | Documentation consolidée (README, RELEASE, IMPLEMENTATION, SECURITY addendum) | P1 | ✅ |
 | Merge fast-forward sur `main` + tag `v0.7.0` (en local) | P1 | ✅ |
 | Commit des corrections charges + tag `v0.7.0` déplacé (local) | P1 | ✅ |
-| `git push origin main` puis `git push origin v0.7.0` (publication Docker Hub) | P1 | ⬜ |
-| Vérifier GitHub Actions + `docker manifest inspect wkerkeni/teslamatefix:0.7.0` (amd64 + arm64) | P1 | ⬜ |
+| `git push origin main` puis `git push origin v0.7.0` (publication Docker Hub) | P1 | ✅ |
+| Vérifier GitHub Actions + `docker manifest inspect wkerkeni/teslamatefix:0.7.0` (amd64 + arm64) | P1 | ✅ |
 | Recette manuelle v0.7.0 ([TEST_PLAN §3](TEST_PLAN.md)) sur une base sauvegardée | P1 | ⬜ |
 | Vérifier l'overview Docker Hub (mention v0.7.0) | P2 | ⬜ |
 | Listing charges : date cliquable, suppression de la colonne stylo | P1 | ✅ |
@@ -51,14 +53,28 @@ Légende statut : ✅ fait · 🟡 en cours / partiel · ⬜ à faire.
 
 | Tâche | Prio | Statut |
 |---|---|---|
-| Supprimer les worktrees absorbés (`feat+drive-edit-map`, `feat+positions-map`, `feat+drive-create-wizard`, `release+v0.7.0`) et leurs branches locales | P1 | ⬜ |
-| Supprimer les branches distantes fusionnées (`feat/drive-edit-map`, `release/v0.7.0`, `feat/cockpit-design`, `feat/public-zero-config`) | P2 | ⬜ |
-| Tags : décider pour **v0.5.1** (jamais posé) et pousser **v0.1.0** (local uniquement) | P2 | ⬜ |
-| Retirer `docs/issues/` (mail infra AWS sans rapport avec le projet, commité par erreur) | P1 | ⬜ |
-| Lint : `react-hooks/set-state-in-effect` dans `ChargeCreateWizard.tsx:585` (dériver l'état au lieu d'un `useEffect`) | P2 | ⬜ |
-| Lint : avertissement TanStack `useReactTable` dans `data-table.tsx`, `_ignored` inutilisé dans `charges/actions.ts` | P3 | ⬜ |
+| Supprimer les worktrees absorbés (`feat+drive-edit-map`, `feat+positions-map`, `feat+drive-create-wizard`, `release+v0.7.0`) et leurs branches locales | P1 | 🟡 (reste la branche locale `release/v0.7.0`) |
+| Supprimer les branches distantes fusionnées (`feat/drive-edit-map`, `release/v0.7.0`, `feat/cockpit-design`, `feat/public-zero-config`) | P2 | ✅ |
+| Tags : **v0.5.1** jamais posé (on n'en pose pas), **v0.1.0** supprimé en local et sur GitHub | P2 | ✅ |
+| Retirer `docs/issues/` (mail infra AWS sans rapport avec le projet, commité par erreur) | P1 | ⬜ (à faire par l'utilisateur, cf. [RELEASE_v0.7.1](RELEASE_v0.7.1.md)) |
+| Lint : `react-hooks/set-state-in-effect` dans `ChargeCreateWizard.tsx:585` (dériver l'état au lieu d'un `useEffect`) | P2 | ✅ |
+| Lint : avertissement TanStack `useReactTable` dans `data-table.tsx`, `_ignored` inutilisé dans `charges/actions.ts` | P3 | ✅ |
 | Cocher a posteriori (ou archiver) les checklists des `RELEASE_v0.2.0…v0.5.2.md` publiées | P3 | ⬜ |
 | Purger les captures Playwright locales à la racine (ignorées par git) | P3 | ⬜ |
+| Scripts NAS (`teslamate-pull-from-nas.sh`, restore avec DROP `telemetry`) : en attente sur la branche `chore/nas-pull-scripts`, à adapter à une installation sans TeslaMateAPI avant merge | P3 | ⬜ |
+
+## v0.7.2 — listing charges + contrôle Privacy Tesla (P1)
+
+Détail : [`RELEASE_v0.7.2.md`](RELEASE_v0.7.2.md).
+
+| Tâche | Prio | Statut |
+|---|---|---|
+| Listing charges façon Grafana : colonnes, menu de colonnes, filtres (dont énergie ≥ et efficience ≤), récapitulatif | P1 | ✅ |
+| Import de `Charging Data.csv` (export Privacy Tesla) et rapport de comparaison avec actions guidées | P1 | ✅ |
+| Assistant de création de charge pré-remplissable par l'URL | P1 | ✅ |
+| Recette sur la base locale restaurée + export réel | P1 | ⬜ |
+| Merge `feat/charges-listing-privacy` → `main`, tag `v0.7.2`, publication Docker | P1 | ✅ |
+| Corrections en lot depuis le rapport (créer toutes les manquantes, fusionner les fragments) | P3 | ⬜ |
 
 ## v0.8.0 — durcissement sécurité (P2)
 
@@ -99,5 +115,5 @@ Priorités détaillées dans [`TEST_PLAN.md` §5](TEST_PLAN.md).
 | Assistant trajet : calcul du dénivelé (`ascent`/`descent`) via une API d'élévation | P3 | ⬜ |
 | Doc : héberger soi-même Nominatim / OSRM (quotas des instances publiques) | P3 | ⬜ |
 | Valider et fiabiliser les flux d'édition des autres entités (adresses, géofences, états, mises à jour, paramètres) — aujourd'hui « non tous validés » | P3 | 🟡 |
-| Détection d'anomalies étendue aux charges (même principe que les trajets) | P3 | ⬜ |
+| Détection d'anomalies étendue aux charges (même principe que les trajets) — v0.7.2 : filtres énergie/efficience + comparaison Privacy Tesla | P3 | 🟡 |
 | Dashboard : aligner sa liste d'anomalies sur les règles de détection de l'édition de trajet, avec accès direct à « Corriger » | P3 | ⬜ |

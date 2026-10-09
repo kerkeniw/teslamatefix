@@ -62,6 +62,9 @@ export function DataTable<TData, TValue>({
   scrollX = false,
   dense = false,
 }: DataTableProps<TData, TValue>) {
+  // TanStack Table est incompatible avec le React Compiler : le composant
+  // n'est pas mémoïsé, ce qui est sans conséquence ici.
+  // eslint-disable-next-line react-hooks/incompatible-library
   const table = useReactTable({
     data,
     columns,

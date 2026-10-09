@@ -54,3 +54,6 @@ next-env.d.ts
 /charges-*.png
 /mobile-*.png
 /desktop-*.png
+
+# Exports Privacy Tesla déposés en local (VIN, plaque, IMEI) — jamais commités
+/var/
