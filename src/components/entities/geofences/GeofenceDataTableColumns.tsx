@@ -1,6 +1,6 @@
 "use client";
 
-import type { ColumnDef } from "@tanstack/react-table";
+import type { AppColumnDef } from "@/components/data-table/data-table";
 import { useTranslations } from "next-intl";
 import { Pencil } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -17,7 +17,7 @@ export type GeofenceRow = {
   session_fee: string | null;
 };
 
-export function useGeofenceColumns(): ColumnDef<GeofenceRow>[] {
+export function useGeofenceColumns(): AppColumnDef<GeofenceRow>[] {
   const t = useTranslations("geofences");
   const tCommon = useTranslations("common");
   return [

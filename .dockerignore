@@ -7,6 +7,12 @@ node_modules
 .yarn
 .pnpm-store
 
+# Répertoire de travail local (exports Privacy Tesla, imports) : jamais dans l'image
+var
+
+# Client Prisma 7 généré localement : régénéré dans l'image (`prisma generate`)
+src/generated
+
 # Sorties de build Next
 .next
 out

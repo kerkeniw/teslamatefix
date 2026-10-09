@@ -11,7 +11,7 @@ import {
 } from "@/lib/auth";
 import { hashPassword } from "@/lib/hash";
 import { env } from "@/lib/env";
-import { logger } from "@/lib/logger";
+import { logger, safeErr } from "@/lib/logger";
 
 export type ChangePasswordState = {
   ok: boolean;
@@ -97,7 +97,7 @@ export async function changePasswordAction(
     persistPasswordHash(newHash);
   } catch (e) {
     logger.error(
-      { event: "auth.changePassword.persistError", err: String(e) },
+      { event: "auth.changePassword.persistError", err: safeErr(e) },
       "persist password hash failed",
     );
     return { ok: false, error: "Une erreur est survenue." };

@@ -24,8 +24,11 @@ async function readSession(req: NextRequest) {
     cookieName: SESSION_COOKIE,
     cookieOptions: {
       httpOnly: true,
-      sameSite: "lax",
-      secure: process.env.NODE_ENV === "production",
+      // Mêmes options que `lib/auth.ts` (le proxy ne charge pas `lib/env`).
+      sameSite: process.env.COOKIE_SAMESITE === "strict" ? "strict" : "lax",
+      secure:
+        process.env.COOKIE_SECURE === "true" ||
+        (process.env.COOKIE_SECURE !== "false" && process.env.NODE_ENV === "production"),
       path: "/",
     },
   });

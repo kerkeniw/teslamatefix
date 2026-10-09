@@ -1,13 +1,14 @@
 "use server";
 
 import { z } from "zod";
-import { Prisma } from "@prisma/client";
+import { Prisma } from "@/generated/prisma/client";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { requireSession } from "@/lib/auth";
 import { env } from "@/lib/env";
-import { logger } from "@/lib/logger";
+import { mutationLimited } from "@/lib/rate-limit";
+import { logger, safeErr } from "@/lib/logger";
 import {
   correctDriveFromPositions,
   applyDriveCorrection,
@@ -170,6 +171,8 @@ export async function createDriveAction(
 ): Promise<DriveActionState> {
   const session = await requireSession();
   if (env.READ_ONLY) return readOnly();
+  const limited = mutationLimited(session.userId);
+  if (limited) return limited;
 
   const raw = Object.fromEntries(formData.entries()) as Record<string, string>;
   const parsed = DriveSchema.safeParse(raw);
@@ -188,7 +191,7 @@ export async function createDriveAction(
     if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2003") {
       return { ok: false, error: "Référence introuvable (véhicule, adresse ou géofence)." };
     }
-    logger.error({ event: "drives.create.error", err: String(e) }, "drives.create failed");
+    logger.error({ event: "drives.create.error", err: safeErr(e) }, "drives.create failed");
     return { ok: false, error: "Une erreur est survenue." };
   }
 
@@ -208,6 +211,8 @@ export async function updateDriveAction(
 ): Promise<DriveActionState> {
   const session = await requireSession();
   if (env.READ_ONLY) return readOnly();
+  const limited = mutationLimited(session.userId);
+  if (limited) return limited;
 
   const raw = Object.fromEntries(formData.entries()) as Record<string, string>;
   const parsed = DriveSchema.safeParse(raw);
@@ -227,7 +232,7 @@ export async function updateDriveAction(
         return { ok: false, error: "Référence introuvable (adresse ou géofence)." };
       }
     }
-    logger.error({ event: "drives.update.error", id, err: String(e) }, "drives.update failed");
+    logger.error({ event: "drives.update.error", id, err: safeErr(e) }, "drives.update failed");
     return { ok: false, error: "Une erreur est survenue." };
   }
 
@@ -244,6 +249,8 @@ export async function updateDriveAction(
 export async function deleteDriveAction(id: number): Promise<{ ok: boolean; error?: string }> {
   const session = await requireSession();
   if (env.READ_ONLY) return { ok: false, error: "Application en lecture seule." };
+  const limited = mutationLimited(session.userId);
+  if (limited) return limited;
 
   try {
     // FK SET NULL côté positions.drive_id géré côté DB ; on fait un update préventif
@@ -254,7 +261,7 @@ export async function deleteDriveAction(id: number): Promise<{ ok: boolean; erro
     if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2025") {
       return { ok: false, error: "Trajet introuvable." };
     }
-    logger.error({ event: "drives.delete.error", id, err: String(e) }, "drives.delete failed");
+    logger.error({ event: "drives.delete.error", id, err: safeErr(e) }, "drives.delete failed");
     return { ok: false, error: "Une erreur est survenue." };
   }
 
@@ -273,12 +280,22 @@ function serializeCorrection(c: DriveCorrection): DriveCorrectionSerialized {
   };
 }
 
-function deserializeCorrection(s: DriveCorrectionSerialized): DriveCorrection {
-  return {
-    ...s,
-    start_date: s.start_date ? new Date(s.start_date) : null,
-    end_date: s.end_date ? new Date(s.end_date) : null,
-  };
+/** Égalité champ à champ de l'aperçu client et du recalcul serveur. */
+function sameCorrection(
+  server: DriveCorrectionSerialized,
+  client: DriveCorrectionSerialized | null | undefined,
+): boolean {
+  if (client == null || typeof client !== "object") return false;
+  return (Object.keys(server) as (keyof DriveCorrectionSerialized)[]).every(
+    (k) => (server[k] ?? null) === (client[k] ?? null),
+  );
+}
+
+function sameIds(server: number[], client: unknown): boolean {
+  if (!Array.isArray(client) || client.length !== server.length) return false;
+  const a = [...server].sort((x, y) => x - y);
+  const b = [...client].sort((x, y) => x - y);
+  return a.every((v, i) => v === b[i]);
 }
 
 export async function correctDriveAction(driveId: number): Promise<{
@@ -306,7 +323,7 @@ export async function correctDriveAction(driveId: number): Promise<{
       absorbedCount: r.absorbedCount,
     };
   } catch (e) {
-    logger.error({ event: "drives.correct.error", id: driveId, err: String(e) }, "drives.correct failed");
+    logger.error({ event: "drives.correct.error", id: driveId, err: safeErr(e) }, "drives.correct failed");
     return { ok: false, error: "Correction impossible." };
   }
 }
@@ -317,11 +334,30 @@ export async function applyCorrectDriveAction(
   absorbedPositionIds: number[] = [],
 ): Promise<{ ok: boolean; error?: string }> {
   const session = await requireSession();
-  // NB : la correction/recalcul contourne volontairement le garde READ_ONLY
-  // (elle écrit aussi le drive_id des positions réaffectées).
+  // Depuis v0.8.0, la correction respecte READ_ONLY comme toute écriture.
+  if (env.READ_ONLY) return { ok: false, error: "Application en lecture seule." };
+  const limited = mutationLimited(session.userId);
+  if (limited) return limited;
 
+  // Le client ne fait que confirmer l'aperçu : on recalcule côté serveur depuis
+  // le seul `driveId` et on applique CE résultat. S'il diffère de l'aperçu
+  // (positions modifiées entre-temps, payload forgé), on refuse.
   try {
-    await applyDriveCorrection(driveId, deserializeCorrection(after), absorbedPositionIds);
+    const fresh = await correctDriveFromPositions(driveId);
+    if (
+      !sameCorrection(serializeCorrection(fresh.after), after) ||
+      !sameIds(fresh.absorbedPositionIds, absorbedPositionIds)
+    ) {
+      logger.warn(
+        { event: "drives.correct.apply.stale", user: session.userId, id: driveId },
+        "drives.correct.apply stale preview",
+      );
+      return {
+        ok: false,
+        error: "Les données du trajet ont changé depuis l'aperçu : relancez la correction.",
+      };
+    }
+    await applyDriveCorrection(driveId, fresh.after, fresh.absorbedPositionIds);
   } catch (e) {
     if (e instanceof Prisma.PrismaClientKnownRequestError) {
       if (e.code === "P2025") return { ok: false, error: "Trajet introuvable." };
@@ -330,7 +366,7 @@ export async function applyCorrectDriveAction(
       }
     }
     logger.error(
-      { event: "drives.correct.apply.error", id: driveId, err: String(e) },
+      { event: "drives.correct.apply.error", id: driveId, err: safeErr(e) },
       "drives.correct.apply failed",
     );
     return { ok: false, error: "Échec de la correction." };
@@ -517,7 +553,7 @@ export async function computeDriveAction(
     route = await routeBetween(input.from, input.to);
   } catch (e) {
     if (e instanceof GeoError) return { ok: false, error: e.message };
-    logger.error({ event: "drives.compute.route_error", err: String(e) }, "route failed");
+    logger.error({ event: "drives.compute.route_error", err: safeErr(e) }, "route failed");
     return { ok: false, error: "Calcul d'itinéraire impossible." };
   }
 
@@ -586,6 +622,44 @@ const CreateWithPositionsSchema = z.object({
   end_geofence_id: optionalIntId,
 });
 
+// Bornes du payload calculé par l'assistant (renvoyé par le client à l'enregistrement).
+const isoDate = z.string().refine((v) => !Number.isNaN(new Date(v).getTime()));
+const nullableIn = (min: number, max: number) => z.number().min(min).max(max).nullable();
+
+const ComputedPayloadSchema = z.object({
+  drive: z.object({
+    end_date: isoDate,
+    distance: z.number().min(0).max(5_000),
+    duration_min: z.number().int().min(0).max(32_767),
+    start_km: z.number().min(0).max(2_000_000),
+    end_km: z.number().min(0).max(2_000_000),
+    start_ideal_range_km: nullableIn(0, 2_000),
+    end_ideal_range_km: nullableIn(0, 2_000),
+    start_rated_range_km: nullableIn(0, 2_000),
+    end_rated_range_km: nullableIn(0, 2_000),
+    outside_temp_avg: nullableIn(-60, 70),
+    inside_temp_avg: nullableIn(-60, 90),
+    speed_max: nullableIn(0, 400),
+  }),
+  positions: z
+    .array(
+      z.object({
+        date: isoDate,
+        latitude: z.number().min(-90).max(90),
+        longitude: z.number().min(-180).max(180),
+        speed: nullableIn(0, 400),
+        odometer: z.number().min(0).max(2_000_000),
+        battery_level: nullableIn(0, 100),
+        ideal_battery_range_km: nullableIn(0, 2_000),
+        rated_battery_range_km: nullableIn(0, 2_000),
+        outside_temp: nullableIn(-60, 70),
+        inside_temp: nullableIn(-60, 90),
+      }),
+    )
+    .min(1)
+    .max(20_000),
+});
+
 function decOrNull(v: number | null) {
   return v == null ? null : new Prisma.Decimal(v);
 }
@@ -601,6 +675,8 @@ export async function createDriveWithPositionsAction(
 ): Promise<DriveActionState> {
   const session = await requireSession();
   if (env.READ_ONLY) return readOnly();
+  const limited = mutationLimited(session.userId);
+  if (limited) return limited;
 
   const raw = Object.fromEntries(formData.entries()) as Record<string, string>;
   const parsed = CreateWithPositionsSchema.safeParse(raw);
@@ -608,15 +684,25 @@ export async function createDriveWithPositionsAction(
     return { ok: false, error: "Données invalides.", fieldErrors: feFromZod(parsed.error) };
   }
 
-  let payload: ComputedDrive;
+  let json: unknown;
   try {
-    payload = JSON.parse(raw.payload ?? "") as ComputedDrive;
+    json = JSON.parse(raw.payload ?? "");
   } catch {
     return { ok: false, error: "Trajet non calculé : cliquez sur « Calculer » d'abord." };
   }
-  if (!payload?.drive || !Array.isArray(payload.positions) || payload.positions.length === 0) {
+  if ((json as ComputedDrive | null)?.drive == null) {
     return { ok: false, error: "Trajet non calculé : cliquez sur « Calculer » d'abord." };
   }
+  // Le payload vient du client : bornes plausibles avant toute écriture (v0.8.0).
+  const checked = ComputedPayloadSchema.safeParse(json);
+  if (!checked.success) {
+    logger.warn(
+      { event: "drives.create_with_positions.invalid_payload", user: session.userId },
+      "invalid computed payload",
+    );
+    return { ok: false, error: "Trajet calculé invalide : relancez « Calculer »." };
+  }
+  const payload = checked.data as ComputedDrive;
 
   const carId = parseInt(parsed.data.car_id, 10);
   const d = payload.drive;
@@ -686,7 +772,7 @@ export async function createDriveWithPositionsAction(
     if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2003") {
       return { ok: false, error: "Référence introuvable (véhicule, adresse ou géofence)." };
     }
-    logger.error({ event: "drives.create_with_positions.error", err: String(e) }, "create failed");
+    logger.error({ event: "drives.create_with_positions.error", err: safeErr(e) }, "create failed");
     return { ok: false, error: "Une erreur est survenue lors de l'enregistrement." };
   }
 

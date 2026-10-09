@@ -1,7 +1,7 @@
 "use server";
 
 import { requireSession } from "@/lib/auth";
-import { logger } from "@/lib/logger";
+import { logger, safeErr } from "@/lib/logger";
 import {
   geocodeSearch,
   candidateLabel,
@@ -35,7 +35,7 @@ export async function geocodeAddressAction(query: string): Promise<GeocodeResult
     if (e instanceof GeoError) {
       return { ok: false, error: e.message, code: e.code };
     }
-    logger.error({ event: "geocode.action.error", err: String(e) }, "geocode failed");
+    logger.error({ event: "geocode.action.error", err: safeErr(e) }, "geocode failed");
     return { ok: false, error: "Erreur de géocodage.", code: "network" };
   }
 }

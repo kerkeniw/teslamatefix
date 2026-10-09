@@ -1,6 +1,6 @@
 # Roadmap — TeslaMateFix
 
-> Mise à jour : **2026-10-08** (publication v0.7.0 vérifiée, nettoyage v0.7.1, lot v0.7.2 charges + Privacy).
+> Mise à jour : **2026-10-09** (lot v0.8.0 : durcissement sécurité + origine des positions, en recette).
 > Document vivant : cocher / déplacer les lignes au fil des releases. Le détail de
 > chaque version livrée est dans son `RELEASE_v<version>.md`, la recette dans
 > [`TEST_PLAN.md`](TEST_PLAN.md).
@@ -25,6 +25,7 @@ Légende statut : ✅ fait · 🟡 en cours / partiel · ⬜ à faire.
 | **v0.7.0** | 2026-09-23 | Trajets (assistant de création, édition + carte, listing Grafana, correction d'anomalies) + Positions (carte, lots, quick-ranges) + stabilisation des charges (chevauchement, coût auto, autonomies depuis SOC). Image Docker `0.7.0` publiée (amd64 + arm64) | [RELEASE](RELEASE_v0.7.0.md) |
 | v0.7.1 | 2026-10-08 | Hygiène : worktrees/branches/tags nettoyés, lint à zéro — *pas de tag, livrée avec v0.7.2* | [RELEASE](RELEASE_v0.7.1.md) |
 | **v0.7.2** | 2026-10-08 | Listing charges façon Grafana (colonnes personnalisables, filtres énergie/efficience, récapitulatif) + contrôle par l'export Privacy Tesla (`/privacy`) | [RELEASE](RELEASE_v0.7.2.md) |
+| **v0.8.0** | 2026-10-10 | Durcissement sécurité (M5–M10, L11–L21, corrections recalculées côté serveur) + mise à jour des dépendances (Next 16.4 : failles critiques, Prisma 7, iron-session 9, TanStack 9, Node 24) + origine des positions et onglet Positions filtrable + synthèse et plages rapides des trajets, pages compactes, répertoire de travail `var/` | [RELEASE](RELEASE_v0.8.0.md) |
 
 > La v0.6.0 n'a jamais été publiée : son contenu est intégré à la v0.7.0.
 
@@ -76,24 +77,28 @@ Détail : [`RELEASE_v0.7.2.md`](RELEASE_v0.7.2.md).
 | Merge `feat/charges-listing-privacy` → `main`, tag `v0.7.2`, publication Docker | P1 | ✅ |
 | Corrections en lot depuis le rapport (créer toutes les manquantes, fusionner les fragments) | P3 | ⬜ |
 
-## v0.8.0 — durcissement sécurité (P2)
+## v0.8.0 — durcissement sécurité + origine des positions (P1)
 
-Source : [`SECURITY_REVIEW.md`](SECURITY_REVIEW.md) (revue du 2026-05-01 + addendum v0.7.0).
+Source : [`SECURITY_REVIEW.md`](SECURITY_REVIEW.md) (revue du 2026-05-01, addenda v0.7.0 et v0.8.0).
+Détail et recette : [`RELEASE_v0.8.0.md`](RELEASE_v0.8.0.md) — branche `release/v0.8.0`.
 
 | # | Tâche | Prio | Statut |
 |---|---|---|---|
-| v0.7 | Correction de trajet : recalcul/revalidation **côté serveur** du payload `after`, bornes sur `absorbedPositionIds`, décision sur le contournement de `READ_ONLY` | P1 | ⬜ |
-| M5 | `TRUST_PROXY=true\|false` : ne lire `X-Forwarded-For` que derrière un reverse proxy de confiance | P2 | ⬜ |
-| M6 | Limite de débit sur les mutations (`withRateLimit(action, max, window)` par utilisateur) | P2 | ⬜ |
-| M7 | `safeErr(e)` : ne plus logger de payload (coordonnées, adresses) dans `logger.error` | P2 | ⬜ |
-| M8 | `scripts/hash-password.mjs` : saisie masquée du mot de passe | P3 | ⬜ |
-| M9 | `recalcFromPositions` / `recalcFromTicks` : `take` borné + échec explicite | P2 | ⬜ |
-| M10 | `bulkDeletePositions` : plafond sur la taille de `ids` | P2 | ⬜ |
-| L17 | `applyRecalc` : revalider `after` (même correctif que la ligne v0.7) | P2 | ⬜ |
-| L18 | `addresses.raw` : taille maximale | P3 | ⬜ |
-| L21 | `Cache-Control: private, no-store` sur les pages authentifiées | P3 | ⬜ |
-| L11/12 | Cookie : `SameSite=strict` optionnel, `COOKIE_SECURE=auto\|true\|false` | P3 | ⬜ |
-| — | Mettre à jour Next (≥ 16.3 corrige `postcss`), Prisma, iron-session | P2 | ⬜ |
+| v0.7 | Correction de trajet : recalcul/revalidation **côté serveur** du payload `after`, bornes sur `absorbedPositionIds`, décision sur le contournement de `READ_ONLY` | P1 | ✅ |
+| M5 | `TRUST_PROXY=true\|false` : ne lire `X-Forwarded-For` que derrière un reverse proxy de confiance | P2 | ✅ |
+| M6 | Limite de débit sur les mutations (`withRateLimit(action, max, window)` par utilisateur) | P2 | ✅ |
+| M7 | `safeErr(e)` : ne plus logger de payload (coordonnées, adresses) dans `logger.error` | P2 | ✅ |
+| M8 | `scripts/hash-password.mjs` : saisie masquée du mot de passe | P3 | ✅ |
+| M9 | `recalcFromPositions` / `recalcFromTicks` : `take` borné + échec explicite | P2 | ✅ |
+| M10 | `bulkDeletePositions` : plafond sur la taille de `ids` | P2 | ✅ |
+| L17 | `applyRecalc` : revalider `after` (même correctif que la ligne v0.7) | P2 | ✅ |
+| L18 | `addresses.raw` : taille maximale | P3 | ✅ |
+| L21 | `Cache-Control: private, no-store` sur les pages authentifiées | P3 | ✅ |
+| L11/12 | Cookie : `SameSite=strict` optionnel, `COOKIE_SECURE=auto\|true\|false` | P3 | ✅ |
+| — | Mettre à jour Next (16.4.0 : failles critiques Proxy + RSC), Prisma 7, iron-session 9, TanStack 9, TypeScript 6, Node 24 (image) | P1 | ✅ |
+| — | Origine des positions (TeslaMateAPI facultatif) : bandeau de répartition, carte « Colorer par › Origine », colonne du tableau | P1 | ✅ |
+| — | Onglet Positions d'un trajet : toutes les positions, colonnes généralement remplies + menu Colonnes, filtres (origine, vitesse, puissance, écart, saut GPS, colonne vide) | P1 | ✅ |
+| — | Commit, merge, tag `v0.8.0`, publication (2026-10-10) — recette navigateur complète à poursuivre | P1 | 🟡 |
 
 ## v0.8.x — tests automatisés (P2)
 

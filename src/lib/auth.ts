@@ -6,6 +6,7 @@ import { getIronSession, type SessionOptions } from "iron-session";
 import bcrypt from "bcryptjs";
 import { timingSafeEqual } from "node:crypto";
 import { env } from "./env";
+import { logger } from "./logger";
 
 export type Session = {
   userId?: string;
@@ -18,9 +19,16 @@ const sessionOptions: SessionOptions = {
   ttl: 60 * 60 * 24 * 7, // 7 jours
   cookieOptions: {
     httpOnly: true,
-    sameSite: "lax",
-    secure: env.NODE_ENV === "production",
+    sameSite: env.COOKIE_SAMESITE,
+    secure: env.COOKIE_SECURE,
     path: "/",
+  },
+  // iron-session 9 : cookie refusé. `invalid` en rafale = sondage du cookie,
+  // `unknown-password` = rotation d'AUTH_SECRET (sessions à rouvrir).
+  onUnsealError: (reason) => {
+    if (reason !== "expired") {
+      logger.warn({ event: "auth.session.rejected", reason }, "session cookie rejected");
+    }
   },
 };
 

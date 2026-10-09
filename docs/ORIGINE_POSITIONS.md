@@ -84,6 +84,13 @@ Pièges :
 
 ## Pistes pour TeslaMateFix
 
+> **Mis en œuvre en v0.8.0** (détail d'un trajet : bandeau de répartition, carte
+> « Colorer par › Origine », colonne et filtre du tableau des positions) —
+> `src/lib/teslamateapi/capabilities.ts`, `src/lib/positions/origin.ts`,
+> `origin-query.ts` (requête ci-dessus restreinte aux positions du trajet). Voir
+> [RELEASE_v0.8.0.md](RELEASE_v0.8.0.md). Reste à faire : origine dans la page
+> Positions et sa carte.
+
 TeslaMateFix ne dépend pas de TeslaMateAPI : la détection, les capacités et les règles (lecture seule,
 `$queryRaw`, hors client Prisma) sont décrites dans
 [INTEGRATION_TESLAMATEAPI.md](INTEGRATION_TESLAMATEAPI.md).

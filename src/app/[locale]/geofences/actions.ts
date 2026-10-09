@@ -1,13 +1,14 @@
 "use server";
 
 import { z } from "zod";
-import { Prisma, billing_type } from "@prisma/client";
+import { Prisma, billing_type } from "@/generated/prisma/client";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { requireSession } from "@/lib/auth";
 import { env } from "@/lib/env";
-import { logger } from "@/lib/logger";
+import { mutationLimited } from "@/lib/rate-limit";
+import { logger, safeErr } from "@/lib/logger";
 import type { GeofenceFormState } from "@/components/entities/geofences/GeofenceForm";
 
 type GeofenceFieldErrors = NonNullable<GeofenceFormState["fieldErrors"]>;
@@ -86,6 +87,8 @@ export async function createGeofenceAction(
 ): Promise<GeofenceFormState> {
   const session = await requireSession();
   if (env.READ_ONLY) return readOnlyResult();
+  const limited = mutationLimited(session.userId);
+  if (limited) return limited;
 
   const raw = Object.fromEntries(formData.entries()) as Record<string, string>;
   const parsed = GeofenceInputSchema.safeParse(raw);
@@ -118,7 +121,7 @@ export async function createGeofenceAction(
     });
     createdId = created.id;
   } catch (e) {
-    logger.error({ event: "geofences.create.error", err: String(e) }, "geofences.create failed");
+    logger.error({ event: "geofences.create.error", err: safeErr(e) }, "geofences.create failed");
     return { ok: false, error: "Une erreur est survenue." };
   }
 
@@ -143,6 +146,8 @@ export async function updateGeofenceAction(
 ): Promise<GeofenceFormState> {
   const session = await requireSession();
   if (env.READ_ONLY) return readOnlyResult();
+  const limited = mutationLimited(session.userId);
+  if (limited) return limited;
 
   const raw = Object.fromEntries(formData.entries()) as Record<string, string>;
   const parsed = GeofenceInputSchema.safeParse(raw);
@@ -174,7 +179,7 @@ export async function updateGeofenceAction(
     if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2025") {
       return { ok: false, error: "Géofence introuvable." };
     }
-    logger.error({ event: "geofences.update.error", id, err: String(e) }, "geofences.update failed");
+    logger.error({ event: "geofences.update.error", id, err: safeErr(e) }, "geofences.update failed");
     return { ok: false, error: "Une erreur est survenue." };
   }
 
@@ -196,6 +201,8 @@ export async function updateGeofenceAction(
 export async function deleteGeofenceAction(id: number): Promise<{ ok: boolean; error?: string }> {
   const session = await requireSession();
   if (env.READ_ONLY) return { ok: false, error: "Application en lecture seule." };
+  const limited = mutationLimited(session.userId);
+  if (limited) return limited;
 
   try {
     await prisma.geofences.delete({ where: { id } });
@@ -203,7 +210,7 @@ export async function deleteGeofenceAction(id: number): Promise<{ ok: boolean; e
     if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2025") {
       return { ok: false, error: "Géofence introuvable." };
     }
-    logger.error({ event: "geofences.delete.error", id, err: String(e) }, "geofences.delete failed");
+    logger.error({ event: "geofences.delete.error", id, err: safeErr(e) }, "geofences.delete failed");
     return { ok: false, error: "Une erreur est survenue." };
   }
 

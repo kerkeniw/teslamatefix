@@ -23,16 +23,16 @@ export const POSITION_SNAPSHOT_SELECT = {
 export type PositionSnapshot = {
   id: number;
   date: Date;
-  latitude: import("@prisma/client").Prisma.Decimal;
-  longitude: import("@prisma/client").Prisma.Decimal;
+  latitude: import("@/generated/prisma/client").Prisma.Decimal;
+  longitude: import("@/generated/prisma/client").Prisma.Decimal;
   odometer: number | null;
-  outside_temp: import("@prisma/client").Prisma.Decimal | null;
-  inside_temp: import("@prisma/client").Prisma.Decimal | null;
+  outside_temp: import("@/generated/prisma/client").Prisma.Decimal | null;
+  inside_temp: import("@/generated/prisma/client").Prisma.Decimal | null;
   battery_level: number | null;
   usable_battery_level: number | null;
-  ideal_battery_range_km: import("@prisma/client").Prisma.Decimal | null;
-  rated_battery_range_km: import("@prisma/client").Prisma.Decimal | null;
-  est_battery_range_km: import("@prisma/client").Prisma.Decimal | null;
+  ideal_battery_range_km: import("@/generated/prisma/client").Prisma.Decimal | null;
+  rated_battery_range_km: import("@/generated/prisma/client").Prisma.Decimal | null;
+  est_battery_range_km: import("@/generated/prisma/client").Prisma.Decimal | null;
   elevation: number | null;
   power: number | null;
   speed: number | null;

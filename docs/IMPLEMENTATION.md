@@ -11,6 +11,7 @@ Ce journal trace, pas à pas, ce qui a été réalisé.
 
 - Scaffold via `npx create-next-app@latest /tmp/teslamatefix-init` (le nom de dossier `TeslaMateFix` était refusé par npm pour cause de majuscules), puis copie des fichiers vers le projet en préservant `.git/` et `.claude/`.
 - Stack effective : **Next.js 16.2.4 (Turbopack)**, React 19.2.4, TypeScript 5, Tailwind 4, ESLint 9, App Router, `src/` directory, alias `@/*`.
+  > *Depuis v0.8.0* : Next 16.4, React 19.3, TypeScript 6, Prisma 7 (client généré dans `src/generated/prisma`, adaptateur `pg`), iron-session 9, TanStack Table 9, image Docker sur Node 24 — cf. [RELEASE_v0.8.0.md](RELEASE_v0.8.0.md) §4. Le journal ci-dessous reste celui de la v0.1.0.
 - `package.json` renommé `teslamatefix`, ajouts : `description`, `license: MIT`, `engines.node >= 20`, script `typecheck`.
 - `src/app/page.tsx` : démo Vercel remplacée par un placeholder simple.
 - `src/app/layout.tsx` : metadata mise à jour (title `TeslaMateFix`).

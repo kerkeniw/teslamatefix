@@ -479,7 +479,8 @@
       "modeSpeed": "Speed",
       "start": "Start",
       "end": "End",
-      "noTrack": "No GPS positions to draw this trip."
+      "noTrack": "No GPS positions to draw this trip.",
+      "modeOrigin": "Origin"
     },
     "compute": {
       "action": "Compute",
@@ -556,7 +557,8 @@
       "location": "Location",
       "locationPlaceholder": "Start or destination…",
       "geofence": "Geofences",
-      "efficiency": "Efficiency"
+      "efficiency": "Efficiency",
+      "quickRange": "Period"
     },
     "efficiencyMode": {
       "slope": "Slope-adjusted",
@@ -614,9 +616,37 @@
       "noCar": "No vehicle available. Import a car before creating a drive."
     },
     "positionsTab": {
-      "totalCount": "{n} position(s) total. Showing first 50.",
-      "viewAll": "View all positions",
-      "empty": "No position attached to this drive."
+      "count": "{shown} of {total} position(s) shown.",
+      "truncated": "Only the first {cap} positions are loaded.",
+      "viewAll": "Open in Positions",
+      "empty": "No position attached to this drive.",
+      "noMatch": "No position matches the filters.",
+      "filters": {
+        "title": "Filters",
+        "active": "{n} active",
+        "reset": "Reset",
+        "origin": "Origin",
+        "min": "min",
+        "max": "max",
+        "regenOnly": "Regeneration only (power < 0)",
+        "gap": "Gap from previous ≥ (s)",
+        "jump": "Jump from previous ≥ (m)",
+        "emptyColumn": "Empty column",
+        "anyColumn": "All positions"
+      },
+      "columns": {
+        "menu": "Columns",
+        "empty": "empty",
+        "time": "Time",
+        "dt": "Δt (s)",
+        "dd": "Δd (m)",
+        "latLon": "Lat, lon"
+      },
+      "pager": {
+        "prev": "Previous page",
+        "next": "Next page",
+        "page": "Page {page} / {pages}"
+      }
     },
     "recalc": {
       "title": "Recompute from positions",
@@ -711,6 +741,14 @@
       "create": "Create drive",
       "save": "Save",
       "delete": "Delete"
+    },
+    "summary": {
+      "title": "Period summary",
+      "count": "Drives",
+      "distance": "Distance",
+      "duration": "Duration",
+      "energy": "Energy consumed (net)",
+      "consumption": "Ø Consumption (net)"
     }
   },
   "charges": {
@@ -836,7 +874,8 @@
       "maxEfficiency": "Efficiency ≤",
       "minCost": "Cost ≥",
       "minDuration": "Duration ≥",
-      "openOnly": "Open sessions only"
+      "openOnly": "Open sessions only",
+      "quickRange": "Period"
     },
     "type": {
       "ac": "AC",
@@ -989,6 +1028,7 @@
       "positionId": "Position ID"
     },
     "summary": {
+      "title": "Period summary",
       "count": "Sessions",
       "energyAdded": "Energy added",
       "energyUsed": "Energy used",
@@ -1124,6 +1164,24 @@
       "create": "Create position",
       "save": "Save",
       "delete": "Delete"
+    },
+    "origin": {
+      "title": "Position origin",
+      "column": "Origin",
+      "short": {
+        "vehicle_data": "Fleet API",
+        "flux": "Stream",
+        "flux_complete": "Completed stream",
+        "d13": "Reconstructed"
+      },
+      "descriptions": {
+        "vehicle_data": "Fleet API vehicle_data call: ranges, temperatures, tyres and climate filled in.",
+        "flux": "Fleet Telemetry frame: protocol columns only (position, speed, power, SOC, odometer, elevation).",
+        "flux_complete": "Stream frame completed afterwards by TeslaMateAPI (D13 FILL).",
+        "d13": "Position created by a TeslaMateAPI reconstruction (D13: EXTEND, CREATE, SPLIT…)."
+      },
+      "reconstructedWarning": "{n} position(s) reconstructed or completed by TeslaMateAPI: computed data, check before a manual correction.",
+      "columnsOnly": "Origin inferred from filled columns only: details unavailable without TeslaMateAPI (a completed stream looks like Fleet API, a reconstruction cannot be identified)."
     }
   },
   "privacy": {
@@ -1141,7 +1199,7 @@
     "clear": {
       "button": "Clear imports",
       "title": "Clear Tesla imports?",
-      "description": "Imported sessions are removed from /data. The TeslaMate database is not modified.",
+      "description": "Imported sessions are removed from the working directory (var/). The TeslaMate database is not modified.",
       "confirm": "Clear",
       "done": "Imports cleared."
     },

@@ -1,7 +1,18 @@
 import { env } from "@/lib/env";
-import { logger } from "@/lib/logger";
+import { warnThrottled } from "@/lib/logger";
 
 const FETCH_TIMEOUT_MS = 3_000;
+
+/** Cause probable d'une erreur HTTP de la Fleet API, pour un journal lisible. */
+function httpHint(status: number): string {
+  if (status === 401) return "jeton refusé (expiré ou révoqué) : TeslaMate doit le rafraîchir";
+  if (status === 403) return "accès refusé : scope manquant ou application non enregistrée dans la région";
+  if (status === 404) return "véhicule inconnu pour ce compte (VIN) ou mauvaise région Fleet API";
+  if (status === 412) return "application non enregistrée (partner registration) dans cette région";
+  if (status === 429) return "quota d'appels Fleet API dépassé";
+  if (status >= 500) return "indisponibilité côté Tesla";
+  return "réponse inattendue";
+}
 
 /**
  * Normalise un code option vers la forme attendue par le compositor, SANS le
@@ -74,18 +85,34 @@ export async function fetchVehicleOptions(
     });
 
     if (!res.ok) {
-      logger.warn(
-        { event: "tesla.fleet.options.http_error", status: res.status },
-        "Fleet API dx/vehicles/options a renvoyé une erreur",
+      // Corps d'erreur Tesla (JSON court, sans secret) : utile au diagnostic.
+      const body = (await res.text().catch(() => "")).slice(0, 300);
+      warnThrottled(
+        `tesla.fleet.options.http_${res.status}`,
+        {
+          event: "tesla.fleet.options.http_error",
+          status: res.status,
+          endpoint: "GET /api/1/dx/vehicles/options",
+          base_url: env.TESLA_FLEET_API_BASE_URL,
+          body,
+        },
+        `Fleet API dx/vehicles/options : HTTP ${res.status} — ${httpHint(res.status)}`,
       );
       return null;
     }
 
     return await res.json();
   } catch (err) {
-    logger.warn(
-      { event: "tesla.fleet.options.fetch_error", err: (err as Error).message },
-      "Échec de l'appel Fleet API dx/vehicles/options",
+    const aborted = (err as Error).name === "AbortError";
+    warnThrottled(
+      "tesla.fleet.options.fetch_error",
+      {
+        event: "tesla.fleet.options.fetch_error",
+        endpoint: "GET /api/1/dx/vehicles/options",
+        base_url: env.TESLA_FLEET_API_BASE_URL,
+        err: aborted ? `timeout ${FETCH_TIMEOUT_MS} ms` : (err as Error).message,
+      },
+      "Échec de l'appel Fleet API dx/vehicles/options (réseau ou délai dépassé)",
     );
     return null;
   } finally {

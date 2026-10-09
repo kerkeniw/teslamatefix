@@ -24,7 +24,7 @@ const MAX_BYTES = 900 * 1024;
 
 /**
  * Import de `Charging Data.csv` (export Privacy Tesla). N'écrit pas dans la base
- * TeslaMate (seulement dans le volume /data) : autorisé en READ_ONLY.
+ * TeslaMate (seulement dans le répertoire de travail `var/`) : autorisé en READ_ONLY.
  */
 export async function importChargingCsvAction(
   _prev: PrivacyImportState | null,
@@ -60,7 +60,7 @@ export async function importChargingCsvAction(
     );
     return {
       ok: false,
-      error: "Impossible d'enregistrer l'import (volume /data en lecture seule ?).",
+      error: "Impossible d'enregistrer l'import (répertoire de travail var/ en lecture seule ?).",
     };
   }
 

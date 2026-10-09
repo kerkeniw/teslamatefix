@@ -1,13 +1,14 @@
 "use server";
 
 import { z } from "zod";
-import { Prisma } from "@prisma/client";
+import { Prisma } from "@/generated/prisma/client";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { requireSession } from "@/lib/auth";
 import { env } from "@/lib/env";
-import { logger } from "@/lib/logger";
+import { mutationLimited } from "@/lib/rate-limit";
+import { logger, safeErr } from "@/lib/logger";
 
 export type PositionActionState = {
   ok: boolean;
@@ -170,6 +171,8 @@ export async function createPositionAction(
 ): Promise<PositionActionState> {
   const session = await requireSession();
   if (env.READ_ONLY) return readOnly();
+  const limited = mutationLimited(session.userId);
+  if (limited) return limited;
 
   const raw = Object.fromEntries(formData.entries()) as Record<string, string>;
   const parsed = PositionSchema.safeParse(raw);
@@ -188,7 +191,7 @@ export async function createPositionAction(
     if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2003") {
       return { ok: false, error: "Référence introuvable (véhicule ou trajet)." };
     }
-    logger.error({ event: "positions.create.error", err: String(e) }, "positions.create failed");
+    logger.error({ event: "positions.create.error", err: safeErr(e) }, "positions.create failed");
     return { ok: false, error: "Une erreur est survenue." };
   }
 
@@ -207,6 +210,8 @@ export async function updatePositionAction(
 ): Promise<PositionActionState> {
   const session = await requireSession();
   if (env.READ_ONLY) return readOnly();
+  const limited = mutationLimited(session.userId);
+  if (limited) return limited;
 
   const raw = Object.fromEntries(formData.entries()) as Record<string, string>;
   const parsed = PositionSchema.safeParse(raw);
@@ -221,7 +226,7 @@ export async function updatePositionAction(
       if (e.code === "P2025") return { ok: false, error: "Position introuvable." };
       if (e.code === "P2003") return { ok: false, error: "Référence introuvable." };
     }
-    logger.error({ event: "positions.update.error", id, err: String(e) }, "positions.update failed");
+    logger.error({ event: "positions.update.error", id, err: safeErr(e) }, "positions.update failed");
     return { ok: false, error: "Une erreur est survenue." };
   }
 
@@ -237,6 +242,8 @@ export async function updatePositionAction(
 export async function deletePositionAction(id: number): Promise<{ ok: boolean; error?: string }> {
   const session = await requireSession();
   if (env.READ_ONLY) return { ok: false, error: "Application en lecture seule." };
+  const limited = mutationLimited(session.userId);
+  if (limited) return limited;
 
   // FK depuis charging_processes.position_id est NOT NULL ; on refuse la
   // suppression dans ce cas plutôt que de laisser Postgres lever une 23503.
@@ -253,7 +260,7 @@ export async function deletePositionAction(id: number): Promise<{ ok: boolean; e
     if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2025") {
       return { ok: false, error: "Position introuvable." };
     }
-    logger.error({ event: "positions.delete.error", id, err: String(e) }, "positions.delete failed");
+    logger.error({ event: "positions.delete.error", id, err: safeErr(e) }, "positions.delete failed");
     return { ok: false, error: "Une erreur est survenue." };
   }
 
@@ -262,13 +269,22 @@ export async function deletePositionAction(id: number): Promise<{ ok: boolean; e
   return { ok: true };
 }
 
+// Plafond de la suppression en lot (Medium #10) : couvre une page de 100 et les
+// sélections d'un trajet, borne la requête `IN (...)`.
+const BULK_DELETE_MAX = 1000;
+
 export async function bulkDeletePositionsAction(
   ids: number[],
 ): Promise<{ ok: boolean; error?: string; refused?: number[] }> {
   const session = await requireSession();
   if (env.READ_ONLY) return { ok: false, error: "Application en lecture seule." };
+  const limited = mutationLimited(session.userId);
+  if (limited) return limited;
   if (!Array.isArray(ids) || ids.length === 0) {
     return { ok: false, error: "Aucune position sélectionnée." };
+  }
+  if (ids.length > BULK_DELETE_MAX) {
+    return { ok: false, error: `Au plus ${BULK_DELETE_MAX} positions par suppression.` };
   }
   const intIds = ids.filter((n) => Number.isInteger(n) && n > 0);
   if (intIds.length === 0) return { ok: false, error: "Identifiants invalides." };
@@ -288,7 +304,7 @@ export async function bulkDeletePositionsAction(
       await prisma.positions.deleteMany({ where: { id: { in: deletable } } });
     } catch (e) {
       logger.error(
-        { event: "positions.bulk_delete.error", count: deletable.length, err: String(e) },
+        { event: "positions.bulk_delete.error", count: deletable.length, err: safeErr(e) },
         "positions.bulk_delete failed",
       );
       return { ok: false, error: "Une erreur est survenue." };

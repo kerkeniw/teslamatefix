@@ -16,8 +16,28 @@
  */
 
 import fs from "node:fs";
+import path from "node:path";
 
-const SECRETS_DIR = process.env.TMFIX_SECRETS_DIR ?? "/data";
+// Volume persistant (secrets, cache Fleet API). Une variable vide vaut absente.
+const SECRETS_DIR = process.env.TMFIX_SECRETS_DIR?.trim() || "/data";
+
+/**
+ * Répertoire de travail (v0.8.0), distinct du volume persistant `/data` :
+ * `var/` relatif au répertoire de lancement (racine du projet en dev, `/app`
+ * dans l'image). Non servi par le web (seul `public/` l'est) ; en production il
+ * peut disparaître à chaque rebuild. Accueille les imports Privacy Tesla.
+ * `TMFIX_WORK_DIR` le déplace ; une variable vide vaut absente.
+ */
+export function resolveWorkDir(
+  value: string | undefined = process.env.TMFIX_WORK_DIR,
+  cwd = process.cwd(),
+): string {
+  // Chemin résolu au runtime : sans l'annotation, Turbopack trace des sources
+  // du projet dans la sortie standalone.
+  return path.resolve(/*turbopackIgnore: true*/ cwd, value?.trim() || "var");
+}
+
+const WORK_DIR = resolveWorkDir();
 
 function required(name: string): string {
   const value = process.env[name];
@@ -70,12 +90,32 @@ if (AUTH_SECRET.length < 32) {
   );
 }
 
+/** `COOKIE_SECURE=auto|true|false` → booléen (auto = NODE_ENV production). */
+export function cookieSecure(value: string | undefined, nodeEnv = process.env.NODE_ENV): boolean {
+  if (value === "true") return true;
+  if (value === "false") return false;
+  return nodeEnv === "production";
+}
+
 export const env = {
   DATABASE_URL: required("DATABASE_URL"),
   AUTH_SECRET,
   DEFAULT_LOCALE: optional("DEFAULT_LOCALE", "fr") as "fr" | "en",
   LOG_LEVEL: optional("LOG_LEVEL", "info"),
   READ_ONLY: optional("READ_ONLY", "false") === "true",
+  /**
+   * Sécurité (depuis v0.8.0) :
+   *   - TRUST_PROXY : `true` uniquement derrière un reverse proxy qui écrase
+   *     `X-Real-IP` / complète `X-Forwarded-For`. Sinon ces en-têtes sont ignorés
+   *     (falsifiables) et la limite de connexion devient globale.
+   *   - COOKIE_SECURE : `auto` (= production), `true` ou `false` (HTTP local).
+   *   - COOKIE_SAMESITE : `lax` (défaut) ou `strict` (un lien collé impose un login).
+   */
+  TRUST_PROXY: optional("TRUST_PROXY", "false") === "true",
+  COOKIE_SECURE: cookieSecure(optional("COOKIE_SECURE", "auto")),
+  COOKIE_SAMESITE: (optional("COOKIE_SAMESITE", "lax") === "strict" ? "strict" : "lax") as
+    | "lax"
+    | "strict",
   PORT: parseInt(optional("PORT", "3001"), 10),
   NODE_ENV: process.env.NODE_ENV ?? "development",
   /**
@@ -84,6 +124,8 @@ export const env = {
    * que ce dossier existe et appartient au user `node`.
    */
   SECRETS_DIR,
+  /** Répertoire de travail local (`./var`), cf. `resolveWorkDir`. */
+  WORK_DIR,
   /**
    * Fleet API (photo officielle du véhicule, depuis v0.5.2). Tout optionnel :
    *   - TESLAMATE_ENCRYPTION_KEY : même valeur que `ENCRYPTION_KEY` de TeslaMate,

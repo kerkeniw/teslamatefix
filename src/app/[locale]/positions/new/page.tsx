@@ -4,6 +4,7 @@ import { env } from "@/lib/env";
 import { prisma } from "@/lib/db";
 import { AppHeader } from "@/components/app-shell/header";
 import { MainNav } from "@/components/app-shell/main-nav";
+import { PageHeader } from "@/components/app-shell/page-header";
 import {
   PositionForm,
   type PositionFormValues,
@@ -93,9 +94,7 @@ export default async function NewPositionPage({
             {tCommon("back")}
           </ButtonLink>
         </div>
-        <header className="mb-6">
-          <h1 className="text-2xl font-semibold tracking-tight">{t("create")}</h1>
-        </header>
+        <PageHeader title={t("create")} />
         <PositionForm
           mode="create"
           initial={initial}

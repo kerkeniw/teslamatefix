@@ -1,4 +1,4 @@
-import { Prisma } from "@prisma/client";
+import { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/db";
 import type { PreferredRange } from "@/lib/units";
 
@@ -71,9 +71,28 @@ type RawRow = Omit<DriveListRow, "start_date" | "end_date" | "has_reduced_range"
   end_date: Date | null;
 };
 
+/** Synthèse de la période filtrée (métrique ; conversion d'unités à l'affichage). */
+export type DriveListSummary = {
+  count: number;
+  distance_km: number | null;
+  duration_min: number | null;
+  /** Énergie consommée (net), kWh. */
+  energy_kwh: number | null;
+  /** Consommation moyenne (net), Wh/km. */
+  consumption_wh_km: number | null;
+};
+
+type RawSummary = {
+  count: number;
+  distance_km: number | null;
+  duration_min: number | null;
+  energy_kwh: number | null;
+  energy_distance_km: number | null;
+};
+
 export async function listDrives(
   opts: ListDrivesOpts,
-): Promise<{ rows: DriveListRow[]; total: number }> {
+): Promise<{ rows: DriveListRow[]; total: number; summary: DriveListSummary }> {
   const {
     carId, from, to, openOnly, minDistKm, minSpeedKmh,
     geofenceIds, location, preferredRange, page, pageSize,
@@ -144,7 +163,7 @@ export async function listDrives(
     )
   `;
 
-  const [rawRows, countRes] = await Promise.all([
+  const [rawRows, summaryRes] = await Promise.all([
     prisma.$queryRaw<RawRow[]>(Prisma.sql`
       ${cte}
       SELECT * FROM data
@@ -152,14 +171,35 @@ export async function listDrives(
       ORDER BY drive_id DESC
       LIMIT ${pageSize} OFFSET ${(page - 1) * pageSize}
     `),
-    prisma.$queryRaw<{ count: number }[]>(Prisma.sql`
+    // Bloc « Summary of this period » du dashboard Grafana Drives : énergie
+    // consommée (net) = Σ range_diff × efficiency, durée, distance, conso moyenne.
+    prisma.$queryRaw<RawSummary[]>(Prisma.sql`
       ${cte}
-      SELECT count(*)::int AS count FROM data
+      SELECT
+        count(*)::int AS count,
+        sum(distance)::float8 AS distance_km,
+        sum(duration_min)::float8 AS duration_min,
+        sum(range_diff * car_efficiency)::float8 AS energy_kwh,
+        sum(distance) FILTER (WHERE range_diff IS NOT NULL AND car_efficiency IS NOT NULL)::float8 AS energy_distance_km
+      FROM data
       ${outerWhere}
     `),
   ]);
 
-  const total = Number(countRes[0]?.count ?? 0);
+  const s = summaryRes[0];
+  const total = Number(s?.count ?? 0);
+  const summary: DriveListSummary = {
+    count: total,
+    distance_km: s?.distance_km ?? null,
+    duration_min: s?.duration_min ?? null,
+    energy_kwh: s?.energy_kwh ?? null,
+    // Comme Grafana : énergie totale / distance totale, sur les trajets où
+    // l'énergie est calculable (sinon la moyenne serait sous-estimée).
+    consumption_wh_km:
+      s?.energy_kwh != null && s.energy_distance_km
+        ? (s.energy_kwh / s.energy_distance_km) * 1000
+        : null,
+  };
 
   // ❄ autonomie réduite : calculé uniquement pour les trajets de la page.
   const ids = rawRows.map((r) => r.drive_id);
@@ -186,5 +226,5 @@ export async function listDrives(
     };
   });
 
-  return { rows, total };
+  return { rows, total, summary };
 }

@@ -10,11 +10,10 @@
 #                sortie est un répertoire `.next/standalone/` autoportant.
 #   3. runner  — image runtime minimale, lance `node server.js` en USER node.
 #
-# Image runtime : `node:22-bookworm-slim` (et non Alpine) car le client Prisma
-# 6 généré sur ce projet fournit `libquery_engine-debian-openssl-3.0.x.so.node`,
-# qui est lié à glibc + OpenSSL 3 (présents sur Debian Bookworm). Utiliser
-# Alpine forcerait à ajouter `linux-musl-openssl-3.0.x` aux `binaryTargets` du
-# schema.prisma, ce qui sort du périmètre de cette étape.
+# Image runtime : `node:24-bookworm-slim` (Node 24 = LTS active). Depuis Prisma 7
+# (v0.8.0), plus de moteur Rust ni de binaire lié à OpenSSL : le client est du
+# TypeScript généré dans `src/generated/prisma`, embarqué par `next build`, et la
+# connexion passe par `@prisma/adapter-pg` + `pg` (tracés dans le standalone).
 #
 # Build (depuis la racine du repo, avec BuildKit activé) :
 #   docker build -f docker/Dockerfile -t teslamatefix:local .
@@ -22,7 +21,7 @@
 # Cache npm via BuildKit `--mount=type=cache` : accélère les builds successifs
 # sans grossir l'image finale (le cache reste hors layer).
 
-ARG NODE_VERSION=22
+ARG NODE_VERSION=24
 
 # ---------------------------------------------------------------------------
 # Stage 1 — deps : install dépendances (full, pour disposer de la CLI Prisma).
@@ -30,13 +29,14 @@ ARG NODE_VERSION=22
 FROM node:${NODE_VERSION}-bookworm-slim AS deps
 WORKDIR /app
 
-# Outils nécessaires aux postinstall natifs (sharp, prisma generate).
+# Certificats pour les téléchargements des postinstall (sharp).
 RUN apt-get update \
- && apt-get install -y --no-install-recommends ca-certificates openssl \
+ && apt-get install -y --no-install-recommends ca-certificates \
  && rm -rf /var/lib/apt/lists/*
 
-# On copie le schéma Prisma avant `npm ci` car `postinstall` lance `prisma generate`.
-COPY package.json package-lock.json ./
+# Schéma + config Prisma avant `npm ci` car `postinstall` lance `prisma generate`
+# (sortie dans src/generated/prisma, sans besoin de DATABASE_URL).
+COPY package.json package-lock.json prisma.config.ts ./
 COPY prisma ./prisma
 
 # Cache npm pour les builds incrémentaux.
@@ -60,12 +60,7 @@ ENV NODE_ENV=production
 ENV AUTH_SECRET=build-time-placeholder-min-32-chars-aaaaaaaa
 ENV DATABASE_URL=postgresql://placeholder:placeholder@placeholder:5432/placeholder?schema=public
 
-# OpenSSL requis pour le runtime Prisma au moment de `prisma generate`.
-RUN apt-get update \
- && apt-get install -y --no-install-recommends ca-certificates openssl \
- && rm -rf /var/lib/apt/lists/*
-
-# Récupère les dépendances + le client Prisma déjà généré au stage deps.
+# Récupère les dépendances installées au stage deps.
 COPY --from=deps /app/node_modules ./node_modules
 COPY --from=deps /app/package.json ./package.json
 COPY --from=deps /app/package-lock.json ./package-lock.json
@@ -74,7 +69,7 @@ COPY --from=deps /app/prisma ./prisma
 # Copie le reste de la source. .dockerignore filtre les artefacts locaux.
 COPY . .
 
-# Re-génère le client Prisma au cas où la copie l'aurait écrasé, puis build.
+# Génère le client Prisma (src/generated, exclu du contexte), puis build.
 RUN npx prisma generate \
  && npm run build
 
@@ -92,29 +87,23 @@ ENV HOSTNAME=0.0.0.0
 # Monter en lecture seule le fichier (ou le dossier) à cet emplacement.
 ENV TESLA_PUBLIC_KEY_FILE=/well-known/com.tesla.3p.public-key.pem
 
-# OpenSSL pour le binaire libquery_engine de Prisma + wget pour le HEALTHCHECK.
-# `tini` (init PID 1) gère proprement les signaux (SIGTERM/SIGINT) lors d'un
-# `docker stop`, important pour fermer les connexions Prisma avant kill.
+# wget pour le HEALTHCHECK. `tini` (init PID 1) gère proprement les signaux
+# (SIGTERM/SIGINT) lors d'un `docker stop`, important pour fermer les
+# connexions à la base avant kill. Plus d'OpenSSL : Prisma 7 n'a plus de moteur.
 RUN apt-get update \
- && apt-get install -y --no-install-recommends ca-certificates openssl wget tini \
+ && apt-get install -y --no-install-recommends ca-certificates wget tini \
  && rm -rf /var/lib/apt/lists/* \
  && mkdir -p /app/.next /data /well-known \
  && chown -R node:node /app /data /well-known
 
 # Sortie standalone Next.js : contient server.js + un node_modules minimal
-# avec le client Prisma déjà inclus par le tracing automatique de Next 16.
+# (runtime Prisma, adaptateur pg et pilote pg inclus par le tracing de Next).
+# Le client Prisma 7 généré est du code source, compilé dans le bundle.
 COPY --from=builder --chown=node:node /app/.next/standalone ./
 # Assets statiques Next (chunks JS, images optimisées).
 COPY --from=builder --chown=node:node /app/.next/static ./.next/static
 # Fichiers servis tels quels par Next (favicons, svg…).
 COPY --from=builder --chown=node:node /app/public ./public
-
-# Filet de sécurité : on copie explicitement le client Prisma au cas où le
-# tracing standalone n'en capture pas toutes les facettes (certaines builds
-# omettent les query engines selon la résolution dynamique). Inoffensif si
-# déjà présent — la copie écrase simplement à l'identique.
-COPY --from=builder --chown=node:node /app/node_modules/.prisma/client ./node_modules/.prisma/client
-COPY --from=builder --chown=node:node /app/node_modules/@prisma/client ./node_modules/@prisma/client
 
 # bcryptjs n'est pas tracé par le standalone build de Next.js (il n'est
 # référencé que dans des fichiers `"use server"` que le tracer omet parfois).

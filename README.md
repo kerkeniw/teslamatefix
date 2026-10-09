@@ -9,7 +9,7 @@ TeslaMate, se connecte à sa base PostgreSQL et expose une UI sécurisée pour
 réparer chaque entité (`drives`, `charges`, `positions`, `addresses`,
 `geofences`, `states`, `updates`, `cars`, `settings`).
 
-> **Statut v0.7.2** — les modules de **création et de modification des charges et
+> **Statut v0.8.0** — les modules de **création et de modification des charges et
 > des trajets** (dont l'**assistant de création de trajet** avec géocodage +
 > itinéraire, l'**édition de trajet avec carte** et la **correction d'anomalies
 > depuis les positions**) sont les flux d'écriture couverts. La page
@@ -18,6 +18,43 @@ réparer chaque entité (`drives`, `charges`, `positions`, `addresses`,
 > flux d'édition n'ont pas tous été validés. À utiliser avec précaution et
 > **toujours sur une base sauvegardée** (`pg_dump` recommandé avant la première
 > utilisation).
+
+## Nouveautés v0.8.0
+
+Détail et étapes manuelles : [`docs/RELEASE_v0.8.0.md`](docs/RELEASE_v0.8.0.md).
+
+### Origine des positions dans le détail d'un trajet
+
+TeslaMate ne dit pas d'où vient une position. TeslaMateFix la déduit
+([`docs/ORIGINE_POSITIONS.md`](docs/ORIGINE_POSITIONS.md)) : appel **Fleet API**
+(`vehicle_data`), trame du **flux** Fleet Telemetry, et — si
+[TeslaMateAPI](docs/INTEGRATION_TESLAMATEAPI.md) est installé, détecté
+automatiquement — **flux complété** ou position **reconstruite** (D13).
+
+- Bandeau de répartition au-dessus de l'écran d'édition d'un trajet, avec un
+  avertissement quand des positions sont reconstruites.
+- Carte : **Colorer par › Origine**.
+- Sans TeslaMateAPI : seules Fleet API et flux sont distinguées, sans erreur.
+
+### Onglet Positions d'un trajet
+
+- **Toutes les positions** du trajet, paginées, avec l'origine, l'écart en temps
+  et en distance avec la précédente, et les colonnes **généralement remplies** sur
+  ce trajet (menu « Colonnes » avec le taux de remplissage de chacune).
+- **Filtres** : origine, vitesse, puissance (dont régénération seule), trous de
+  collecte (écart ≥ N s), sauts GPS (≥ N m), colonne vide.
+
+### Durcissement sécurité
+
+Points ouverts de [`docs/SECURITY_REVIEW.md`](docs/SECURITY_REVIEW.md) traités :
+correction de trajet et recalcul de charge **recalculés côté serveur** (et soumis
+à `READ_ONLY`), limite de débit des écritures, journaux sans coordonnées, bornes
+sur les lots, `Cache-Control: no-store`, saisie masquée de `npm run auth:hash`.
+Nouvelles variables facultatives : `TRUST_PROXY`, `COOKIE_SECURE`,
+`COOKIE_SAMESITE` ([`docs/INSTALL.md` §5.e](docs/INSTALL.md)).
+
+> ⚠️ Derrière un reverse proxy, ajouter `TRUST_PROXY=true` : sinon la limite de
+> tentatives de connexion devient commune à tous les clients.
 
 ## Nouveautés v0.7.2
 
@@ -133,8 +170,8 @@ Détails et checklist de cette partie : [`docs/RELEASE_v0.6.0.md`](docs/RELEASE_
 - **Barre d'actions flottante** (Enregistrer / Annuler / Corriger / Supprimer) et
   espacement resserré sur tous les écrans d'édition.
 
-> ⚠️ La correction **contourne volontairement le mode `READ_ONLY`** (elle écrit
-> dans `drives` et `positions`). Faire un `pg_dump` avant usage.
+> ⚠️ La correction écrit dans `drives` et `positions` : faire un `pg_dump` avant
+> usage. (En v0.7.x elle contournait `READ_ONLY` ; depuis v0.8.0 elle le respecte.)
 
 ### Positions : carte géographique + filtres
 
@@ -328,9 +365,10 @@ survivent. Détails et compatibilité TeslaMate :
 - **TeslaMateAPI (facultatif)** : TeslaMateFix fonctionne seul et détecte, s'il est installé,
   le flux de télémétrie et l'outil de reconstruction pour proposer des fonctionnalités liées —
   [`docs/INTEGRATION_TESLAMATEAPI.md`](docs/INTEGRATION_TESLAMATEAPI.md).
-- **Stack technique** — Next.js 16, React 19, Prisma 6 (introspection
-  read-only de TeslaMate), iron-session, next-intl FR/EN, Tailwind 4 +
-  shadcn/ui.
+- **Stack technique** (v0.8.0) — Next.js 16.4, React 19.3, Prisma 7 (client
+  généré + adaptateur `pg`, introspection de TeslaMate), iron-session 9,
+  TanStack Table 9, next-intl FR/EN, Tailwind 4 + shadcn/ui, TypeScript 6,
+  Node 24 dans l'image Docker.
 
 ## Licence
 

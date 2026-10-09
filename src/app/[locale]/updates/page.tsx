@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db";
 import { getSelectedCarOrDefault } from "@/lib/vehicle";
 import { AppHeader } from "@/components/app-shell/header";
 import { MainNav } from "@/components/app-shell/main-nav";
+import { PageHeader } from "@/components/app-shell/page-header";
 import { UpdateListClient } from "@/components/entities/updates/UpdateListClient";
 import type { UpdateRow } from "@/components/entities/updates/UpdateDataTableColumns";
 
@@ -60,10 +61,7 @@ export default async function UpdatesPage({
       <AppHeader />
       <MainNav />
       <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6">
-        <header className="mb-6">
-          <h1 className="text-2xl font-semibold tracking-tight">{t("title")}</h1>
-          <p className="mt-1 text-sm text-muted-foreground">{t("subtitle")}</p>
-        </header>
+        <PageHeader title={t("title")} subtitle={t("subtitle")} />
         <UpdateListClient
           data={rows}
           total={total}

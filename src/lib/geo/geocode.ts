@@ -9,7 +9,7 @@
  * GEO_USER_AGENT). L'instance publique OSM est soumise à une policy de quota.
  */
 import { env } from "@/lib/env";
-import { logger } from "@/lib/logger";
+import { logger, safeErr } from "@/lib/logger";
 import type { AddressFormValues } from "@/components/entities/addresses/AddressForm";
 
 /** Erreur métier géo — permet au caller de distinguer quota / réseau / vide. */
@@ -80,7 +80,7 @@ async function nominatimFetch(path: string): Promise<unknown> {
       cache: "no-store",
     });
   } catch (e) {
-    logger.error({ event: "geo.geocode.fetch_error", err: String(e) }, "nominatim fetch failed");
+    logger.error({ event: "geo.geocode.fetch_error", err: safeErr(e) }, "nominatim fetch failed");
     throw new GeoError("Service de géocodage injoignable.", "network");
   }
   if (res.status === 429) {

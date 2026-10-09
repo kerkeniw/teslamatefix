@@ -1,6 +1,6 @@
 "use client";
 
-import type { ColumnDef } from "@tanstack/react-table";
+import type { AppColumnDef } from "@/components/data-table/data-table";
 import { useTranslations, useFormatter } from "next-intl";
 import { Pencil } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -56,7 +56,7 @@ export function StateBadge({ state }: { state: StateStatus }) {
   );
 }
 
-export function useStateColumns(): ColumnDef<StateRow>[] {
+export function useStateColumns(): AppColumnDef<StateRow>[] {
   const t = useTranslations("states");
   const tCommon = useTranslations("common");
   const format = useFormatter();

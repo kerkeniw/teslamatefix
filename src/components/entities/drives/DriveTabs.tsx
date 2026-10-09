@@ -38,6 +38,7 @@ export function DriveTabs({
   readOnly,
   saveAction,
   deleteAction,
+  originSummary,
   positionsTab,
 }: {
   id: number;
@@ -68,6 +69,8 @@ export function DriveTabs({
     formData: FormData,
   ) => Promise<DriveActionState>;
   deleteAction: () => Promise<{ ok: boolean; error?: string }>;
+  /** Répartition des positions par origine (au-dessus des onglets). */
+  originSummary?: ReactNode;
   positionsTab: ReactNode;
 }) {
   const t = useTranslations("drives");
@@ -130,6 +133,8 @@ export function DriveTabs({
           {anomalyReasons.map((r) => t(`correction.reasonsShort.${r}`)).join(", ")}
         </div>
       ) : null}
+
+      {originSummary}
 
       <Tabs defaultValue="drive" className="w-full">
         <TabsList>

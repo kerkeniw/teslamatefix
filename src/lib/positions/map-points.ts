@@ -9,7 +9,7 @@
  * type `Prisma.Decimal` uniquement).
  */
 
-import type { Prisma } from "@prisma/client";
+import type { Prisma } from "@/generated/prisma/client";
 
 /** Taille d'un lot AJAX. */
 export const BATCH_SIZE = 2000;

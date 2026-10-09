@@ -1,10 +1,13 @@
+// Prisma 7 : client généré dans le projet (TypeScript, importé via
+// `@/generated/prisma/client`), sans moteur Rust ; connexion par l'adaptateur
+// `@prisma/adapter-pg` (src/lib/db.ts). L'URL est dans prisma.config.ts.
 generator client {
-  provider = "prisma-client-js"
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
 }
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
   schemas  = ["private", "public"]
 }
 

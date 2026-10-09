@@ -1,4 +1,4 @@
-import { Prisma } from "@prisma/client";
+import { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/db";
 
 export type OverlapCandidate = { id: number; start_date: Date; end_date: Date | null };
@@ -342,6 +342,8 @@ export async function deriveChargerTicksContext(
   const ticks = await prisma.charges.findMany({
     where: { charging_process_id: processId },
     orderBy: { date: "asc" },
+    // Medium #9 : borne mémoire (une charge réelle compte quelques milliers de ticks).
+    take: 100_000,
     select: {
       charger_voltage: true,
       charger_phases: true,

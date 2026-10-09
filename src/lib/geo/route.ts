@@ -4,7 +4,7 @@
  * Base URL configurable via `env.ROUTER_BASE_URL` (défaut = OSRM public).
  */
 import { env } from "@/lib/env";
-import { logger } from "@/lib/logger";
+import { logger, safeErr } from "@/lib/logger";
 import { GeoError } from "@/lib/geo/geocode";
 
 export type LatLon = { lat: number; lon: number };
@@ -40,7 +40,7 @@ export async function routeBetween(from: LatLon, to: LatLon): Promise<RouteResul
       cache: "no-store",
     });
   } catch (e) {
-    logger.error({ event: "geo.route.fetch_error", err: String(e) }, "osrm fetch failed");
+    logger.error({ event: "geo.route.fetch_error", err: safeErr(e) }, "osrm fetch failed");
     throw new GeoError("Service de routage injoignable.", "network");
   }
   if (res.status === 429) {

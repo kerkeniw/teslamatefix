@@ -1,11 +1,12 @@
 "use server";
 
 import { z } from "zod";
-import { Prisma } from "@prisma/client";
+import { Prisma } from "@/generated/prisma/client";
 import { revalidatePath } from "next/cache";
 import { requireSession } from "@/lib/auth";
 import { env } from "@/lib/env";
-import { logger } from "@/lib/logger";
+import { mutationLimited } from "@/lib/rate-limit";
+import { logger, safeErr } from "@/lib/logger";
 import { updateSettings } from "@/lib/integrity/settings";
 import type { SettingsFormState } from "@/components/entities/settings/SettingsForm";
 
@@ -54,6 +55,8 @@ export async function updateSettingsAction(
 ): Promise<SettingsFormState> {
   const session = await requireSession();
   if (env.READ_ONLY) return readOnlyResult();
+  const limited = mutationLimited(session.userId);
+  if (limited) return limited;
 
   const raw = Object.fromEntries(formData.entries()) as Record<string, string>;
   const parsed = SettingsInputSchema.safeParse(raw);
@@ -80,7 +83,7 @@ export async function updateSettingsAction(
     if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2025") {
       return { ok: false, error: "Ligne settings (id=1) introuvable." };
     }
-    logger.error({ event: "settings.update.error", err: String(e) }, "settings.update failed");
+    logger.error({ event: "settings.update.error", err: safeErr(e) }, "settings.update failed");
     return { ok: false, error: "Une erreur est survenue." };
   }
 

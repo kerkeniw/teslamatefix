@@ -6,14 +6,15 @@ import { EMPTY_STORE, type PrivacyStore } from "./merge";
 export { EMPTY_STORE, mergeImport, type PrivacyStore, type PrivacyImportEntry } from "./merge";
 
 /**
- * Persistance des sessions issues des exports Privacy Tesla, dans le volume
- * `/data` (comme le cache du compositor). Les imports successifs se cumulent :
+ * Persistance des sessions issues des exports Privacy Tesla, dans le répertoire
+ * de travail `var/` (`env.WORK_DIR`, créé au besoin). En production il peut
+ * disparaître à un rebuild : il suffit de réimporter le CSV. Les imports successifs se cumulent :
  * Tesla livre un export par période demandée, on fusionne en dédoublonnant sur
  * (VIN, début). Le rapport est recalculé à chaque affichage contre la base, il
  * n'est donc pas stocké.
  */
 
-const STORE_FILE = path.join(env.SECRETS_DIR, "privacy-charging.json");
+const STORE_FILE = path.join(env.WORK_DIR, "privacy-charging.json");
 
 export function readPrivacyStore(): PrivacyStore {
   try {

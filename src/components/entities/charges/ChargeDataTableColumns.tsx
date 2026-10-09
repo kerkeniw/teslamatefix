@@ -1,6 +1,6 @@
 "use client";
 
-import type { ColumnDef, VisibilityState } from "@tanstack/react-table";
+import type { AppColumnDef, VisibilityState } from "@/components/data-table/data-table";
 import { useTranslations, useFormatter } from "next-intl";
 import { Badge } from "@/components/ui/badge";
 import { Link } from "@/i18n/navigation";
@@ -57,7 +57,7 @@ export function ChargeTypeBadge({ type }: { type: ChargeListRow["charge_type"] }
 export function useChargeColumns(opts: {
   length: LengthUnit;
   temp: TempUnit;
-}): ColumnDef<ChargeRow>[] {
+}): AppColumnDef<ChargeRow>[] {
   const { length, temp } = opts;
   const t = useTranslations("charges");
   const tCommon = useTranslations("common");
@@ -70,8 +70,8 @@ export function useChargeColumns(opts: {
   const col = (
     id: string,
     label: string,
-    cell: ColumnDef<ChargeRow>["cell"],
-  ): ColumnDef<ChargeRow> => ({ id, header: label, cell, meta: { label } });
+    cell: AppColumnDef<ChargeRow>["cell"],
+  ): AppColumnDef<ChargeRow> => ({ id, header: label, cell, meta: { label } });
 
   const rangeCell = (v: number | null) => numCell(v != null ? kmToUnit(v, length) : null, 1);
 

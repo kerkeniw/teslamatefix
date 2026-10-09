@@ -5,6 +5,7 @@ import { env } from "@/lib/env";
 import { prisma } from "@/lib/db";
 import { AppHeader } from "@/components/app-shell/header";
 import { MainNav } from "@/components/app-shell/main-nav";
+import { PageHeader } from "@/components/app-shell/page-header";
 import {
   PositionForm,
   type PositionFormValues,
@@ -134,10 +135,7 @@ export default async function PositionEditPage({
             {tCommon("back")}
           </ButtonLink>
         </div>
-        <header className="mb-6">
-          <h1 className="text-2xl font-semibold tracking-tight">{t("edit")}</h1>
-          <p className="mt-1 font-mono text-xs text-muted-foreground">#{pos.id}</p>
-        </header>
+        <PageHeader title={t("edit")} id={pos.id} />
         <PositionForm
           mode="edit"
           id={pos.id}

@@ -11,6 +11,8 @@ import { FKCombobox, type FKOption } from "@/components/form/fk-combobox";
 import { searchAddressesAction } from "@/app/actions/search-addresses";
 import { searchGeofencesAction } from "@/app/actions/search-geofences";
 import { cn } from "@/lib/utils";
+import { POSITION_ORIGINS } from "@/lib/positions/origin";
+import { OriginBadge } from "@/components/entities/positions/OriginBadge";
 import type { TrackPoint, TrackColorMode } from "./DriveTrackMap";
 
 const DriveTrackMap = dynamic(
@@ -58,7 +60,12 @@ export function DriveLocationPanel({
     { value: "track", label: t("map.modeTrack") },
     { value: "power", label: t("map.modePower") },
     { value: "speed", label: t("map.modeSpeed") },
+    // Origine : seulement si la page l'a calculée (écran d'édition, pas l'assistant).
+    ...(track.some((p) => p.origin != null)
+      ? [{ value: "origin" as const, label: t("map.modeOrigin") }]
+      : []),
   ];
+  const presentOrigins = POSITION_ORIGINS.filter((o) => track.some((p) => p.origin === o));
 
   return (
     <Card size="sm" className="lg:col-span-2">
@@ -213,6 +220,13 @@ export function DriveLocationPanel({
                 {m.label}
               </label>
             ))}
+            {mode === "origin" ? (
+              <span className="flex flex-wrap gap-x-3 gap-y-1 border-l pl-3">
+                {presentOrigins.map((o) => (
+                  <OriginBadge key={o} origin={o} />
+                ))}
+              </span>
+            ) : null}
           </fieldset>
         ) : null}
       </CardContent>

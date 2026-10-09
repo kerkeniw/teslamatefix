@@ -4,6 +4,7 @@ import { env } from "@/lib/env";
 import { getSelectedCarOrDefault } from "@/lib/vehicle";
 import { AppHeader } from "@/components/app-shell/header";
 import { MainNav } from "@/components/app-shell/main-nav";
+import { PageHeader } from "@/components/app-shell/page-header";
 import { DriveCreateClient } from "@/components/entities/drives/DriveCreateClient";
 import { ButtonLink } from "@/components/ui/button-link";
 import { ArrowLeft } from "lucide-react";
@@ -32,9 +33,7 @@ export default async function NewDrivePage({
             {tCommon("back")}
           </ButtonLink>
         </div>
-        <header className="mb-6">
-          <h1 className="text-2xl font-semibold tracking-tight">{t("create")}</h1>
-        </header>
+        <PageHeader title={t("create")} />
         <DriveCreateClient
           carId={selectedCar ? selectedCar.id : null}
           carLabel={selectedCar ? selectedCar.label : ""}

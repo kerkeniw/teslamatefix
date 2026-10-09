@@ -41,7 +41,7 @@ vi.mock("@/lib/db", () => ({
 // On mocke aussi `@prisma/client` pour fournir un `Prisma.Decimal` minimal
 // (utilisé par `applyRecalc`). Le test n'invoque pas `applyRecalc`, mais
 // l'import en tête du fichier `charges.ts` doit résoudre.
-vi.mock("@prisma/client", () => {
+vi.mock("@/generated/prisma/client", () => {
   class Decimal {
     private v: number;
     constructor(v: number | string) {

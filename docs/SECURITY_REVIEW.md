@@ -151,3 +151,31 @@ Relecture ciblée des surfaces ajoutées par la v0.7.0 (pas une nouvelle revue c
   liste blanche (`ideal`/`rated`). OK.
 - **Medium #5 à #10 toujours ouverts** — planifiés en v0.8.0, cf.
   [`ROADMAP.md`](ROADMAP.md).
+
+---
+
+## Addendum v0.8.0 (2026-10-09)
+
+Traitement des points ouverts. Détail et recette : [`RELEASE_v0.8.0.md`](RELEASE_v0.8.0.md).
+
+| # | Statut | Correctif |
+|---|---|---|
+| v0.7 (correction de trajet) | ✅ | Recalcul côté serveur depuis `driveId` ; l'aperçu client n'est qu'une confirmation, refusée s'il diffère du recalcul (positions absorbées comprises). **Respecte `READ_ONLY`** |
+| Assistant de création de trajet | ✅ | Payload calculé revalidé avec Zod (bornes plausibles, 20 000 positions max) |
+| M5 `X-Forwarded-For` | ✅ | `TRUST_PROXY` (défaut `false`) : en-têtes ignorés sinon, limite de connexion alors globale ; derrière un proxy, `X-Real-IP` puis entrée la plus à droite de XFF |
+| M6 limite des mutations | ✅ | `mutationLimited(userId)` : 60 écritures / min / utilisateur, après chaque garde `READ_ONLY` |
+| M7 PII dans les journaux | ✅ | `safeErr(e)` : nom + code pour Prisma, première ligne tronquée sinon |
+| M8 saisie du mot de passe | ✅ | Mode raw, rien n'est affiché |
+| M9 chargements non bornés | ✅ | Correction de trajet : 100 000 positions max, échec explicite ; ticks d'une charge bornés |
+| M10 suppression en lot | ✅ | 1 000 ids max |
+| L11 / L12 cookie | ✅ | `COOKIE_SAMESITE=lax\|strict`, `COOKIE_SECURE=auto\|true\|false` |
+| L14 `noopener` | ✅ | |
+| L17 `applyRecalc` | ✅ | Même principe que la correction de trajet (recalcul depuis les ticks) |
+| L18 `addresses.raw` | ✅ | 64 Ko max |
+| L21 `Cache-Control` | ✅ | `private, no-store` sauf assets immuables et clé publique Tesla |
+| L15 `postcss` / mises à jour | ✅ | Next 16.4.0 (corrige aussi 2 failles critiques : contournement du Proxy, DoS RSC), Prisma 7, iron-session 9, `sharp`… — reste `braces` (outillage de build, aucun correctif publié) |
+| L16, L20, CSP | — | Inchangés (choix assumés, cf. ci-dessus) |
+
+Nouvelle surface v0.8.0 : lecture **seule** du schéma facultatif `telemetry`
+(TeslaMateAPI) par `$queryRaw` paramétré (`ids::int[]`), après détection des droits
+`SELECT` table par table ; aucune écriture, dégradation silencieuse en cas d'échec.

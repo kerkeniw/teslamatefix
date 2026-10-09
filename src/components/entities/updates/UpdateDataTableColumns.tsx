@@ -1,6 +1,6 @@
 "use client";
 
-import type { ColumnDef } from "@tanstack/react-table";
+import type { AppColumnDef } from "@/components/data-table/data-table";
 import { useTranslations, useFormatter } from "next-intl";
 import { Pencil } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -35,7 +35,7 @@ export function formatDuration(
   return t("duration.days", { d: days, h: remHours });
 }
 
-export function useUpdateColumns(): ColumnDef<UpdateRow>[] {
+export function useUpdateColumns(): AppColumnDef<UpdateRow>[] {
   const t = useTranslations("updates");
   const tCommon = useTranslations("common");
   const format = useFormatter();

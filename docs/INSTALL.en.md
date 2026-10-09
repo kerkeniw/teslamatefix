@@ -105,7 +105,22 @@ For a pilot phase or multi-user consultation without risk, add to env:
 READ_ONLY: "true"
 ```
 
-The UI still shows all entities and details, but mutation buttons (Save, Delete, Recalc) are hidden. No mutation possible.
+The UI still shows all entities and details, but mutation buttons (Save, Delete, Recalc) are hidden. No mutation possible (since v0.8.0, drive correction included).
+
+### 5.e. Reverse proxy and cookie (v0.8.0)
+
+```yaml
+TRUST_PROXY: "true"      # behind a reverse proxy (Traefik, nginx, Caddy…)
+COOKIE_SECURE: "auto"    # "false" when accessed over plain HTTP
+COOKIE_SAMESITE: "lax"   # "strict": a link opened from another site requires a login
+```
+
+- `TRUST_PROXY` (default `false`): the login attempt limit (5 / 5 min) is counted
+  per IP using `X-Real-IP` or `X-Forwarded-For`, set by the proxy. When `false`,
+  these (spoofable) headers are ignored and the limit is **global**. Only set
+  `true` if the container is reachable **only** through the proxy.
+- `COOKIE_SECURE` (default `auto` = on in production): browsers do not send a
+  `Secure` cookie over HTTP; set `false` for local HTTP access.
 
 ## 6. Image publishing (maintainer)
 

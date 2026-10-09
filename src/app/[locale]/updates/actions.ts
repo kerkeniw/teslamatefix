@@ -1,13 +1,14 @@
 "use server";
 
 import { z } from "zod";
-import { Prisma } from "@prisma/client";
+import { Prisma } from "@/generated/prisma/client";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { requireSession } from "@/lib/auth";
 import { env } from "@/lib/env";
-import { logger } from "@/lib/logger";
+import { mutationLimited } from "@/lib/rate-limit";
+import { logger, safeErr } from "@/lib/logger";
 import type { UpdateFormState } from "@/components/entities/updates/UpdateForm";
 
 type UpdateFieldErrors = NonNullable<UpdateFormState["fieldErrors"]>;
@@ -93,6 +94,8 @@ export async function createUpdateAction(
 ): Promise<UpdateFormState> {
   const session = await requireSession();
   if (env.READ_ONLY) return readOnlyResult();
+  const limited = mutationLimited(session.userId);
+  if (limited) return limited;
 
   const raw = Object.fromEntries(formData.entries()) as Record<string, string>;
   const parsed = UpdateInputSchema.safeParse(raw);
@@ -134,7 +137,7 @@ export async function createUpdateAction(
         },
       };
     }
-    logger.error({ event: "updates.create.error", err: String(e) }, "updates.create failed");
+    logger.error({ event: "updates.create.error", err: safeErr(e) }, "updates.create failed");
     return { ok: false, error: "Une erreur est survenue." };
   }
 
@@ -159,6 +162,8 @@ export async function updateUpdateAction(
 ): Promise<UpdateFormState> {
   const session = await requireSession();
   if (env.READ_ONLY) return readOnlyResult();
+  const limited = mutationLimited(session.userId);
+  if (limited) return limited;
 
   const raw = Object.fromEntries(formData.entries()) as Record<string, string>;
   const parsed = UpdateInputSchema.safeParse(raw);
@@ -197,7 +202,7 @@ export async function updateUpdateAction(
         },
       };
     }
-    logger.error({ event: "updates.update.error", id, err: String(e) }, "updates.update failed");
+    logger.error({ event: "updates.update.error", id, err: safeErr(e) }, "updates.update failed");
     return { ok: false, error: "Une erreur est survenue." };
   }
 
@@ -221,6 +226,8 @@ export async function deleteUpdateAction(
 ): Promise<{ ok: boolean; error?: string }> {
   const session = await requireSession();
   if (env.READ_ONLY) return { ok: false, error: "Application en lecture seule." };
+  const limited = mutationLimited(session.userId);
+  if (limited) return limited;
 
   try {
     await prisma.updates.delete({ where: { id } });
@@ -228,7 +235,7 @@ export async function deleteUpdateAction(
     if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2025") {
       return { ok: false, error: "Mise à jour introuvable." };
     }
-    logger.error({ event: "updates.delete.error", id, err: String(e) }, "updates.delete failed");
+    logger.error({ event: "updates.delete.error", id, err: safeErr(e) }, "updates.delete failed");
     return { ok: false, error: "Une erreur est survenue." };
   }
 

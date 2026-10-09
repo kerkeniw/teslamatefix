@@ -4,6 +4,7 @@ import { env } from "@/lib/env";
 import { prisma } from "@/lib/db";
 import { AppHeader } from "@/components/app-shell/header";
 import { MainNav } from "@/components/app-shell/main-nav";
+import { PageHeader } from "@/components/app-shell/page-header";
 import { UpdateForm } from "@/components/entities/updates/UpdateForm";
 import { ButtonLink } from "@/components/ui/button-link";
 import { ArrowLeft } from "lucide-react";
@@ -43,9 +44,7 @@ export default async function NewUpdatePage({
             {tCommon("back")}
           </ButtonLink>
         </div>
-        <header className="mb-6">
-          <h1 className="text-2xl font-semibold tracking-tight">{t("create")}</h1>
-        </header>
+        <PageHeader title={t("create")} />
         <UpdateForm
           mode="create"
           cars={carOptions}

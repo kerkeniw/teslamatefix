@@ -1,13 +1,16 @@
 "use client";
 
 import {
+  columnVisibilityFeature,
   flexRender,
-  getCoreRowModel,
-  useReactTable,
+  metaHelper,
+  tableFeatures,
+  useTable,
+  type CellData,
   type ColumnDef,
+  type ColumnVisibilityState,
   type OnChangeFn,
   type RowData,
-  type VisibilityState,
 } from "@tanstack/react-table";
 import {
   Table,
@@ -20,15 +23,27 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 
-// Permet aux colonnes de porter un libellé lisible pour le menu de visibilité
-// (rendu par le composant parent).
-declare module "@tanstack/react-table" {
-  // TData/TValue requis pour matcher la signature d'origine de ColumnMeta.
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  interface ColumnMeta<TData extends RowData, TValue> {
-    label?: string;
-  }
-}
+/**
+ * Fonctionnalités TanStack Table v9 utilisées par toutes les listes : seule la
+ * visibilité des colonnes (tri, filtres et pagination sont côté serveur). Les
+ * colonnes portent un libellé lisible (`meta.label`) pour le menu « Colonnes »
+ * rendu par le composant parent. Défini au niveau module : référence stable.
+ */
+export const dataTableFeatures = tableFeatures({
+  columnVisibilityFeature,
+  columnMeta: metaHelper<{ label?: string }>(),
+});
+
+export type DataTableFeatures = typeof dataTableFeatures;
+
+/** `ColumnDef` des listes de l'application (v9 : features en 1er paramètre). */
+export type AppColumnDef<TData extends RowData, TValue extends CellData = CellData> = ColumnDef<
+  DataTableFeatures,
+  TData,
+  TValue
+>;
+
+export type VisibilityState = ColumnVisibilityState;
 
 /**
  * DataTable générique stateless : pagination, tri et filtres sont gérés côté
@@ -40,8 +55,8 @@ declare module "@tanstack/react-table" {
  * props, le comportement est identique à l'origine (aucune incidence sur les
  * autres listes).
  */
-export type DataTableProps<TData, TValue> = {
-  columns: ColumnDef<TData, TValue>[];
+export type DataTableProps<TData extends RowData> = {
+  columns: AppColumnDef<TData>[];
   data: TData[];
   emptyMessage?: string;
   loading?: boolean;
@@ -52,7 +67,7 @@ export type DataTableProps<TData, TValue> = {
   dense?: boolean;
 };
 
-export function DataTable<TData, TValue>({
+export function DataTable<TData extends RowData>({
   columns,
   data,
   emptyMessage = "Aucun résultat.",
@@ -61,14 +76,12 @@ export function DataTable<TData, TValue>({
   onColumnVisibilityChange,
   scrollX = false,
   dense = false,
-}: DataTableProps<TData, TValue>) {
-  // TanStack Table est incompatible avec le React Compiler : le composant
-  // n'est pas mémoïsé, ce qui est sans conséquence ici.
-  // eslint-disable-next-line react-hooks/incompatible-library
-  const table = useReactTable({
+}: DataTableProps<TData>) {
+  // v9 : modèle de lignes « core » intégré, plus de `getCoreRowModel`.
+  const table = useTable({
+    features: dataTableFeatures,
     data,
     columns,
-    getCoreRowModel: getCoreRowModel(),
     state: columnVisibility ? { columnVisibility } : undefined,
     onColumnVisibilityChange,
   });

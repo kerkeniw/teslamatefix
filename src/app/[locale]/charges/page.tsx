@@ -1,4 +1,4 @@
-import { setRequestLocale, getTranslations } from "next-intl/server";
+import { setRequestLocale } from "next-intl/server";
 import { requireSession } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { getSelectedCarOrDefault } from "@/lib/vehicle";
@@ -78,7 +78,6 @@ export default async function ChargesPage({
   setRequestLocale(locale);
   await requireSession();
   const sp = await searchParams;
-  const t = await getTranslations("charges");
 
   const page = parsePage(sp.page);
   const pageSize = parsePageSize(sp.pageSize);
@@ -140,11 +139,7 @@ export default async function ChargesPage({
     <>
       <AppHeader />
       <MainNav />
-      <main className="mx-auto w-full max-w-none flex-1 px-4 py-6">
-        <header className="mb-6">
-          <h1 className="text-2xl font-semibold tracking-tight">{t("title")}</h1>
-          <p className="mt-1 text-sm text-muted-foreground">{t("subtitle")}</p>
-        </header>
+      <main className="mx-auto w-full max-w-none flex-1 px-4 py-4">
         <ChargeListClient
           data={rows}
           total={total}

@@ -1,12 +1,13 @@
 "use server";
 
 import { z } from "zod";
-import { Prisma } from "@prisma/client";
+import { Prisma } from "@/generated/prisma/client";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/db";
 import { requireSession } from "@/lib/auth";
 import { env } from "@/lib/env";
-import { logger } from "@/lib/logger";
+import { mutationLimited } from "@/lib/rate-limit";
+import { logger, safeErr } from "@/lib/logger";
 
 export type CarActionState = {
   ok: boolean;
@@ -97,6 +98,8 @@ export async function updateCarAction(
 ): Promise<CarActionState> {
   const session = await requireSession();
   if (env.READ_ONLY) return readOnlyResult();
+  const limited = mutationLimited(session.userId);
+  if (limited) return limited;
 
   const raw = Object.fromEntries(formData.entries()) as Record<string, string>;
   const parsed = CarInputSchema.safeParse(raw);
@@ -156,7 +159,7 @@ export async function updateCarAction(
     if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2025") {
       return { ok: false, error: "Véhicule ou réglages introuvables." };
     }
-    logger.error({ event: "cars.update.error", id, err: String(e) }, "cars.update failed");
+    logger.error({ event: "cars.update.error", id, err: safeErr(e) }, "cars.update failed");
     return { ok: false, error: "Une erreur est survenue." };
   }
 

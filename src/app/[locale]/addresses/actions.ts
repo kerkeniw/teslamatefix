@@ -1,13 +1,14 @@
 "use server";
 
 import { z } from "zod";
-import { Prisma } from "@prisma/client";
+import { Prisma } from "@/generated/prisma/client";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { requireSession } from "@/lib/auth";
 import { env } from "@/lib/env";
-import { logger } from "@/lib/logger";
+import { mutationLimited } from "@/lib/rate-limit";
+import { logger, safeErr } from "@/lib/logger";
 import { insertAddress } from "@/lib/addresses/insert";
 import type { AddressFormState } from "@/components/entities/addresses/AddressForm";
 
@@ -52,8 +53,10 @@ const AddressInputSchema = z.object({
   country: optionalString(255),
   latitude: optionalDecimal(-90, 90),
   longitude: optionalDecimal(-180, 180),
+  // JSON brut Nominatim (~2 Ko en pratique) : borné à 64 Ko (Low #18).
   raw: z
     .string()
+    .max(64_000, "Le JSON brut dépasse 64 Ko.")
     .transform((v) => v.trim())
     .optional()
     .default(""),
@@ -82,6 +85,8 @@ export async function createAddressAction(
 ): Promise<AddressFormState> {
   const session = await requireSession();
   if (env.READ_ONLY) return readOnlyResult();
+  const limited = mutationLimited(session.userId);
+  if (limited) return limited;
 
   const raw = Object.fromEntries(formData.entries()) as Record<string, string>;
   const parsed = AddressInputSchema.safeParse(raw);
@@ -130,7 +135,7 @@ export async function createAddressAction(
     if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002") {
       return { ok: false, error: "Une autre adresse utilise déjà ce couple (osm_id, osm_type)." };
     }
-    logger.error({ event: "addresses.create.error", err: String(e) }, "addresses.create failed");
+    logger.error({ event: "addresses.create.error", err: safeErr(e) }, "addresses.create failed");
     return { ok: false, error: "Une erreur est survenue." };
   }
 
@@ -155,6 +160,8 @@ export async function updateAddressAction(
 ): Promise<AddressFormState> {
   const session = await requireSession();
   if (env.READ_ONLY) return readOnlyResult();
+  const limited = mutationLimited(session.userId);
+  if (limited) return limited;
 
   const raw = Object.fromEntries(formData.entries()) as Record<string, string>;
   const parsed = AddressInputSchema.safeParse(raw);
@@ -208,7 +215,7 @@ export async function updateAddressAction(
         return { ok: false, error: "Une autre adresse utilise déjà ce couple (osm_id, osm_type)." };
       }
     }
-    logger.error({ event: "addresses.update.error", id, err: String(e) }, "addresses.update failed");
+    logger.error({ event: "addresses.update.error", id, err: safeErr(e) }, "addresses.update failed");
     return { ok: false, error: "Une erreur est survenue." };
   }
 
@@ -230,6 +237,8 @@ export async function updateAddressAction(
 export async function deleteAddressAction(id: number): Promise<{ ok: boolean; error?: string }> {
   const session = await requireSession();
   if (env.READ_ONLY) return { ok: false, error: "Application en lecture seule." };
+  const limited = mutationLimited(session.userId);
+  if (limited) return limited;
 
   try {
     await prisma.addresses.delete({ where: { id } });
@@ -237,7 +246,7 @@ export async function deleteAddressAction(id: number): Promise<{ ok: boolean; er
     if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2025") {
       return { ok: false, error: "Adresse introuvable." };
     }
-    logger.error({ event: "addresses.delete.error", id, err: String(e) }, "addresses.delete failed");
+    logger.error({ event: "addresses.delete.error", id, err: safeErr(e) }, "addresses.delete failed");
     return { ok: false, error: "Une erreur est survenue." };
   }
 

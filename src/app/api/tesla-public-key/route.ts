@@ -26,7 +26,9 @@ const PUBLIC_KEY_FILE =
 
 export async function GET() {
   try {
-    const pem = await readFile(PUBLIC_KEY_FILE, "utf8");
+    // Chemin absolu monté au runtime (volume) : rien à tracer au build. Sans
+    // l'annotation, Turbopack (Next 16.4) embarquerait tout le projet.
+    const pem = await readFile(/*turbopackIgnore: true*/ PUBLIC_KEY_FILE, "utf8");
     return new NextResponse(pem, {
       status: 200,
       headers: {

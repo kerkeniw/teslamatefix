@@ -4,6 +4,7 @@ import { env } from "@/lib/env";
 import { getSelectedCarOrDefault } from "@/lib/vehicle";
 import { AppHeader } from "@/components/app-shell/header";
 import { MainNav } from "@/components/app-shell/main-nav";
+import { PageHeader } from "@/components/app-shell/page-header";
 import { z } from "zod";
 import {
   ChargeCreateWizard,
@@ -61,9 +62,7 @@ export default async function NewChargePage({
             {tCommon("back")}
           </ButtonLink>
         </div>
-        <header className="mb-6">
-          <h1 className="text-2xl font-semibold tracking-tight">{t("create.title")}</h1>
-        </header>
+        <PageHeader title={t("create.title")} />
         <ChargeCreateWizard
           car={selectedCar ? { id: selectedCar.id, label: selectedCar.label } : null}
           hasCar={selectedCar != null}

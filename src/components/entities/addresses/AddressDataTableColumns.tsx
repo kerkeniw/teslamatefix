@@ -1,6 +1,6 @@
 "use client";
 
-import type { ColumnDef } from "@tanstack/react-table";
+import type { AppColumnDef } from "@/components/data-table/data-table";
 import { useTranslations } from "next-intl";
 import { Pencil } from "lucide-react";
 import { ButtonLink } from "@/components/ui/button-link";
@@ -16,7 +16,7 @@ export type AddressRow = {
   longitude: string | null;
 };
 
-export function useAddressColumns(): ColumnDef<AddressRow>[] {
+export function useAddressColumns(): AppColumnDef<AddressRow>[] {
   const t = useTranslations("addresses");
   const tCommon = useTranslations("common");
   return [

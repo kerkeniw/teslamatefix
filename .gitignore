@@ -57,3 +57,6 @@ next-env.d.ts
 
 # Exports Privacy Tesla déposés en local (VIN, plaque, IMEI) — jamais commités
 /var/
+
+# Prisma 7 : client généré (npx prisma generate / postinstall)
+/src/generated/

@@ -1,4 +1,4 @@
-import { Prisma } from "@prisma/client";
+import { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/db";
 
 export type DriveRecalc = {
@@ -359,6 +359,8 @@ export type DriveCorrectionCompute = {
 
 // Garde-fou sur le scan des positions candidates à l'absorption.
 const ABSORB_SCAN_CAP = 2000;
+// Plafond des positions d'un trajet chargées pour la correction (≈ 28 h de flux à 1 Hz).
+const TAGGED_SCAN_CAP = 100_000;
 
 /**
  * Calcule la correction d'un trajet : bornes/métriques depuis ses positions +
@@ -460,8 +462,13 @@ export async function correctDriveFromPositions(
   const tagged = await prisma.positions.findMany({
     where: { drive_id: driveId },
     orderBy: { date: "asc" },
+    take: TAGGED_SCAN_CAP + 1,
     select: POSITION_SELECT,
   });
+  // Medium #9 : échec explicite plutôt qu'un chargement non borné en mémoire.
+  if (tagged.length > TAGGED_SCAN_CAP) {
+    throw new Error(`drive ${driveId}: more than ${TAGGED_SCAN_CAP} positions`);
+  }
 
   // Absorbe les positions orphelines de fin (jusqu'au 1er arrêt / prochain trajet),
   // pour Corriger comme pour Recalcul, trajet fermé ou non. `selectTrailingToAbsorb`

@@ -1,13 +1,14 @@
 "use server";
 
 import { z } from "zod";
-import { Prisma } from "@prisma/client";
+import { Prisma } from "@/generated/prisma/client";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { requireSession } from "@/lib/auth";
 import { env } from "@/lib/env";
-import { logger } from "@/lib/logger";
+import { mutationLimited } from "@/lib/rate-limit";
+import { logger, safeErr } from "@/lib/logger";
 import { getSelectedTimezone } from "@/lib/timezone";
 import {
   recalcFromTicks,
@@ -122,6 +123,8 @@ export async function createChargeAction(
 ): Promise<ChargeActionState> {
   const session = await requireSession();
   if (env.READ_ONLY) return readOnly();
+  const limited = mutationLimited(session.userId);
+  if (limited) return limited;
 
   const raw = Object.fromEntries(formData.entries()) as Record<string, string>;
   const parsed = ChargeSchema.safeParse(raw);
@@ -158,7 +161,7 @@ export async function createChargeAction(
     if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2003") {
       return { ok: false, error: "Référence introuvable (véhicule, position, adresse ou géofence)." };
     }
-    logger.error({ event: "charges.create.error", err: String(e) }, "charges.create failed");
+    logger.error({ event: "charges.create.error", err: safeErr(e) }, "charges.create failed");
     return { ok: false, error: "Une erreur est survenue." };
   }
 
@@ -178,6 +181,8 @@ export async function updateChargeAction(
 ): Promise<ChargeActionState> {
   const session = await requireSession();
   if (env.READ_ONLY) return readOnly();
+  const limited = mutationLimited(session.userId);
+  if (limited) return limited;
 
   const raw = Object.fromEntries(formData.entries()) as Record<string, string>;
   const parsed = ChargeSchema.safeParse(raw);
@@ -338,7 +343,7 @@ export async function updateChargeAction(
       if (e.code === "P2025") return { ok: false, error: "Session de charge introuvable." };
       if (e.code === "P2003") return { ok: false, error: "Référence introuvable." };
     }
-    logger.error({ event: "charges.update.error", id, err: String(e) }, "charges.update failed");
+    logger.error({ event: "charges.update.error", id, err: safeErr(e) }, "charges.update failed");
     return { ok: false, error: "Une erreur est survenue." };
   }
 
@@ -361,6 +366,8 @@ export async function updateChargeAction(
 export async function deleteChargeAction(id: number): Promise<{ ok: boolean; error?: string }> {
   const session = await requireSession();
   if (env.READ_ONLY) return { ok: false, error: "Application en lecture seule." };
+  const limited = mutationLimited(session.userId);
+  if (limited) return limited;
 
   try {
     // CASCADE côté DB sur charges.charging_process_id : tous les ticks tombent
@@ -370,7 +377,7 @@ export async function deleteChargeAction(id: number): Promise<{ ok: boolean; err
     if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2025") {
       return { ok: false, error: "Session de charge introuvable." };
     }
-    logger.error({ event: "charges.delete.error", id, err: String(e) }, "charges.delete failed");
+    logger.error({ event: "charges.delete.error", id, err: safeErr(e) }, "charges.delete failed");
     return { ok: false, error: "Une erreur est survenue." };
   }
 
@@ -382,6 +389,8 @@ export async function deleteChargeAction(id: number): Promise<{ ok: boolean; err
 export async function deleteTickAction(id: number): Promise<{ ok: boolean; error?: string }> {
   const session = await requireSession();
   if (env.READ_ONLY) return { ok: false, error: "Application en lecture seule." };
+  const limited = mutationLimited(session.userId);
+  if (limited) return limited;
 
   let processId: number | null = null;
   try {
@@ -395,7 +404,7 @@ export async function deleteTickAction(id: number): Promise<{ ok: boolean; error
     if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2025") {
       return { ok: false, error: "Mesure introuvable." };
     }
-    logger.error({ event: "charges.tick.delete.error", id, err: String(e) }, "tick delete failed");
+    logger.error({ event: "charges.tick.delete.error", id, err: safeErr(e) }, "tick delete failed");
     return { ok: false, error: "Une erreur est survenue." };
   }
 
@@ -429,7 +438,7 @@ export async function recalcChargeAction(processId: number): Promise<{
     return { ok: true, before: serializeRecalc(r.before), after: serializeRecalc(r.after) };
   } catch (e) {
     logger.error(
-      { event: "charges.recalc.error", id: processId, err: String(e) },
+      { event: "charges.recalc.error", id: processId, err: safeErr(e) },
       "charges.recalc failed",
     );
     return { ok: false, error: "Recalcul impossible." };
@@ -442,19 +451,34 @@ export async function applyRecalcChargeAction(
 ): Promise<{ ok: boolean; error?: string }> {
   const session = await requireSession();
   if (env.READ_ONLY) return { ok: false, error: "Application en lecture seule." };
+  const limited = mutationLimited(session.userId);
+  if (limited) return limited;
 
+  // Low #17 : le client ne fait que confirmer l'aperçu. On recalcule depuis les
+  // ticks côté serveur et on applique CE résultat, refusé s'il diffère.
   try {
-    await applyChargeRecalc(processId, {
-      start_date: after.start_date ? new Date(after.start_date) : null,
-      end_date: after.end_date ? new Date(after.end_date) : null,
-      duration_min: after.duration_min,
-      charge_energy_added: after.charge_energy_added,
-      start_battery_level: after.start_battery_level,
-      end_battery_level: after.end_battery_level,
-    });
+    const fresh = await recalcFromTicks(processId);
+    const server = serializeRecalc(fresh.after);
+    const same =
+      after != null &&
+      typeof after === "object" &&
+      (Object.keys(server) as (keyof SerializedChargeRecalc)[]).every(
+        (k) => (server[k] ?? null) === (after[k] ?? null),
+      );
+    if (!same) {
+      logger.warn(
+        { event: "charges.recalc.apply.stale", user: session.userId, id: processId },
+        "charges.recalc.apply stale preview",
+      );
+      return {
+        ok: false,
+        error: "Les données de la charge ont changé depuis l'aperçu : relancez le recalcul.",
+      };
+    }
+    await applyChargeRecalc(processId, fresh.after);
   } catch (e) {
     logger.error(
-      { event: "charges.recalc.apply.error", id: processId, err: String(e) },
+      { event: "charges.recalc.apply.error", id: processId, err: safeErr(e) },
       "charges.recalc.apply failed",
     );
     return { ok: false, error: "Échec de l'application du recalcul." };
@@ -733,6 +757,8 @@ export async function createChargeWithTicksAction(
 ): Promise<ChargeActionState> {
   const session = await requireSession();
   if (env.READ_ONLY) return readOnly();
+  const limited = mutationLimited(session.userId);
+  if (limited) return limited;
 
   const raw = Object.fromEntries(formData.entries()) as Record<string, string>;
 
@@ -909,7 +935,7 @@ export async function createChargeWithTicksAction(
       };
     }
     logger.error(
-      { event: "charges.createWithTicks.error", err: String(e) },
+      { event: "charges.createWithTicks.error", err: safeErr(e) },
       "charges.createWithTicks failed",
     );
     return { ok: false, error: "Une erreur est survenue." };

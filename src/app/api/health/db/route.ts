@@ -4,7 +4,7 @@
  * (rapide, indépendant de la DB), cette route ouvre une connexion Prisma.
  */
 import { prisma } from "@/lib/db";
-import { logger } from "@/lib/logger";
+import { logger, safeErr } from "@/lib/logger";
 
 export const dynamic = "force-dynamic";
 
@@ -13,7 +13,7 @@ export async function GET() {
     await prisma.$queryRaw`SELECT 1`;
     return Response.json({ status: "ok", db: "ok" });
   } catch (err) {
-    logger.error({ event: "health.db.error", err: String(err) }, "DB ping failed");
+    logger.error({ event: "health.db.error", err: safeErr(err) }, "DB ping failed");
     return Response.json(
       { status: "degraded", db: "unreachable" },
       { status: 503 },

@@ -479,7 +479,8 @@
       "modeSpeed": "Vitesse",
       "start": "Départ",
       "end": "Arrivée",
-      "noTrack": "Aucune position GPS pour tracer ce trajet."
+      "noTrack": "Aucune position GPS pour tracer ce trajet.",
+      "modeOrigin": "Origine"
     },
     "compute": {
       "action": "Calculer",
@@ -556,7 +557,8 @@
       "location": "Localisation",
       "locationPlaceholder": "Départ ou arrivée…",
       "geofence": "Géofences",
-      "efficiency": "Efficacité"
+      "efficiency": "Efficacité",
+      "quickRange": "Période"
     },
     "efficiencyMode": {
       "slope": "Ajustée pente",
@@ -614,9 +616,37 @@
       "noCar": "Aucun véhicule disponible. Importer une voiture avant de créer un trajet."
     },
     "positionsTab": {
-      "totalCount": "{n} position(s) au total. Affichage des 50 premières.",
-      "viewAll": "Voir toutes les positions",
-      "empty": "Aucune position rattachée à ce trajet."
+      "count": "{shown} position(s) affichée(s) sur {total}.",
+      "truncated": "Seules les {cap} premières positions sont chargées.",
+      "viewAll": "Ouvrir dans Positions",
+      "empty": "Aucune position rattachée à ce trajet.",
+      "noMatch": "Aucune position ne correspond aux filtres.",
+      "filters": {
+        "title": "Filtres",
+        "active": "{n} actif(s)",
+        "reset": "Réinitialiser",
+        "origin": "Origine",
+        "min": "min",
+        "max": "max",
+        "regenOnly": "Régénération seulement (puissance < 0)",
+        "gap": "Écart avec la précédente ≥ (s)",
+        "jump": "Saut avec la précédente ≥ (m)",
+        "emptyColumn": "Colonne vide",
+        "anyColumn": "Toutes les positions"
+      },
+      "columns": {
+        "menu": "Colonnes",
+        "empty": "vide",
+        "time": "Heure",
+        "dt": "Δt (s)",
+        "dd": "Δd (m)",
+        "latLon": "Lat, lon"
+      },
+      "pager": {
+        "prev": "Page précédente",
+        "next": "Page suivante",
+        "page": "Page {page} / {pages}"
+      }
     },
     "recalc": {
       "title": "Recalcul depuis les positions",
@@ -711,6 +741,14 @@
       "create": "Créer le trajet",
       "save": "Enregistrer",
       "delete": "Supprimer"
+    },
+    "summary": {
+      "title": "Synthèse de la période",
+      "count": "Trajets",
+      "distance": "Distance",
+      "duration": "Durée",
+      "energy": "Énergie consommée (net)",
+      "consumption": "Ø Consommation (net)"
     }
   },
   "charges": {
@@ -836,7 +874,8 @@
       "maxEfficiency": "Efficience ≤",
       "minCost": "Coût ≥",
       "minDuration": "Durée ≥",
-      "openOnly": "Sessions ouvertes seulement"
+      "openOnly": "Sessions ouvertes seulement",
+      "quickRange": "Période"
     },
     "type": {
       "ac": "AC",
@@ -989,6 +1028,7 @@
       "positionId": "ID position"
     },
     "summary": {
+      "title": "Synthèse de la période",
       "count": "Sessions",
       "energyAdded": "Énergie ajoutée",
       "energyUsed": "Énergie consommée",
@@ -1124,6 +1164,24 @@
       "create": "Créer la position",
       "save": "Enregistrer",
       "delete": "Supprimer"
+    },
+    "origin": {
+      "title": "Origine des positions",
+      "column": "Origine",
+      "short": {
+        "vehicle_data": "Fleet API",
+        "flux": "Flux",
+        "flux_complete": "Flux complété",
+        "d13": "Reconstruite"
+      },
+      "descriptions": {
+        "vehicle_data": "Appel Fleet API vehicle_data : autonomies, températures, pneus et climatisation renseignés.",
+        "flux": "Trame Fleet Telemetry : seules les colonnes du protocole (position, vitesse, puissance, SOC, odomètre, altitude).",
+        "flux_complete": "Trame du flux complétée après coup par TeslaMateAPI (D13 FILL).",
+        "d13": "Position créée par une reconstruction TeslaMateAPI (D13 : EXTEND, CREATE, SPLIT…)."
+      },
+      "reconstructedWarning": "{n} position(s) reconstruite(s) ou complétée(s) par TeslaMateAPI : données recalculées, à vérifier avant une correction manuelle.",
+      "columnsOnly": "Origine déduite des seules colonnes remplies : détail indisponible sans TeslaMateAPI (un flux complété passe pour Fleet API, une reconstruction n'est pas identifiable)."
     }
   },
   "privacy": {
@@ -1141,7 +1199,7 @@
     "clear": {
       "button": "Effacer les imports",
       "title": "Effacer les imports Tesla ?",
-      "description": "Les sessions importées sont supprimées de /data. La base TeslaMate n'est pas modifiée.",
+      "description": "Les sessions importées sont supprimées du répertoire de travail (var/). La base TeslaMate n'est pas modifiée.",
       "confirm": "Effacer",
       "done": "Imports effacés."
     },

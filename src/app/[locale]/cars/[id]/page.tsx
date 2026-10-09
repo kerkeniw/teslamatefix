@@ -5,6 +5,7 @@ import { env } from "@/lib/env";
 import { prisma } from "@/lib/db";
 import { AppHeader } from "@/components/app-shell/header";
 import { MainNav } from "@/components/app-shell/main-nav";
+import { PageHeader } from "@/components/app-shell/page-header";
 import { CarEditClient } from "@/components/entities/cars/CarEditClient";
 import { readCachedVehicleOptions } from "@/lib/tesla/vehicle-image";
 import { ButtonLink } from "@/components/ui/button-link";
@@ -43,12 +44,7 @@ export default async function CarEditPage({
             {tCommon("back")}
           </ButtonLink>
         </div>
-        <header className="mb-6">
-          <h1 className="text-2xl font-semibold tracking-tight">
-            {car.name ?? car.marketing_name ?? car.model ?? t("edit")}
-          </h1>
-          <p className="mt-1 font-mono text-xs text-muted-foreground">#{car.id}</p>
-        </header>
+        <PageHeader title={car.name ?? car.marketing_name ?? car.model ?? t("edit")} id={car.id} />
         <CarEditClient
           optionsData={{
             db: {

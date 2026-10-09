@@ -106,7 +106,22 @@ Pour une phase pilote ou une consultation multi-utilisateurs sans risque, ajoute
 READ_ONLY: "true"
 ```
 
-L'UI continue d'afficher toutes les entités et tous les détails, mais les boutons de mutation (Save, Delete, Recalc) sont masqués. Aucune mutation possible.
+L'UI continue d'afficher toutes les entités et tous les détails, mais les boutons de mutation (Save, Delete, Recalc) sont masqués. Aucune mutation possible (depuis v0.8.0, la correction de trajet aussi).
+
+### 5.e. Reverse proxy et cookie (v0.8.0)
+
+```yaml
+TRUST_PROXY: "true"      # derrière un reverse proxy (Traefik, nginx, Caddy…)
+COOKIE_SECURE: "auto"    # "false" si l'accès se fait en HTTP simple
+COOKIE_SAMESITE: "lax"   # "strict" : un lien ouvert depuis un autre site impose un login
+```
+
+- `TRUST_PROXY` (défaut `false`) : la limite de tentatives de connexion (5 / 5 min)
+  est comptée par IP grâce à `X-Real-IP` ou `X-Forwarded-For`, posés par le proxy.
+  À `false`, ces en-têtes (falsifiables) sont ignorés et la limite est **globale**.
+  Ne mettre `true` que si le conteneur n'est joignable **que** par le proxy.
+- `COOKIE_SECURE` (défaut `auto` = actif en production) : sans HTTPS, le navigateur
+  n'envoie pas un cookie `Secure` ; mettre `false` pour un accès local en HTTP.
 
 ## 6. Publication d'image (mainteneur)
 

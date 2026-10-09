@@ -7,7 +7,9 @@ import { getSelectedCarOrDefault } from "@/lib/vehicle";
 import { AppHeader } from "@/components/app-shell/header";
 import { MainNav } from "@/components/app-shell/main-nav";
 import { DriveTabs } from "@/components/entities/drives/DriveTabs";
-import { ChildrenPositionsTable } from "@/components/entities/drives/ChildrenPositionsTable";
+import { DrivePositionsPanel } from "@/components/entities/drives/DrivePositionsPanel";
+import { OriginSummary } from "@/components/entities/positions/OriginBadge";
+import { loadDrivePositions, DRIVE_POSITIONS_CAP } from "@/lib/drives/positions-detail";
 import type {
   DriveFormValues,
   DriveFormInitialOptions,
@@ -51,31 +53,13 @@ export default async function DriveEditPage({
   const id = parseInt(idStr, 10);
   if (!Number.isFinite(id)) notFound();
 
-  const [drive, selectedCar, positionsCount, positionsHead, trackRows, lastPos] =
+  const [drive, selectedCar, detail, lastPos] =
     await Promise.all([
       prisma.drives.findUnique({ where: { id } }),
       getSelectedCarOrDefault(),
-      prisma.positions.count({ where: { drive_id: id } }),
-      prisma.positions.findMany({
-        where: { drive_id: id },
-        orderBy: { date: "asc" },
-        take: 50,
-        select: {
-          id: true,
-          date: true,
-          latitude: true,
-          longitude: true,
-          speed: true,
-          battery_level: true,
-        },
-      }),
-      // Tracé complet pour la carte : uniquement les colonnes nécessaires.
-      prisma.positions.findMany({
-        where: { drive_id: id },
-        orderBy: { date: "asc" },
-        take: 5000,
-        select: { latitude: true, longitude: true, speed: true, power: true },
-      }),
+      // Toutes les positions du trajet (plafonnées), avec leur origine : tableau
+      // de l'onglet Positions + tracé de la carte.
+      loadDrivePositions(id),
       // Dernière position rattachée (détection d'anomalie « positions au-delà de la fin »).
       prisma.positions.findFirst({
         where: { drive_id: id },
@@ -89,7 +73,7 @@ export default async function DriveEditPage({
   const lastPositionDate = lastPos?.date ?? null;
   const anomalyReasons: string[] = [];
   if (drive.end_date == null) anomalyReasons.push("unclosed");
-  if (positionsCount > 0 && (drive.end_position_id == null || drive.end_km == null)) {
+  if (detail.total > 0 && (drive.end_position_id == null || drive.end_km == null)) {
     anomalyReasons.push("missingEndPosition");
   }
   if (
@@ -99,7 +83,7 @@ export default async function DriveEditPage({
   ) {
     anomalyReasons.push("positionsBeyondEnd");
   }
-  if (positionsCount >= 2 && (drive.distance == null || drive.duration_min == null)) {
+  if (detail.total >= 2 && (drive.distance == null || drive.duration_min == null)) {
     anomalyReasons.push("missingMetrics");
   }
 
@@ -110,13 +94,14 @@ export default async function DriveEditPage({
     select: { efficiency: true },
   });
 
-  const track = trackRows
-    .filter((p) => p.latitude != null && p.longitude != null)
+  const track = detail.rows
+    .filter((p) => Number.isFinite(p.lat) && Number.isFinite(p.lng))
     .map((p) => ({
-      lat: Number(p.latitude),
-      lng: Number(p.longitude),
-      speed: p.speed ?? null,
-      power: p.power ?? null,
+      lat: p.lat,
+      lng: p.lng,
+      speed: typeof p.v.speed === "number" ? p.v.speed : null,
+      power: typeof p.v.power === "number" ? p.v.power : null,
+      origin: p.origin,
     }));
 
   // Précharge uniquement les libellés des FK référencées par ce drive — la
@@ -197,15 +182,6 @@ export default async function DriveEditPage({
     endGeofence: findGeofence(drive.end_geofence_id),
   };
 
-  const positions = positionsHead.map((p) => ({
-    id: p.id,
-    date: p.date.toISOString(),
-    latitude: p.latitude.toString(),
-    longitude: p.longitude.toString(),
-    speed: p.speed ?? null,
-    battery_level: p.battery_level ?? null,
-  }));
-
   const boundUpdate = updateDriveAction.bind(null, id);
   const boundDelete = deleteDriveAction.bind(null, id);
 
@@ -236,11 +212,18 @@ export default async function DriveEditPage({
           readOnly={env.READ_ONLY}
           saveAction={boundUpdate}
           deleteAction={boundDelete}
+          originSummary={
+            <OriginSummary counts={detail.originCounts} mode={detail.originMode} />
+          }
           positionsTab={
-            <ChildrenPositionsTable
+            <DrivePositionsPanel
               driveId={drive.id}
-              positions={positions}
-              total={positionsCount}
+              rows={detail.rows}
+              total={detail.total}
+              truncated={detail.truncated}
+              cap={DRIVE_POSITIONS_CAP}
+              filled={detail.filled}
+              originCounts={detail.originCounts}
             />
           }
         />

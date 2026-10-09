@@ -30,6 +30,14 @@ const nextConfig: NextConfig = {
         source: "/:path*",
         headers: [...securityHeaders],
       },
+      {
+        // Low #21 : pages et API authentifiées jamais mises en cache par un
+        // proxy ni par le navigateur. Exclut les assets immuables de Next et la
+        // clé publique Tesla (lue par Tesla, publique).
+        source:
+          "/((?!_next/static|_next/image|favicon\\.ico|api/tesla-public-key|\\.well-known).*)",
+        headers: [{ key: "Cache-Control", value: "private, no-store" }],
+      },
     ];
   },
   /**

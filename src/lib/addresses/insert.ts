@@ -4,7 +4,7 @@
  * Gère la déduplication sur le couple unique (osm_id, osm_type) : si une adresse
  * existe déjà pour ce couple, on la réutilise au lieu d'insérer.
  */
-import { Prisma } from "@prisma/client";
+import { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/db";
 
 export type AddressInsert = {

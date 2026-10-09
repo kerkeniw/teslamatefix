@@ -1,10 +1,11 @@
 "use server";
 
-import { Prisma } from "@prisma/client";
+import { Prisma } from "@/generated/prisma/client";
 import { revalidatePath } from "next/cache";
 import { requireSession } from "@/lib/auth";
 import { env } from "@/lib/env";
-import { logger } from "@/lib/logger";
+import { mutationLimited } from "@/lib/rate-limit";
+import { logger, safeErr } from "@/lib/logger";
 import { insertAddress } from "@/lib/addresses/insert";
 import type { AddressFormValues } from "@/components/entities/addresses/AddressForm";
 import type { FKOption } from "@/components/form/fk-combobox";
@@ -43,6 +44,8 @@ export async function createAddressFromGeoAction(
 ): Promise<CreateAddressFromGeoResult> {
   const session = await requireSession();
   if (env.READ_ONLY) return { ok: false, error: "Application en lecture seule." };
+  const limited = mutationLimited(session.userId);
+  if (limited) return limited;
 
   const lat = values.latitude != null ? Number(values.latitude) : NaN;
   const lon = values.longitude != null ? Number(values.longitude) : NaN;
@@ -75,7 +78,7 @@ export async function createAddressFromGeoAction(
       return { ok: false, error: "Une adresse identique existe déjà." };
     }
     logger.error(
-      { event: "addresses.create_from_geo.error", err: String(e) },
+      { event: "addresses.create_from_geo.error", err: safeErr(e) },
       "createAddressFromGeo failed",
     );
     return { ok: false, error: "Impossible d'enregistrer l'adresse." };

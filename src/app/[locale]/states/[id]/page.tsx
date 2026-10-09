@@ -5,6 +5,7 @@ import { env } from "@/lib/env";
 import { prisma } from "@/lib/db";
 import { AppHeader } from "@/components/app-shell/header";
 import { MainNav } from "@/components/app-shell/main-nav";
+import { PageHeader } from "@/components/app-shell/page-header";
 import { StateForm } from "@/components/entities/states/StateForm";
 import { ButtonLink } from "@/components/ui/button-link";
 import { ArrowLeft } from "lucide-react";
@@ -58,10 +59,7 @@ export default async function StateEditPage({
             {tCommon("back")}
           </ButtonLink>
         </div>
-        <header className="mb-6">
-          <h1 className="text-2xl font-semibold tracking-tight">{t("edit")}</h1>
-          <p className="mt-1 font-mono text-xs text-muted-foreground">#{state.id}</p>
-        </header>
+        <PageHeader title={t("edit")} id={state.id} />
         <StateForm
           mode="edit"
           id={state.id}

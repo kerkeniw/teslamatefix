@@ -3,6 +3,7 @@
 import { useEffect, useMemo } from "react";
 import L from "leaflet";
 import {
+  CircleMarker,
   MapContainer,
   TileLayer,
   Marker,
@@ -11,15 +12,18 @@ import {
   useMap,
 } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
+import { ORIGIN_COLORS, type PositionOrigin } from "@/lib/positions/origin";
 
 export type TrackPoint = {
   lat: number;
   lng: number;
   speed: number | null;
   power: number | null;
+  /** Origine de la position (docs/ORIGINE_POSITIONS.md), si connue. */
+  origin?: PositionOrigin;
 };
 
-export type TrackColorMode = "track" | "power" | "speed";
+export type TrackColorMode = "track" | "power" | "speed" | "origin";
 
 // Au-delà de ce nombre de segments, on sous-échantillonne pour garder Leaflet
 // fluide (un drive peut compter plusieurs milliers de positions).
@@ -103,6 +107,24 @@ export function DriveTrackMap({
   const segments = useMemo(() => {
     if (mode === "track" || track.length < 2) return [];
 
+    // Origine : une polyligne par série de positions de même origine (pas de
+    // sous-échantillonnage : quelques séries suffisent, même à 1 Hz). Chaque
+    // série reprend le dernier point de la précédente pour rester continue.
+    if (mode === "origin") {
+      const runs: { positions: [number, number][]; color: string }[] = [];
+      for (const p of track) {
+        const color = ORIGIN_COLORS[p.origin ?? "vehicle_data"];
+        const current = runs.at(-1);
+        if (current && current.color === color) {
+          current.positions.push([p.lat, p.lng]);
+        } else {
+          const last: [number, number] | undefined = current?.positions.at(-1);
+          runs.push({ positions: last ? [last, [p.lat, p.lng]] : [[p.lat, p.lng]], color });
+        }
+      }
+      return runs;
+    }
+
     const metric = mode === "power" ? "power" : "speed";
     const values = track
       .map((p) => p[metric])
@@ -131,6 +153,14 @@ export function DriveTrackMap({
     return segs;
   }, [track, mode]);
 
+  const vehicleDataPoints = useMemo<[number, number][]>(
+    () =>
+      mode === "origin"
+        ? track.filter((p) => p.origin === "vehicle_data").map((p) => [p.lat, p.lng])
+        : [],
+    [track, mode],
+  );
+
   const start = points[0];
   const end = points[points.length - 1];
 
@@ -158,6 +188,24 @@ export function DriveTrackMap({
             />
           ))
         )}
+
+        {/* Les appels vehicle_data sont isolés au milieu du flux (1 toutes les
+            10 min) : un point les rend visibles sur le tracé. */}
+        {mode === "origin" && vehicleDataPoints.length <= MAX_SEGMENTS
+          ? vehicleDataPoints.map((p, i) => (
+              <CircleMarker
+                key={`vd-${i}`}
+                center={p}
+                radius={5}
+                pathOptions={{
+                  color: "#fff",
+                  weight: 1.5,
+                  fillColor: ORIGIN_COLORS.vehicle_data,
+                  fillOpacity: 1,
+                }}
+              />
+            ))
+          : null}
 
         {start ? (
           <Marker position={start} icon={startIcon}>

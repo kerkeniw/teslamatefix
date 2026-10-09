@@ -6,6 +6,7 @@ import { z } from "zod";
 import { login, verifyCredentials } from "@/lib/auth";
 import { clientIp, loginRateLimiter } from "@/lib/rate-limit";
 import { logger } from "@/lib/logger";
+import { env } from "@/lib/env";
 
 const LoginSchema = z.object({
   username: z.string().min(1).max(64),
@@ -37,7 +38,7 @@ export async function loginAction(
   }
 
   const hdrs = await headers();
-  const ip = clientIp({ headers: hdrs } as unknown as Request);
+  const ip = clientIp(hdrs, env.TRUST_PROXY);
   const limit = loginRateLimiter.check(`login:${ip}`);
   if (!limit.ok) {
     const seconds = Math.ceil(limit.retryAfterMs / 1000);

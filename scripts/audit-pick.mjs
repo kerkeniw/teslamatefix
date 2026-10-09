@@ -3,7 +3,10 @@
 // `scripts/audit-capture.mjs` (Playwright) et `scripts/audit-compare.mjs`.
 //
 // Usage : node --env-file=.env scripts/audit-pick.mjs
-import { PrismaClient } from "@prisma/client";
+//
+// `pg` directement : depuis Prisma 7, le client généré (TypeScript, dans
+// `src/generated`) n'est pas importable depuis un script Node.
+import pg from "pg";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -12,40 +15,51 @@ const HERE = dirname(fileURLToPath(import.meta.url));
 const OUT_DIR = resolve(HERE, "..", "audit");
 mkdirSync(OUT_DIR, { recursive: true });
 
-const prisma = new PrismaClient();
+// TeslaMate stocke de l'UTC en `timestamp without time zone` : sans ce parseur,
+// `pg` l'interpréterait en heure locale.
+pg.types.setTypeParser(pg.types.builtins.TIMESTAMP, (s) => new Date(`${s.replace(" ", "T")}Z`));
 
-// Sérialisation safe pour traverser un JSON.stringify : Decimal / BigInt / Date.
+const client = new pg.Client({ connectionString: process.env.DATABASE_URL });
+
+// Sérialisation safe pour traverser un JSON.stringify : BigInt / Date.
+// (`pg` renvoie déjà les numeric en chaîne, comme le `toString()` d'un Decimal.)
 function replacer(_key, value) {
   if (typeof value === "bigint") return value.toString();
   if (value instanceof Date) return value.toISOString();
-  // Prisma Decimal a une méthode toString — détecté par tag interne.
-  if (value && typeof value === "object" && "toFixed" in value && "s" in value && "d" in value) {
-    return value.toString();
-  }
   return value;
 }
 
 async function pickIds(table, n = 10) {
   // ORDER BY RANDOM() : suffisant à l'échelle des entités (drives 1.6k,
   // charging_processes 161). À éviter sur positions (4.4M lignes) — hors-périmètre.
-  const rows = await prisma.$queryRawUnsafe(
-    `SELECT id FROM public.${table} ORDER BY RANDOM() LIMIT ${n}`,
+  const { rows } = await client.query(
+    `SELECT id FROM public.${table} ORDER BY RANDOM() LIMIT $1`,
+    [n],
   );
   return rows.map((r) => Number(r.id)).sort((a, b) => a - b);
 }
 
+async function byIds(sql, ids) {
+  const list = [...ids].filter((x) => x != null);
+  if (list.length === 0) return [];
+  const { rows } = await client.query(sql, [list]);
+  return rows;
+}
+
 async function main() {
+  await client.connect();
+
   const driveIds = await pickIds("drives", 10);
   const chargeIds = await pickIds("charging_processes", 10);
 
-  const drives = await prisma.drives.findMany({
-    where: { id: { in: driveIds } },
-    orderBy: { id: "asc" },
-  });
-  const charges = await prisma.charging_processes.findMany({
-    where: { id: { in: chargeIds } },
-    orderBy: { id: "asc" },
-  });
+  const drives = await byIds(
+    "SELECT * FROM public.drives WHERE id = ANY($1::int[]) ORDER BY id",
+    driveIds,
+  );
+  const charges = await byIds(
+    "SELECT * FROM public.charging_processes WHERE id = ANY($1::int[]) ORDER BY id",
+    chargeIds,
+  );
 
   // Récupère aussi les labels FK référencés (pour comparer côté combo).
   const addressIds = new Set();
@@ -62,18 +76,18 @@ async function main() {
     if (c.position_id != null) positionIds.add(c.position_id);
   }
 
-  const addresses = await prisma.addresses.findMany({
-    where: { id: { in: [...addressIds].filter((x) => x != null) } },
-    select: { id: true, display_name: true, city: true, road: true, country: true },
-  });
-  const geofences = await prisma.geofences.findMany({
-    where: { id: { in: [...geofenceIds].filter((x) => x != null) } },
-    select: { id: true, name: true },
-  });
-  const positions = await prisma.positions.findMany({
-    where: { id: { in: [...positionIds].filter((x) => x != null) } },
-    select: { id: true, date: true, latitude: true, longitude: true },
-  });
+  const addresses = await byIds(
+    "SELECT id, display_name, city, road, country FROM public.addresses WHERE id = ANY($1::int[])",
+    addressIds,
+  );
+  const geofences = await byIds(
+    "SELECT id, name FROM public.geofences WHERE id = ANY($1::int[])",
+    geofenceIds,
+  );
+  const positions = await byIds(
+    "SELECT id, date, latitude, longitude FROM public.positions WHERE id = ANY($1::int[])",
+    positionIds,
+  );
 
   writeFileSync(
     resolve(OUT_DIR, "drives.db.json"),
@@ -91,11 +105,11 @@ async function main() {
   console.log("Drives :", driveIds.join(", "));
   console.log("Charges:", chargeIds.join(", "));
   console.log("→", OUT_DIR);
-
-  await prisma.$disconnect();
 }
 
-main().catch((e) => {
-  console.error(e);
-  process.exit(1);
-});
+main()
+  .catch((e) => {
+    console.error(e);
+    process.exitCode = 1;
+  })
+  .finally(() => client.end());

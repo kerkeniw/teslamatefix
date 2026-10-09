@@ -1,13 +1,14 @@
 "use server";
 
 import { z } from "zod";
-import { Prisma } from "@prisma/client";
+import { Prisma } from "@/generated/prisma/client";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { requireSession } from "@/lib/auth";
 import { env } from "@/lib/env";
-import { logger } from "@/lib/logger";
+import { mutationLimited } from "@/lib/rate-limit";
+import { logger, safeErr } from "@/lib/logger";
 import { closePreviousOpenState } from "@/lib/integrity/states";
 import type { StateFormState } from "@/components/entities/states/StateForm";
 
@@ -87,6 +88,8 @@ export async function createStateAction(
 ): Promise<StateFormState> {
   const session = await requireSession();
   if (env.READ_ONLY) return readOnlyResult();
+  const limited = mutationLimited(session.userId);
+  if (limited) return limited;
 
   const raw = Object.fromEntries(formData.entries()) as Record<string, string>;
   const parsed = StateInputSchema.safeParse(raw);
@@ -148,7 +151,7 @@ export async function createStateAction(
     ) {
       return { ok: false, fieldErrors: { end_date: "endBeforeStart" } };
     }
-    logger.error({ event: "states.create.error", err: String(e) }, "states.create failed");
+    logger.error({ event: "states.create.error", err: safeErr(e) }, "states.create failed");
     return { ok: false, error: "Une erreur est survenue." };
   }
 
@@ -175,6 +178,8 @@ export async function updateStateAction(
 ): Promise<StateFormState> {
   const session = await requireSession();
   if (env.READ_ONLY) return readOnlyResult();
+  const limited = mutationLimited(session.userId);
+  if (limited) return limited;
 
   const raw = Object.fromEntries(formData.entries()) as Record<string, string>;
   const parsed = StateInputSchema.safeParse(raw);
@@ -233,7 +238,7 @@ export async function updateStateAction(
     ) {
       return { ok: false, fieldErrors: { end_date: "endBeforeStart" } };
     }
-    logger.error({ event: "states.update.error", id, err: String(e) }, "states.update failed");
+    logger.error({ event: "states.update.error", id, err: safeErr(e) }, "states.update failed");
     return { ok: false, error: "Une erreur est survenue." };
   }
 
@@ -255,6 +260,8 @@ export async function updateStateAction(
 export async function deleteStateAction(id: number): Promise<{ ok: boolean; error?: string }> {
   const session = await requireSession();
   if (env.READ_ONLY) return { ok: false, error: "Application en lecture seule." };
+  const limited = mutationLimited(session.userId);
+  if (limited) return limited;
 
   try {
     await prisma.states.delete({ where: { id } });
@@ -262,7 +269,7 @@ export async function deleteStateAction(id: number): Promise<{ ok: boolean; erro
     if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2025") {
       return { ok: false, error: "État introuvable." };
     }
-    logger.error({ event: "states.delete.error", id, err: String(e) }, "states.delete failed");
+    logger.error({ event: "states.delete.error", id, err: safeErr(e) }, "states.delete failed");
     return { ok: false, error: "Une erreur est survenue." };
   }
 

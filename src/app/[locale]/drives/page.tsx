@@ -1,11 +1,12 @@
-import { setRequestLocale, getTranslations } from "next-intl/server";
+import { setRequestLocale } from "next-intl/server";
 import { requireSession } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { getSelectedCarOrDefault } from "@/lib/vehicle";
 import { AppHeader } from "@/components/app-shell/header";
 import { MainNav } from "@/components/app-shell/main-nav";
 import { DriveListClient } from "@/components/entities/drives/DriveListClient";
-import type { DriveListRow } from "@/lib/drives/list-query";
+import type { DriveListRow, DriveListSummary } from "@/lib/drives/list-query";
+import { isQuickRangeKey } from "@/lib/positions/quick-ranges";
 import { listDrives } from "@/lib/drives/list-query";
 import type { FKOption } from "@/components/form/fk-combobox";
 import type { EfficiencyMode } from "@/components/entities/drives/DriveDataTableColumns";
@@ -22,12 +23,21 @@ type SP = {
   pageSize?: string;
   from?: string;
   to?: string;
+  qr?: string;
   open_only?: string;
   min_dist?: string;
   min_speed?: string;
   location?: string;
   geofence?: string;
   eff?: string;
+};
+
+const EMPTY_SUMMARY: DriveListSummary = {
+  count: 0,
+  distance_km: null,
+  duration_min: null,
+  energy_kwh: null,
+  consumption_wh_km: null,
 };
 
 function parsePage(v?: string) {
@@ -62,7 +72,6 @@ export default async function DrivesPage({
   setRequestLocale(locale);
   await requireSession();
   const sp = await searchParams;
-  const t = await getTranslations("drives");
 
   const page = parsePage(sp.page);
   const pageSize = parsePageSize(sp.pageSize);
@@ -93,6 +102,7 @@ export default async function DrivesPage({
 
   let rows: DriveListRow[] = [];
   let total = 0;
+  let summary: DriveListSummary = EMPTY_SUMMARY;
   if (selectedCar) {
     const res = await listDrives({
       carId: selectedCar.id,
@@ -109,6 +119,7 @@ export default async function DrivesPage({
     });
     rows = res.rows;
     total = res.total;
+    summary = res.summary;
   }
 
   // Libellés des géofences pré-sélectionnées (pour les puces du filtre).
@@ -125,19 +136,17 @@ export default async function DrivesPage({
     <>
       <AppHeader />
       <MainNav />
-      <main className="mx-auto w-full max-w-none flex-1 px-4 py-6">
-        <header className="mb-6">
-          <h1 className="text-2xl font-semibold tracking-tight">{t("title")}</h1>
-          <p className="mt-1 text-sm text-muted-foreground">{t("subtitle")}</p>
-        </header>
+      <main className="mx-auto w-full max-w-none flex-1 px-4 py-4">
         <DriveListClient
           data={rows}
           total={total}
           page={page}
           pageSize={pageSize}
+          summary={summary}
           filters={{
             from: sp.from ?? "",
             to: sp.to ?? "",
+            qr: sp.qr && isQuickRangeKey(sp.qr) ? sp.qr : null,
             open_only: openOnly,
             min_dist: sp.min_dist ?? "",
             min_speed: sp.min_speed ?? "",

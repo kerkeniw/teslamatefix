@@ -1,6 +1,6 @@
 "use client";
 
-import type { ColumnDef, VisibilityState } from "@tanstack/react-table";
+import type { AppColumnDef, VisibilityState } from "@/components/data-table/data-table";
 import { useTranslations, useFormatter } from "next-intl";
 import { Badge } from "@/components/ui/badge";
 import { Link } from "@/i18n/navigation";
@@ -110,7 +110,7 @@ export function useDriveColumns(opts: {
   length: LengthUnit;
   temp: TempUnit;
   efficiencyMode: EfficiencyMode;
-}): ColumnDef<DriveRow>[] {
+}): AppColumnDef<DriveRow>[] {
   const { length, temp, efficiencyMode } = opts;
   const t = useTranslations("drives");
   const tCommon = useTranslations("common");
@@ -124,8 +124,8 @@ export function useDriveColumns(opts: {
   const col = (
     id: string,
     label: string,
-    cell: ColumnDef<DriveRow>["cell"],
-  ): ColumnDef<DriveRow> => ({ id, header: label, cell, meta: { label } });
+    cell: AppColumnDef<DriveRow>["cell"],
+  ): AppColumnDef<DriveRow> => ({ id, header: label, cell, meta: { label } });
 
   return [
     col("id", tCommon("id"), ({ row }) => (
